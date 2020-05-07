@@ -4,8 +4,7 @@
     "types": "./dist/index.d.ts",
     "version": "1.0.0",
     "scripts": {
-        "test": "jest --setupFiles dotenv/config",
-        "build": "tsc -p . --declaration",
+        "build": "webpack",
         "lint": "eslint . --ext .js,.ts"
     },
     "files": [
@@ -39,7 +38,8 @@
         "ts-loader": "^7.0.0",
         "clean-webpack-plugin": "^3.0.0",
         "friendly-errors-webpack-plugin": "^1.7.0",
-        "file-loader": "^6.0.0"
+        "file-loader": "^6.0.0",
+        "mini-css-extract-plugin": "^0.9.0"
     },
     "dependencies": {
         "vue": "^2.6.11",

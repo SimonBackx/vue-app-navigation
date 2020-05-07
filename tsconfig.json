@@ -1,18 +1,19 @@
 {
     "compilerOptions": {
         "target": "es2017",
-        "module": "esnext",
+        "module": "commonjs",
         "jsx": "preserve",
         "importHelpers": true,
         "moduleResolution": "node",
         "experimentalDecorators": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "sourceMap": true,
         "strictNullChecks": true,
         "outDir": "dist",
         "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
-        "types": ["node", "jest"]
+        "types": ["node", "jest"],
+        "sourceMap": true,
+        "declaration": true
     },
     "include": ["*.ts", "src/**/*.ts", "tests/**/*.ts", "*.d.ts"],
     "exclude": ["node_modules", "dist"]
