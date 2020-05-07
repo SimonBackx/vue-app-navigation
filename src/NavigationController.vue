@@ -252,7 +252,6 @@ export default class NavigationController extends Vue {
             }
         }
 
-
         const height = h + "px";
         console.log("height", height)
 
