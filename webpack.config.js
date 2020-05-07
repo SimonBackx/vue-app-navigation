@@ -9,7 +9,7 @@ module.exports = {
     stats: 'none',
     entry: "./index.ts",
     externals: {
-      vue: 'Vue',
+      vue: 'vue',
     },
     resolve: {
         // Add `.ts` and `.tsx` as a resolvable extension (so that you don't have to add it explicitly)
