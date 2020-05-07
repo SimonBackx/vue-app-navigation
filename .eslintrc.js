@@ -19,11 +19,13 @@ module.exports = {
     },
     overrides: [
         {
-            // Rules for TypeScript
-            files: ["*.ts"],
+            // Rules for TypeScript and vue
+            files: ["*.ts", "*.vue"],
+            parser: "vue-eslint-parser",
             parserOptions: {
                 parser: "@typescript-eslint/parser",
-                project: ["./tsconfig.json"]
+                project: ["./tsconfig.json"],
+                extraFileExtensions: [".vue"],
             },
             plugins: ["@typescript-eslint", "jest", "simple-import-sort"],
             extends: [
@@ -32,6 +34,7 @@ module.exports = {
                 "plugin:@typescript-eslint/recommended",
                 "plugin:@typescript-eslint/recommended-requiring-type-checking",
                 "plugin:jest/recommended",
+                "plugin:vue/recommended",
             ],
             rules: {
                 "no-console": "off",
@@ -47,6 +50,14 @@ module.exports = {
                 "@typescript-eslint/no-empty-interface": "off", // It is convenient to have placeholder interfaces
                 "@typescript-eslint/no-this-alias": "off", // No idea why we need this. This breaks code that is just fine. Prohibit the use of function() instead of this rule
                 "@typescript-eslint/unbound-method": "off", // Methods are automatically bound in vue, it would break removeEventListeners if we bound it every time unless we save every method in variables again...
+                "vue/html-indent": ["warn", 4],
+                "vue/max-attributes-per-line": "off",
+                "vue/component-tags-order": [
+                    "error",
+                    {
+                        order: ["template", "script", "style"],
+                    },
+                ],
             },
         }
     ]

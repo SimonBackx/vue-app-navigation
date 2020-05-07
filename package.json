@@ -42,6 +42,8 @@
         "file-loader": "^6.0.0"
     },
     "dependencies": {
-        "vue": "^2.6.11"
+        "vue": "^2.6.11",
+        "vue-class-component": "^7.0.2",
+        "vue-property-decorator": "^8.4.1"
     }
 }

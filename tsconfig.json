@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
-        "target": "es2019",
-        "module": "commonjs",
+        "target": "es2017",
+        "module": "esnext",
         "jsx": "preserve",
         "importHelpers": true,
         "moduleResolution": "node",
@@ -11,7 +11,7 @@
         "sourceMap": true,
         "strictNullChecks": true,
         "outDir": "dist",
-        "lib": ["es2019"],
+        "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
         "types": ["node", "jest"]
     },
     "include": ["*.ts", "src/**/*.ts", "tests/**/*.ts", "*.d.ts"],
