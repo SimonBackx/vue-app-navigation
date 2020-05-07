@@ -18,6 +18,7 @@ export class ComponentWithProperties {
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
     static keyCounter = 0;
+    static debug = true;
 
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle = "cover";
@@ -31,12 +32,12 @@ export class ComponentWithProperties {
     beforeMount() {
         if (this.vnode) {
             ComponentWithProperties.keepAliveCounter--;
-            console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+            if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
         }
     }
 
     mounted() {
-        console.log("Component mounted: " + this.component.name);
+        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name);
         this.isMounted = true;
     }
 
@@ -47,12 +48,12 @@ export class ComponentWithProperties {
             if (this.keepAlive) {
                 this.keepAlive = false;
                 ComponentWithProperties.keepAliveCounter++;
-                console.log("Kept component alive " + this.component.name);
-                console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+                if (ComponentWithProperties.debug) console.log("Kept component alive " + this.component.name);
+                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
 
                 return;
             }
-            console.log("Destroyed component " + this.component.name);
+            if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name);
             this.vnode.componentInstance?.$destroy();
             this.vnode = null;
         }
