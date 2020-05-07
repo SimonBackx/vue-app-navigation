@@ -242,7 +242,17 @@ export default class NavigationController extends Vue {
         // const fixPadding = Math.min(300, Math.max(0, element.offsetHeight - current - scrollElement.clientHeight));
         // console.log("Fix padding: " + fixPadding);
         // This fixPadding thing doesn't work on other browsers. Need to recheck when it reappears on iOS
-        const h = scrollElement.clientHeight;// + fixPadding;
+        let h = scrollElement.clientHeight;// + fixPadding;
+        if (scrollElement === document.documentElement) {
+            // Fix viewport glitch
+            const w = (window as any);
+            if (w.visualViewport) {
+                console.log("Used height "+w.viewport.height+" instead of "+h)
+                h = w.viewport.height
+            }
+        }
+
+
         const height = h + "px";
         console.log("height", height)
 
