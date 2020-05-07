@@ -247,7 +247,7 @@ export default class NavigationController extends Vue {
             // Fix viewport glitch
             const w = (window as any);
             if (w.visualViewport) {
-                console.log("Used height "+w.viewport.height+" instead of "+h)
+                console.log("Used height "+w.visualViewport.height+" instead of "+h)
                 h = w.viewport.height
             }
         }
