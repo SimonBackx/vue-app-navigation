@@ -1,6 +1,8 @@
 # vue-app-navigation
 Navigation library for Vue for web apps that need to feel and work like native apps (inspired by iOS)
 
+[Example](https://simonbackx.com/files/vue-app-navigation/example.gif "Example of navigation")
+
 ## Concepts
 
 -   URL based navigation isn't fit for mobile applications. You should be able to keep pushing new views, and you should be able to navigate back to earlier states without having to keep in mind how to rebuild the state of earlier components. It just needs to 'work'.
