@@ -7,9 +7,7 @@ const path = require("path");
 module.exports = {
     mode: "development",
     stats: 'none',
-     entry: {
-        index: "./index.ts",
-    },
+    entry: "./index.ts",
     externals: {
       vue: 'Vue',
     },
@@ -21,8 +19,9 @@ module.exports = {
         // Production
         //filename: '[name].[contenthash].js',
         // Development:
-         path: path.resolve(__dirname, "dist"),
+        path: path.resolve(__dirname, "dist"),
         filename: '[name].js',
+        libraryTarget: 'commonjs2',
     },
     devtool: "sourcemap",
     module: {
