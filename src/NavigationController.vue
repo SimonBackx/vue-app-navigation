@@ -372,6 +372,7 @@ export default class NavigationController extends Vue {
 
             &-enter {
                 & > div {
+                    // This is bugged in safari :/
                     transform: translateY(100vh);
                 }
             }
