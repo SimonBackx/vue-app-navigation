@@ -47,11 +47,28 @@ export class NavigationMixin extends Vue {
         }
     }
 
+    dismiss() {
+        const modalNav = this.modalNavigationController as any;
+        modalNav?.pop();
+    }
+
     get navigationController(): NavigationController | null {
         let start: any = this.$parent;
         while (start) {
             if (start instanceof NavigationController) {
                 return start;
+            }
+
+            start = start.$parent;
+        }
+        return null;
+    }
+
+    get modalNavigationController(): NavigationController | null {
+        let start: any = this.$parent;
+        while (start) {
+            if (start instanceof NavigationController) {
+                if (start.animationType == "modal") return start;
             }
 
             start = start.$parent;
