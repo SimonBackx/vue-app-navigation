@@ -202,7 +202,7 @@ export default class NavigationController extends Vue {
         // Disable scroll during animation (this is to fix overflow elements)
         // We can only allow scroll during transitions when all browser support overflow: clip, which they don't atm
         // This sometimes doesn't work on iOS Safari on body due to a bug
-        //scrollElement.style.overflow = "hidden";
+        scrollElement.style.overflow = "hidden";
 
         requestAnimationFrame(() => {
             // Wait and execute immediately after beforeLeave's animation frame
