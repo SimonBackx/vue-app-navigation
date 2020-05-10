@@ -124,10 +124,19 @@ export default class NavigationController extends Vue {
         this.mainComponent = component;
         this.$emit("didPush");
     }
-    pop(animated = true, destroy = true): ComponentWithProperties | null {
-        if (this.components.length <= 1) {
+
+    popToRoot(animated = true, destroy = true) {
+        return this.pop(animated, destroy, this.components.length - 1);
+    }
+
+    pop(animated = true, destroy = true, count = 1): ComponentWithProperties[] | undefined {
+        if (this.components.length <= count) {
             this.$emit("pop");
-            return null;
+            return;
+        }
+
+        if (count === 0) {
+            return;
         }
 
         this.previousScrollPosition = this.getScrollElement().scrollTop;
@@ -140,11 +149,13 @@ export default class NavigationController extends Vue {
         console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
         this.freezeSize();
-        const popped = this.components.splice(this.components.length - 1, 1);
+        const popped = this.components.splice(this.components.length - count, count);
 
         if (!destroy) {
             // Stop destroy
-            popped[0].keepAlive = true;
+            for (const comp of popped) {
+                comp.keepAlive = true;
+            }
         }
 
         // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
@@ -162,7 +173,7 @@ export default class NavigationController extends Vue {
         this.mainComponent = this.components[this.components.length - 1];
         this.$emit("didPop");
 
-        return popped[0];
+        return popped;
     }
 
     beforeEnter(insertedElement: HTMLElement) {
