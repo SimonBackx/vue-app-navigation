@@ -11,29 +11,21 @@
             @after-enter="afterEnter"
             @enter-cancelled="enterCancelled"
         >
-            <FramedComponent
-                :key="mainComponent.key"
-                ref="child"
-                :root="mainComponent"
-                :name="mainComponent.key"
-                @push="push"
-                @show="push"
-                @pop="pop"
-            />
+            <FramedComponent :key="mainComponent.key" ref="child" :root="mainComponent" :name="mainComponent.key" @push="push" @show="push" @pop="pop" />
         </transition>
     </div>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref,Vue } from "vue-property-decorator";
+import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 
 @Component({
     components: {
-        FramedComponent
-    }
+        FramedComponent,
+    },
 })
 export default class NavigationController extends Vue {
     components: ComponentWithProperties[] = [];
@@ -83,12 +75,7 @@ export default class NavigationController extends Vue {
         }
 
         const style = window.getComputedStyle(element);
-        if (
-            style.overflowY == "scroll" ||
-            style.overflow == "scroll" ||
-            style.overflow == "auto" ||
-            style.overflowY == "auto"
-        ) {
+        if (style.overflowY == "scroll" || style.overflow == "scroll" || style.overflow == "auto" || style.overflowY == "auto") {
             return element;
         } else {
             if (!element.parentElement) {
@@ -98,21 +85,25 @@ export default class NavigationController extends Vue {
         }
     }
 
-    push(
-        component: ComponentWithProperties,
-        animated = true,
-        replace = 0,
-        reverse = false
-    ) {
+    push(component: ComponentWithProperties, animated = true, replace = 0, reverse = false) {
         if (!animated) {
             this.transitionName = "none";
         } else {
             this.transitionName = this.animationType == "modal" ? "modal-push" : reverse ? "pop" : "push";
         }
 
+        // Add the client height from the saved height (check pop method for information)
+        const scrollElement = this.getScrollElement();
+        const w = window as any;
+
+        let clientHeight = scrollElement.clientHeight;
+        if (scrollElement === document.documentElement && w.visualViewport) {
+            clientHeight = w.visualViewport.height;
+        }
+
         // Save scroll position
-        this.previousScrollPosition = this.getScrollElement().scrollTop;
-        this.savedScrollPositions.push(this.previousScrollPosition);
+        this.previousScrollPosition = scrollElement.scrollTop;
+        this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
         this.nextScrollPosition = 0;
 
         // Save width and height
@@ -156,7 +147,17 @@ export default class NavigationController extends Vue {
             popped[0].keepAlive = true;
         }
 
-        this.nextScrollPosition = this.savedScrollPositions.pop() ?? 0;
+        // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
+        // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
+        const scrollElement = this.getScrollElement();
+        const w = window as any;
+
+        let clientHeight = scrollElement.clientHeight;
+        if (scrollElement === document.documentElement && w.visualViewport) {
+            clientHeight = w.visualViewport.height;
+        }
+
+        this.nextScrollPosition = Math.max(0, (this.savedScrollPositions.pop() ?? 0) - clientHeight);
 
         this.mainComponent = this.components[this.components.length - 1];
         this.$emit("didPop");
@@ -192,7 +193,7 @@ export default class NavigationController extends Vue {
 
         const w = ((element.firstChild as HTMLElement).firstChild as HTMLElement).offsetWidth;
         const h = (element.firstChild as HTMLElement).offsetHeight;
-        const next = this.nextScrollPosition;
+        let next = this.nextScrollPosition;
 
         // Lock position if needed
         // This happens before the beforeLeave animation frame!
@@ -201,7 +202,7 @@ export default class NavigationController extends Vue {
         // Disable scroll during animation (this is to fix overflow elements)
         // We can only allow scroll during transitions when all browser support overflow: clip, which they don't atm
         // This sometimes doesn't work on iOS Safari on body due to a bug
-        scrollElement.style.overflow = "hidden";
+        //scrollElement.style.overflow = "hidden";
 
         requestAnimationFrame(() => {
             // Wait and execute immediately after beforeLeave's animation frame
@@ -242,18 +243,18 @@ export default class NavigationController extends Vue {
         // const fixPadding = Math.min(300, Math.max(0, element.offsetHeight - current - scrollElement.clientHeight));
         // console.log("Fix padding: " + fixPadding);
         // This fixPadding thing doesn't work on other browsers. Need to recheck when it reappears on iOS
-        let h = scrollElement.clientHeight;// + fixPadding;
+        let h = scrollElement.clientHeight; // + fixPadding;
         if (scrollElement === document.documentElement) {
             // Fix viewport glitch
-            const w = (window as any);
+            const w = window as any;
             if (w.visualViewport) {
-                console.log("Used height "+w.visualViewport.height+" instead of "+h)
-                h = w.visualViewport.height
+                console.log("Used height " + w.visualViewport.height + " instead of " + h);
+                h = w.visualViewport.height;
             }
         }
 
         const height = h + "px";
-        console.log("height", height)
+        console.log("height", height);
 
         // This animation frame is super important to prevent flickering on Safari and Webkit!
         // This is also one of the reasons why we cannot use the default Vue class additions
