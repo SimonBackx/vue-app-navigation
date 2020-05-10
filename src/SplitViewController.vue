@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref,Vue } from "vue-property-decorator";
+import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
@@ -20,7 +20,7 @@ import NavigationController from "./NavigationController.vue";
 const throttle = (func, limit) => {
     let lastFunc;
     let lastRan;
-    return function () {
+    return function() {
         const context = this;
         // eslint-disable-next-line prefer-rest-params
         const args = arguments;
@@ -29,7 +29,7 @@ const throttle = (func, limit) => {
             lastRan = Date.now();
         } else {
             clearTimeout(lastFunc);
-            lastFunc = setTimeout(function () {
+            lastFunc = setTimeout(function() {
                 if (Date.now() - lastRan >= limit) {
                     func.apply(context, args);
                     lastRan = Date.now();
@@ -86,10 +86,7 @@ export default class SplitViewController extends Vue {
     }
 
     get lastIsDetail() {
-        return (
-            this.detailKey != null &&
-            (this.$refs.navigationController as NavigationController).mainComponent?.key == this.detailKey
-        );
+        return this.detailKey != null && (this.$refs.navigationController as NavigationController).mainComponent?.key == this.detailKey;
     }
 
     getScrollElement(element: HTMLElement | null = null): HTMLElement {
@@ -98,12 +95,7 @@ export default class SplitViewController extends Vue {
         }
 
         const style = window.getComputedStyle(element);
-        if (
-            style.overflowY == "scroll" ||
-            style.overflow == "scroll" ||
-            style.overflow == "auto" ||
-            style.overflowY == "auto"
-        ) {
+        if (style.overflowY == "scroll" || style.overflow == "scroll" || style.overflow == "auto" || style.overflowY == "auto") {
             return element;
         } else {
             if (!element.parentElement) {
@@ -159,17 +151,19 @@ export default class SplitViewController extends Vue {
             return;
         }
         const popped = this.navigationController.pop(false, false);
+        if (!popped || popped.length == 0) {
+            return;
+        }
 
         // We need to wait until it is removed from the vnode
         this.$nextTick(() => {
-            this.detail = popped;
+            this.detail = popped[0];
         });
     }
 }
 </script>
 
 <style lang="scss">
-
 .split-view-controller {
     //background: $color-white-shade;
     position: relative;
