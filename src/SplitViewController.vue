@@ -70,15 +70,11 @@ export default class SplitViewController extends Vue {
     activated() {
         (this as any).listener = throttle(this.onResize, 200);
         window.addEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
-
-        if (this.detailWidth) {
-            (this.$el as HTMLElement).style.setProperty("split-view-width", this.detailWidth);
-        }
     }
 
     mounted() {
         if (this.detailWidth) {
-            (this.$el as HTMLElement).style.setProperty("split-view-width", this.detailWidth);
+            (this.$el as HTMLElement).style.setProperty("--split-view-width", this.detailWidth);
         }
     }
 
