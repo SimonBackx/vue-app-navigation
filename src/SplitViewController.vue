@@ -215,7 +215,12 @@ export default class SplitViewController extends Vue {
         display: grid;
         grid-template-columns: 320px 1fr;
 
+        & > .master {
+            min-width: 0;
+        }
+
         & > .detail {
+            min-width: 0;
             min-height: 100vh;
             min-height: calc(var(--vh, 1vh) * 100);
         }
