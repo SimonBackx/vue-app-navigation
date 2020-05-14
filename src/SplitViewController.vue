@@ -53,6 +53,9 @@ export default class SplitViewController extends Vue {
     root!: ComponentWithProperties;
     detail: ComponentWithProperties | null = null;
 
+    @Prop()
+    detailWidth?: string;
+
     @Ref()
     navigationController!: NavigationController;
 
@@ -67,6 +70,10 @@ export default class SplitViewController extends Vue {
     activated() {
         (this as any).listener = throttle(this.onResize, 200);
         window.addEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
+
+        if (this.detailWidth) {
+            (this.$el as HTMLElement).style.setProperty("split-view-width", this.detailWidth);
+        }
     }
 
     deactivated() {
@@ -214,6 +221,7 @@ export default class SplitViewController extends Vue {
     &[data-has-detail="true"] {
         display: grid;
         grid-template-columns: 320px 1fr;
+        grid-template-columns: var(--split-view-width, 320px) 1fr;
 
         & > .master {
             min-width: 0;
