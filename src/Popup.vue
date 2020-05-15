@@ -82,6 +82,9 @@ export default class Popup extends NavigationMixin {
 
         --saved-vh: var(--vh, 1vh);
 
+        // Fix chrome bug that scrollbars are not visible anymore
+        transform: translate3d(0, 0, 0);
+
         > * {
             // Pass updated vh to children
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
