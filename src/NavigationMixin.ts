@@ -49,7 +49,12 @@ export class NavigationMixin extends Vue {
 
     dismiss() {
         const modalNav = this.modalNavigationController as any;
-        modalNav?.pop();
+        if (!modalNav) {
+            // Chances are this is not displayed as a modal, but on a normal stack
+            this.pop();
+        } else {
+            modalNav?.pop();
+        }
     }
 
     get navigationController(): NavigationController | null {
