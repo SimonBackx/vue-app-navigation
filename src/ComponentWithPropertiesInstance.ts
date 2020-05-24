@@ -22,6 +22,10 @@ export default Vue.extend({
         this.component.beforeMount();
     },
 
+    activated() {
+        this.component.activated();
+    },
+
     mounted() {
         this.component.mounted();
     },

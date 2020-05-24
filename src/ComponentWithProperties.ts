@@ -1,4 +1,6 @@
 import { VNode } from "vue";
+import { HistoryManager } from "./HistoryManager";
+import { NavigationController } from "..";
 
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
@@ -23,6 +25,9 @@ export class ComponentWithProperties {
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle = "cover";
 
+    // Hisotry index
+    public historyIndex: number | null = null;
+
     constructor(component: any, properties: Record<string, any> = {}) {
         this.component = component;
         this.properties = properties;
@@ -36,9 +41,32 @@ export class ComponentWithProperties {
         }
     }
 
+    getHistoryIndex() {
+        if (this.component) return this.historyIndex;
+    }
+
     mounted() {
-        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name);
+        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name + " at " + HistoryManager.counter);
         this.isMounted = true;
+
+        if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
+            return;
+        }
+        if (this.historyIndex == null) {
+            this.historyIndex = HistoryManager.counter;
+        }
+        if (this.historyIndex !== null) {
+            this.historyIndex = HistoryManager.didMountHistoryIndex(this.historyIndex);
+        }
+    }
+
+    activated() {
+        if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
+            return;
+        }
+        if (this.historyIndex !== null) {
+            this.historyIndex = HistoryManager.didMountHistoryIndex(this.historyIndex);
+        }
     }
 
     destroy() {

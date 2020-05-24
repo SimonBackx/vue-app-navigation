@@ -21,6 +21,7 @@ import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
+import { HistoryManager } from "./HistoryManager";
 
 @Component({
     components: {
@@ -123,6 +124,13 @@ export default class NavigationController extends Vue {
 
         this.mainComponent = component;
         this.$emit("didPush");
+
+        if (replace == 0) {
+            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+                // todo: fix reference to this and memory handling here!!
+                this.pop(animated && canAnimate);
+            });
+        }
     }
 
     popToRoot(animated = true, destroy = true) {
@@ -172,7 +180,6 @@ export default class NavigationController extends Vue {
 
         this.mainComponent = this.components[this.components.length - 1];
         this.$emit("didPop");
-
         return popped;
     }
 
