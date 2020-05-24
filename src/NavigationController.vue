@@ -39,6 +39,9 @@ export default class NavigationController extends Vue {
     @Prop()
     root!: ComponentWithProperties;
 
+    @Prop({ default: null })
+    initialComponents: ComponentWithProperties[] | null;
+
     @Prop({ default: "default" })
     animationType!: string;
 
@@ -46,8 +49,16 @@ export default class NavigationController extends Vue {
     child!: FramedComponent;
 
     mounted() {
-        this.mainComponent = this.root;
-        this.components = [this.root];
+        if (this.initialComponents && this.initialComponents.length > 0) {
+            this.mainComponent = this.initialComponents[this.initialComponents.length - 1];
+            this.components = this.initialComponents.slice(0);
+
+            // Update property (even if not allowed, we know, but we need to remove the references)
+            this.initialComponents.splice(0, this.initialComponents.length);
+        } else {
+            this.mainComponent = this.root;
+            this.components = [this.root];
+        }
     }
 
     freezeSize() {

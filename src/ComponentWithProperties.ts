@@ -27,6 +27,7 @@ export class ComponentWithProperties {
 
     // Hisotry index
     public historyIndex: number | null = null;
+    public isContainerView = false;
 
     constructor(component: any, properties: Record<string, any> = {}) {
         this.component = component;
@@ -49,7 +50,7 @@ export class ComponentWithProperties {
         if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name + " at " + HistoryManager.counter);
         this.isMounted = true;
 
-        if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
+        if (this.isContainerView) {
             return;
         }
         if (this.modalDisplayStyle == "overlay") {
@@ -64,7 +65,7 @@ export class ComponentWithProperties {
     }
 
     activated() {
-        if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
+        if (this.isContainerView) {
             return;
         }
         if (this.modalDisplayStyle == "overlay") {

@@ -9,8 +9,8 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 @Component
 export class NavigationMixin extends Vue {
     emitParents(event: string, data: any) {
-        let start: any = this;
-        while (start.$parent) {
+        let start: any = this.$parent;
+        while (start) {
             if (start.$listeners[event]) {
                 start.$emit(event, data);
                 return;

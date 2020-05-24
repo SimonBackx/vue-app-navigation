@@ -2,7 +2,7 @@ import Vue, { VNode } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
-export default Vue.extend({
+const ComponentWithPropertiesInstance = Vue.extend({
     props: {
         component: ComponentWithProperties,
     },
@@ -28,6 +28,15 @@ export default Vue.extend({
 
     mounted() {
         this.component.mounted();
+
+        // Mark all parents as containers
+        let start: any = this.$parent;
+        while (start) {
+            if (start instanceof ComponentWithPropertiesInstance) {
+                (start.component as ComponentWithProperties).isContainerView = true;
+            }
+            start = start.$parent;
+        }
     },
 
     destroyed() {
@@ -54,3 +63,5 @@ export default Vue.extend({
         return this.component.vnode;
     },
 });
+
+export default ComponentWithPropertiesInstance;
