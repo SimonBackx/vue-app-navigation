@@ -52,6 +52,9 @@ export class ComponentWithProperties {
         if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
             return;
         }
+        if (this.modalDisplayStyle == "overlay") {
+            return;
+        }
         if (this.historyIndex == null) {
             this.historyIndex = HistoryManager.counter;
         }
@@ -62,6 +65,9 @@ export class ComponentWithProperties {
 
     activated() {
         if (this.component.name == "NavigationController" || this.component.name == "SplitViewController") {
+            return;
+        }
+        if (this.modalDisplayStyle == "overlay") {
             return;
         }
         if (this.historyIndex !== null) {
