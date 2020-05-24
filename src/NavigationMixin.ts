@@ -8,20 +8,6 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 // You can declare mixins as the same style as components.
 @Component
 export class NavigationMixin extends Vue {
-    /// Push or replace the state of the browser history and change the URL in the URL bar
-    // query string changes are ignored as change and area treated as replaceState unless you set push to true
-    setUrl(path: string, push = false) {
-        const currentPath = window.location.pathname;
-        const url = new URL(window.location.protocol + "//" + window.location.host + path);
-        const parsedPath = url.pathname;
-
-        if (push || currentPath != parsedPath) {
-            history.pushState({}, "", url.href);
-        } else {
-            history.replaceState({}, "", url.href);
-        }
-    }
-
     emitParents(event: string, data: any) {
         let start: any = this;
         while (start.$parent) {

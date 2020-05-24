@@ -11,6 +11,11 @@ class HistoryManagerStatic {
     isAdjustingState = false;
     manualStateAction = false;
 
+    /// Set the current URL without modifying states
+    setUrl(url: string) {
+        history.replaceState({ counter: this.counter }, "", url);
+    }
+
     pushState(customState: object, url: string | undefined, undoAction: (animate: boolean) => void, redoAction?: () => void) {
         if (!this.active) {
             return;
@@ -22,11 +27,10 @@ class HistoryManagerStatic {
             this.redoActions.set(this.counter, redoAction);
         }
         history.pushState({ counter: this.counter }, "");
-
-        // Clear undoActions of future numbers (todo) when returned multiple times and pushing again
     }
 
     didMountHistoryIndex(counter: number) {
+        // We'll keep this for debugging and remove it if everything is stable
         console.log("Did mount history index " + counter + " / " + this.counter);
         if (counter < this.counter) {
             // First delete all actions
@@ -52,11 +56,10 @@ class HistoryManagerStatic {
         // Create push pop listener that will execute undo actions
         window.addEventListener("popstate", (event) => {
             if (this.isAdjustingState) {
-                console.warn("okay, weird, duplicate popstate");
+                console.warn("Duplicate popstate");
                 return;
             }
             if (this.manualStateAction) {
-                console.warn("Ignore pop state due to manual action");
                 this.manualStateAction = false;
                 return;
             }
@@ -75,11 +78,8 @@ class HistoryManagerStatic {
                     // undo actions
                     const animate = this.counter - newCounter == 1;
                     while (newCounter < this.counter) {
-                        console.log("loop");
                         // Undo
                         const undoAction = this.undoActions.get(this.counter);
-                        console.log("undo " + this.counter);
-
                         if (undoAction) {
                             const num = this.counter;
                             undoAction(animate);
