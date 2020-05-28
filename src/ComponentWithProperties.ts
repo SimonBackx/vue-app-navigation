@@ -20,7 +20,7 @@ export class ComponentWithProperties {
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
     static keyCounter = 0;
-    static debug = true;
+    static debug = false;
 
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle = "cover";
