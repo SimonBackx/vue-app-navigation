@@ -153,7 +153,11 @@ export default class NavigationController extends Vue {
             const instance = component.componentInstance() as any;
             if (instance && instance.shouldNavigateAway) {
                 const promise = instance.shouldNavigateAway();
-                if (promise.then && promise.catch) {
+                if (typeof promise === "boolean") {
+                    if (!promise) {
+                        return false;
+                    }
+                } else if (promise.then && promise.catch) {
                     const r = (await promise) as boolean;
                     if (!r) {
                         return false;
@@ -187,7 +191,11 @@ export default class NavigationController extends Vue {
                 const instance = component.componentInstance() as any;
                 if (instance && instance.shouldNavigateAway) {
                     const promise = instance.shouldNavigateAway();
-                    if (promise.then && promise.catch) {
+                    if (typeof promise === "boolean") {
+                        if (!promise) {
+                            return;
+                        }
+                    } else if (promise.then && promise.catch) {
                         const r = (await promise) as boolean;
                         if (!r) {
                             return;
