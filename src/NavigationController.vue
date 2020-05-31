@@ -150,7 +150,7 @@ export default class NavigationController extends Vue {
     async shouldNavigateAway(): Promise<boolean> {
         for (let index = this.components.length - 1; index >= 0; index--) {
             const component = this.components[index];
-            const r = component.shouldNavigateAway();
+            const r = await component.shouldNavigateAway();
             if (!r) {
                 return false;
             }
@@ -178,7 +178,7 @@ export default class NavigationController extends Vue {
         if (destroy && !force) {
             for (let index = this.components.length - 1; index >= this.components.length - count; index--) {
                 const component = this.components[index];
-                const r = component.shouldNavigateAway();
+                const r = await component.shouldNavigateAway();
                 if (!r) {
                     return;
                 }

@@ -116,7 +116,7 @@ export default class SplitViewController extends Vue {
 
     async shouldNavigateAway(): Promise<boolean> {
         if (this.detail) {
-            const r = this.detail.shouldNavigateAway();
+            const r = await this.detail.shouldNavigateAway();
             if (!r) {
                 return false;
             }
@@ -143,8 +143,7 @@ export default class SplitViewController extends Vue {
             // Replace existing detail component
             // First check if we don't destroy anything
             if (this.detail) {
-                console.log("showDetail has detail!");
-                const r = this.detail.shouldNavigateAway();
+                const r = await this.detail.shouldNavigateAway();
                 if (!r) {
                     return false;
                 }
