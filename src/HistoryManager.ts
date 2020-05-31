@@ -1,3 +1,5 @@
+import { ComponentWithProperties } from "./ComponentWithProperties";
+
 class HistoryManagerStatic {
     undoActions: Map<number, (animate: boolean) => void> = new Map();
 
@@ -31,7 +33,9 @@ class HistoryManagerStatic {
 
     didMountHistoryIndex(counter: number) {
         // We'll keep this for debugging and remove it if everything is stable
-        console.log("Did mount history index " + counter + " / " + this.counter);
+        if (ComponentWithProperties.debug) {
+            console.log("Did mount history index " + counter + " / " + this.counter);
+        }
         if (counter < this.counter) {
             // First delete all actions
 
@@ -64,12 +68,9 @@ class HistoryManagerStatic {
                 return;
             }
             this.isAdjustingState = true;
-            console.log("popstate");
-            console.log(event);
             const newCounter: number | undefined = event.state.counter;
 
             if (newCounter !== undefined) {
-                console.log(newCounter);
                 // Foward or backwards?
                 if (newCounter > this.counter) {
                     // redo actions
