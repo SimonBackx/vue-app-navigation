@@ -80,6 +80,24 @@ export class ComponentWithProperties {
         return this.vnode?.componentInstance;
     }
 
+    async shouldNavigateAway(): Promise<boolean> {
+        const instance = this.componentInstance() as any;
+        if (instance && instance.shouldNavigateAway) {
+            const promise = instance.shouldNavigateAway();
+            if (typeof promise === "boolean") {
+                if (!promise) {
+                    return false;
+                }
+            } else if (promise.then && promise.catch) {
+                const r = (await promise) as boolean;
+                if (!r) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     destroy() {
         this.isMounted = false;
 

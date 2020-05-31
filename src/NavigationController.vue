@@ -150,19 +150,9 @@ export default class NavigationController extends Vue {
     async shouldNavigateAway(): Promise<boolean> {
         for (let index = this.components.length - 1; index >= 0; index--) {
             const component = this.components[index];
-            const instance = component.componentInstance() as any;
-            if (instance && instance.shouldNavigateAway) {
-                const promise = instance.shouldNavigateAway();
-                if (typeof promise === "boolean") {
-                    if (!promise) {
-                        return false;
-                    }
-                } else if (promise.then && promise.catch) {
-                    const r = (await promise) as boolean;
-                    if (!r) {
-                        return false;
-                    }
-                }
+            const r = component.shouldNavigateAway();
+            if (!r) {
+                return false;
             }
         }
         return true;
@@ -188,19 +178,9 @@ export default class NavigationController extends Vue {
         if (destroy && !force) {
             for (let index = this.components.length - 1; index >= this.components.length - count; index--) {
                 const component = this.components[index];
-                const instance = component.componentInstance() as any;
-                if (instance && instance.shouldNavigateAway) {
-                    const promise = instance.shouldNavigateAway();
-                    if (typeof promise === "boolean") {
-                        if (!promise) {
-                            return;
-                        }
-                    } else if (promise.then && promise.catch) {
-                        const r = (await promise) as boolean;
-                        if (!r) {
-                            return;
-                        }
-                    }
+                const r = component.shouldNavigateAway();
+                if (!r) {
+                    return;
                 }
             }
         }
