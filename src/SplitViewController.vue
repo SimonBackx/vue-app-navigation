@@ -114,21 +114,57 @@ export default class SplitViewController extends Vue {
         }
     }
 
-    showDetail(component: ComponentWithProperties) {
+    async shouldNavigateAway(): Promise<boolean> {
+        if (this.detail) {
+            const instance = this.detail.componentInstance() as any;
+            if (instance && instance.shouldNavigateAway) {
+                const promise = instance.shouldNavigateAway();
+                if (promise.then && promise.catch) {
+                    const r = (await promise) as boolean;
+                    if (!r) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        if (this.navigationController) {
+            return await this.navigationController.shouldNavigateAway();
+        }
+
+        return true;
+    }
+
+    async showDetail(component: ComponentWithProperties): Promise<boolean> {
         this.detailKey = component.key;
 
         if (this.shouldCollapse()) {
             if (this.lastIsDetail || this.detail) {
                 console.error("Pusing a detail when a detail is already presented is not allowed");
-                return;
+                return false;
             }
 
             this.navigationController.push(component);
         } else {
             // Replace existing detail component
+            // First check if we don't destroy anything
+            if (this.detail) {
+                const instance = this.detail.componentInstance() as any;
+                if (instance && instance.shouldNavigateAway) {
+                    const promise = instance.shouldNavigateAway();
+                    if (promise.then && promise.catch) {
+                        const r = (await promise) as boolean;
+                        if (!r) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
             this.getScrollElement().scrollTop = 0;
             this.detail = component;
         }
+        return true;
     }
 
     shouldCollapse() {
@@ -150,7 +186,7 @@ export default class SplitViewController extends Vue {
         this.navigationController.push(detail, false);
     }
 
-    expand() {
+    async expand() {
         if (this.detail) {
             console.error("Cannot expand when detail is already visible");
             return;
@@ -159,7 +195,7 @@ export default class SplitViewController extends Vue {
             console.error("Cannot expand when there is no detail");
             return;
         }
-        const popped = this.navigationController.pop(false, false);
+        const popped = await this.navigationController.pop(false, false);
         if (!popped || popped.length == 0) {
             return;
         }

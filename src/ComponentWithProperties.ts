@@ -76,6 +76,10 @@ export class ComponentWithProperties {
         }
     }
 
+    componentInstance(): Vue | undefined {
+        return this.vnode?.componentInstance;
+    }
+
     destroy() {
         this.isMounted = false;
 

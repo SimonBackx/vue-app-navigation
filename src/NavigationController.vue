@@ -144,11 +144,34 @@ export default class NavigationController extends Vue {
         }
     }
 
+    /**
+     * Whether user interaction might prevent destructive navigation away from components.
+     */
+    async shouldNavigateAway(): Promise<boolean> {
+        for (let index = this.components.length - 1; index >= 0; index--) {
+            const component = this.components[index];
+            const instance = component.componentInstance() as any;
+            if (instance && instance.shouldNavigateAway) {
+                const promise = instance.shouldNavigateAway();
+                if (promise.then && promise.catch) {
+                    const r = (await promise) as boolean;
+                    if (!r) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     popToRoot(animated = true, destroy = true) {
         return this.pop(animated, destroy, this.components.length - 1);
     }
 
-    pop(animated = true, destroy = true, count = 1): ComponentWithProperties[] | undefined {
+    /**
+     * force: whether "shouldNavigateAway" of child components is ignored
+     */
+    async pop(animated = true, destroy = true, count = 1, force = false): Promise<ComponentWithProperties[] | undefined> {
         if (this.components.length <= count) {
             this.$emit("pop");
             return;
@@ -156,6 +179,22 @@ export default class NavigationController extends Vue {
 
         if (count === 0) {
             return;
+        }
+
+        if (destroy && !force) {
+            for (let index = this.components.length - 1; index >= this.components.length - count; index--) {
+                const component = this.components[index];
+                const instance = component.componentInstance() as any;
+                if (instance && instance.shouldNavigateAway) {
+                    const promise = instance.shouldNavigateAway();
+                    if (promise.then && promise.catch) {
+                        const r = (await promise) as boolean;
+                        if (!r) {
+                            return;
+                        }
+                    }
+                }
+            }
         }
 
         this.previousScrollPosition = this.getScrollElement().scrollTop;
