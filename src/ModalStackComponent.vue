@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref,Vue } from "vue-property-decorator";
+import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import NavigationController from "./NavigationController.vue";
@@ -38,6 +38,11 @@ export default class ModalStackComponent extends Vue {
             return;
         }
         (this.$refs.navigationController as NavigationController).push(component);
+    }
+
+    replace(component: ComponentWithProperties) {
+        const nav = this.$refs.navigationController as NavigationController;
+        nav.push(component, true, nav.components.length);
     }
 }
 </script>
