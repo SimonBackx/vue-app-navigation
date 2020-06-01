@@ -40,9 +40,9 @@ export default class ModalStackComponent extends Vue {
         (this.$refs.navigationController as NavigationController).push(component);
     }
 
-    replace(component: ComponentWithProperties) {
+    replace(component: ComponentWithProperties, animated = true) {
         const nav = this.$refs.navigationController as NavigationController;
-        nav.push(component, true, nav.components.length);
+        nav.push(component, animated, nav.components.length);
     }
 }
 </script>
