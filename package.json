@@ -2,7 +2,7 @@
     "name": "@simonbackx/vue-app-navigation",
     "main": "./dist/main.js",
     "types": "./dist/index.d.ts",
-    "version": "1.2.19",
+    "version": "1.2.20",
     "scripts": {
         "build": "webpack",
         "lint": "eslint . --ext .js,.ts"
