@@ -3,7 +3,6 @@
     "main": "./dist/main.js",
     "types": "./dist/index.d.ts",
     "version": "1.2.18",
-    "sideEffects": false,
     "scripts": {
         "build": "webpack",
         "lint": "eslint . --ext .js,.ts"
