@@ -9,7 +9,7 @@ module.exports = {
     stats: 'none',
     entry: "./index.ts",
     externals: {
-      vue: 'vue',
+        vue: 'vue',
     },
     resolve: {
         // Add `.ts` and `.tsx` as a resolvable extension (so that you don't have to add it explicitly)
@@ -21,7 +21,6 @@ module.exports = {
         // Development:
         path: path.resolve(__dirname, "dist"),
         filename: '[name].js',
-        libraryTarget: 'commonjs2',
     },
     devtool: "sourcemap",
     module: {
@@ -30,8 +29,8 @@ module.exports = {
                 test: /\.vue$/,
                 loader: 'vue-loader'
             },
-            { 
-                test: /\.tsx?$/, 
+            {
+                test: /\.tsx?$/,
                 loader: "ts-loader",
                 options: { appendTsSuffixTo: [/\.vue$/] }
             },
