@@ -21,6 +21,7 @@ module.exports = {
         // Development:
         path: path.resolve(__dirname, "dist"),
         filename: '[name].js',
+        libraryTarget: 'commonjs2',
     },
     devtool: "sourcemap",
     module: {
