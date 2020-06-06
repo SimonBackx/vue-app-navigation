@@ -4,6 +4,8 @@ import { Component, Vue } from "vue-property-decorator";
 import NavigationController from "./NavigationController.vue";
 import SplitViewController from "./SplitViewController.vue";
 import { ComponentWithProperties } from "./ComponentWithProperties";
+import { StackComponent } from "../dist";
+import Popup from "./Popup.vue";
 
 // You can declare mixins as the same style as components.
 @Component
@@ -48,7 +50,7 @@ export class NavigationMixin extends Vue {
     }
 
     dismiss() {
-        const modalNav = this.modalNavigationController as any;
+        const modalNav = this.modalOrPopup as any;
         if (!modalNav) {
             // Chances are this is not displayed as a modal, but on a normal stack
             this.pop();
@@ -61,6 +63,22 @@ export class NavigationMixin extends Vue {
         let start: any = this.$parent;
         while (start) {
             if (start instanceof NavigationController) {
+                return start;
+            }
+
+            start = start.$parent;
+        }
+        return null;
+    }
+
+    get modalOrPopup(): NavigationController | Popup | null {
+        let start: any = this.$parent;
+        while (start) {
+            if (start instanceof NavigationController) {
+                if (start.animationType == "modal") return start;
+            }
+
+            if (start instanceof Popup) {
                 return start;
             }
 
