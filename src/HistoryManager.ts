@@ -15,6 +15,10 @@ class HistoryManagerStatic {
 
     /// Set the current URL without modifying states
     setUrl(url: string) {
+        if (!this.active) {
+            return;
+        }
+
         history.replaceState({ counter: this.counter }, "", url);
     }
 
