@@ -4,7 +4,7 @@ import { Component, Vue } from "vue-property-decorator";
 import NavigationController from "./NavigationController.vue";
 import SplitViewController from "./SplitViewController.vue";
 import { ComponentWithProperties } from "./ComponentWithProperties";
-import { StackComponent, ModalStackComponent } from "../dist";
+import ModalStackComponent from "./ModalStackComponent.vue";
 import Popup from "./Popup.vue";
 
 // You can declare mixins as the same style as components.
