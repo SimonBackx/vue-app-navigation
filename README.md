@@ -1,5 +1,20 @@
 # vue-app-navigation
+
 Navigation library for Vue for web apps that need to feel and work like native apps (inspired by iOS)
+
+## Installation
+
+### Yarn
+
+```
+yarn add @simonbackx/vue-app-navigation
+```
+
+### NPM
+
+```
+npm install @simonbackx/vue-app-navigation
+```
 
 [Example](https://simonbackx.com/files/vue-app-navigation/example.gif "Example of navigation")
 
