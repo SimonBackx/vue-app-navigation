@@ -1,6 +1,6 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="pop" @touchdown="pop">
+        <div class="sheet" @mousedown="pop" @touchdown="pop">
             <div @mousedown.stop="" @touchdown.stop="">
                 <component :is="root.component" :key="root.key" v-bind="root.properties" @pop="pop" />
             </div>
@@ -19,7 +19,7 @@ import { NavigationMixin } from "./NavigationMixin";
         root: ComponentWithProperties,
     },
 })
-export default class Popup extends NavigationMixin {
+export default class Sheet extends NavigationMixin {
     activated() {
         document.addEventListener("keydown", this.onKey);
     }
@@ -44,7 +44,7 @@ export default class Popup extends NavigationMixin {
 </script>
 
 <style lang="scss">
-.popup {
+.sheet {
     // DO NOT ADD MAX HEIGHT HERE! Always add it to the children of the navigation controllers!
     background: rgba(black, 0.7);
     position: fixed;
@@ -58,11 +58,14 @@ export default class Popup extends NavigationMixin {
     z-index: 10000;
     padding: 20px;
 
+    .navigation-controller {
+        transition: height 0.2s;
+    }
+
     // Improve performance
 
     & > div {
         max-width: 800px;
-        flex-basis: 100%;
         background: white;
         border-radius: 5px;
 
@@ -70,8 +73,8 @@ export default class Popup extends NavigationMixin {
         overflow: hidden;
 
         max-height: 100vh;
-        max-height: calc(var(--vh, 1vh) * 100);
-        height: calc(var(--vh, 1vh) * 100 - 80px);
+        max-height: calc(100vh - 80px);
+        max-height: calc(var(--vh, 1vh) * 100 - 80px);
 
         overflow: hidden;
         overflow-y: auto;

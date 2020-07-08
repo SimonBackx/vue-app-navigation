@@ -71,8 +71,8 @@ export default class NavigationController extends Vue {
     growSize(width: number, height: number) {
         const el = this.$el as HTMLElement;
 
-        el.style.height = Math.max(el.offsetHeight, height) + "px";
-        el.style.width = Math.max(el.offsetWidth, width) + "px";
+        el.style.height = height+ "px";
+        el.style.width = width + "px";
     }
 
     unfreezeSize() {

@@ -13,6 +13,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import NavigationController from "./NavigationController.vue";
 import Popup from "./Popup.vue";
 import StackComponent from "./StackComponent.vue";
+import Sheet from './Sheet.vue';
 
 @Component({
     components: {
@@ -30,6 +31,11 @@ export default class ModalStackComponent extends Vue {
     present(component: ComponentWithProperties) {
         if (component.modalDisplayStyle == "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
             this.stackComponent.show(new ComponentWithProperties(Popup, { root: component }));
+            return;
+        }
+
+        if (component.modalDisplayStyle == "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
+            this.stackComponent.show(new ComponentWithProperties(Sheet, { root: component }));
             return;
         }
 

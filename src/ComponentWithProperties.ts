@@ -1,6 +1,7 @@
 import { VNode } from "vue";
 import { HistoryManager } from "./HistoryManager";
-import { NavigationController } from "..";
+
+type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet"
 
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
@@ -23,7 +24,7 @@ export class ComponentWithProperties {
     static debug = false;
 
     /// Cover whole screen. Other style = popup
-    public modalDisplayStyle = "cover";
+    public modalDisplayStyle: ModalDisplayStyle = "cover";
 
     // Hisotry index
     public historyIndex: number | null = null;
@@ -116,7 +117,7 @@ export class ComponentWithProperties {
         }
     }
 
-    setDisplayStyle(style: string): ComponentWithProperties {
+    setDisplayStyle(style: ModalDisplayStyle): ComponentWithProperties {
         this.modalDisplayStyle = style;
         return this;
     }
