@@ -2,7 +2,7 @@
     <transition appear name="fade">
         <div class="sheet" @mousedown="popIfPossible" @touchdown="popIfPossible">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="pop" />
+                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
             </div>
         </div>
     </transition>
@@ -33,7 +33,7 @@ export default class Sheet extends NavigationMixin {
     }
 
     async popIfPossible() {
-        const r = await this.root.shouldNavigateAway();
+        const r = await this.shouldNavigateAway();
         if (!r) {
             return false;
         }
@@ -51,6 +51,10 @@ export default class Sheet extends NavigationMixin {
             this.popIfPossible();
             event.preventDefault();
         }
+    }
+
+    shouldNavigateAway() {
+        return this.root.shouldNavigateAway()
     }
 }
 </script>
