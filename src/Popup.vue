@@ -2,7 +2,7 @@
     <transition appear name="fade">
         <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible">
             <div @mousedown.stop="" @touchdown.stop="">
-                <component :is="root.component" :key="root.key" v-bind="root.properties" @pop="pop" />
+                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="pop" />
             </div>
         </div>
     </transition>
