@@ -13,8 +13,13 @@ import { Component, Prop } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
+import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 
-@Component
+@Component({
+    components: {
+        ComponentWithPropertiesInstance,
+    },
+})
 export default class Sheet extends NavigationMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
