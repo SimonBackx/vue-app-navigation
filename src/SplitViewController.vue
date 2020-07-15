@@ -43,10 +43,7 @@ const throttle = (func, limit) => {
     components: {
         NavigationController,
         FramedComponent,
-    },
-    props: {
-        root: ComponentWithProperties,
-    },
+    }
 })
 export default class SplitViewController extends Vue {
     @Prop()

@@ -1,6 +1,6 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="pop" @touchdown="pop">
+        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible">
             <div @mousedown.stop="" @touchdown.stop="">
                 <component :is="root.component" :key="root.key" v-bind="root.properties" @pop="pop" />
             </div>
@@ -9,23 +9,30 @@
 </template>
 
 <script lang="ts">
-import Component from "vue-class-component";
+import { Component, Prop } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
 
-@Component({
-    props: {
-        root: ComponentWithProperties,
-    },
-})
+@Component
 export default class Popup extends NavigationMixin {
+    @Prop({ required: true })
+    root!: ComponentWithProperties
+
     activated() {
         document.addEventListener("keydown", this.onKey);
     }
 
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
+    }
+
+    async popIfPossible() {
+        const r = await this.root.shouldNavigateAway();
+        if (!r) {
+            return false;
+        }
+        this.pop();
     }
 
     onKey(event) {
@@ -36,7 +43,7 @@ export default class Popup extends NavigationMixin {
         const key = event.key || event.keyCode;
 
         if (key === "Escape" || key === "Esc" || key === 27) {
-            this.pop();
+            this.popIfPossible();
             event.preventDefault();
         }
     }
