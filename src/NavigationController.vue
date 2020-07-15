@@ -162,12 +162,32 @@ export default class NavigationController extends Vue {
         return this.pop(animated, destroy, this.components.length - 1);
     }
 
+    getPoppableParent(): any | null {
+        let prev = this;
+        let start: any = this.$parent;
+        while (start) {
+            if (prev.$listeners["pop"]) {
+                return prev;
+            }
+
+            prev = start;
+            start = start.$parent;
+        }
+        return null;
+    }
+
     /**
      * force: whether "shouldNavigateAway" of child components is ignored
      */
     async pop(animated = true, destroy = true, count = 1, force = false): Promise<ComponentWithProperties[] | undefined> {
         if (this.components.length <= count) {
-            this.$emit("pop");
+            const parent = this.getPoppableParent()
+            if (!parent) {
+                console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
+                this.$emit("pop")
+                return;
+            }
+            parent.$emit("pop")
             return;
         }
 

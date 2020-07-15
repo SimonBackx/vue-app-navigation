@@ -49,6 +49,9 @@ export class NavigationMixin extends Vue {
         }
     }
 
+    /**
+     * Same as pop, but instead dismisses the first parent that was displayed as a modal
+     */
     dismiss() {
         const modalNav = this.modalOrPopup as any;
         if (!modalNav) {
@@ -127,13 +130,7 @@ export class NavigationMixin extends Vue {
         let prev = this;
         let start: any = this.$parent;
         while (start) {
-            // Todo: need to replace this with a dynamic check of the method "canPop" on all parents
-            // Instead of instanceof checks
-            if (start instanceof NavigationController) {
-                if (start.components.length > 1) {
-                    return prev;
-                }
-            } else if (prev.$listeners["pop"]) {
+            if (prev.$listeners["pop"]) {
                 return prev;
             }
 
