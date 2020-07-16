@@ -409,15 +409,12 @@ export default class NavigationController extends Vue {
 
     > .modal {
         &-push {
-            &-enter-active {
-                & > div {
-                    transition: transform 0.35s;
-                }
-            }
-
             &-enter,
             &-enter-active {
+                // We animate on the containing div, because animation on the inner div causes issues with position: sticky in webkit
                 position: relative;
+                top: 100vh; // need to animate on top, since transform causes issues on webkit / safari
+                transition: top 0.35s;
                 z-index: 100;
 
                 & > div {
@@ -446,11 +443,8 @@ export default class NavigationController extends Vue {
                 }
             }
 
-            &-enter {
-                & > div {
-                    // This is bugged in safari :/
-                    transform: translateY(100vh);
-                }
+            &-enter-to {
+                top: 0;
             }
         }
 
