@@ -10,3 +10,4 @@ export { default as SplitViewController } from "./src/SplitViewController.vue";
 export { default as StackComponent } from "./src/StackComponent.vue";
 
 export * from "./src/HistoryManager";
+export * from "./src/PopOptions";

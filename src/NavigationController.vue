@@ -22,6 +22,7 @@ import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
+import { PopOptions } from "./PopOptions"
 
 @Component({
     components: {
@@ -139,7 +140,7 @@ export default class NavigationController extends Vue {
         if (replace == 0) {
             HistoryManager.pushState({}, "", (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
-                this.pop(animated && canAnimate);
+                this.pop({ animated: animated && canAnimate});
             });
         }
     }
@@ -158,8 +159,9 @@ export default class NavigationController extends Vue {
         return true;
     }
 
-    popToRoot(animated = true, destroy = true) {
-        return this.pop(animated, destroy, this.components.length - 1);
+    popToRoot(options: PopOptions = {}) {
+        options.count = this.components.length - 1
+        return this.pop(options);
     }
 
     getPoppableParent(): any | null {
@@ -179,15 +181,24 @@ export default class NavigationController extends Vue {
     /**
      * force: whether "shouldNavigateAway" of child components is ignored
      */
-    async pop(animated = true, destroy = true, count = 1, force = false): Promise<ComponentWithProperties[] | undefined> {
+    async pop(options: PopOptions = {}): Promise<ComponentWithProperties[] | undefined> {
+        const animated = options.animated ?? true;
+        const destroy = options.destroy ?? true;;
+        const count = options.count ?? 1;
+        const force = options.force ?? false;
+
         if (this.components.length <= count) {
             const parent = this.getPoppableParent()
+
+            // Prevent multiple count pop across modal levels
+            options.count = 1
+
             if (!parent) {
                 console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
-                this.$emit("pop")
+                this.$emit("pop", options)
                 return;
             }
-            parent.$emit("pop")
+            parent.$emit("pop", options)
             return;
         }
 

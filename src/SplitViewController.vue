@@ -180,7 +180,10 @@ export default class SplitViewController extends Vue {
             console.error("Cannot expand when there is no detail");
             return;
         }
-        const popped = await this.navigationController.pop(false, false);
+        const popped = await this.navigationController.pop({
+            animated: false,
+            destroy: false
+        });
         if (!popped || popped.length == 0) {
             return;
         }

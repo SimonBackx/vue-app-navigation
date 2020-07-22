@@ -6,6 +6,7 @@ import SplitViewController from "./SplitViewController.vue";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ModalStackComponent from "./ModalStackComponent.vue";
 import Popup from "./Popup.vue";
+import { PopOptions } from './PopOptions';
 
 // You can declare mixins as the same style as components.
 @Component
@@ -35,12 +36,16 @@ export class NavigationMixin extends Vue {
         this.emitParents("showDetail", component);
     }
 
-    pop() {
+    /**
+     * Call one of the pop listeners of a parent or grandparent. E.g. to go back in a navigation controller.
+     * @param options Options that should get applied to the pop of the first parent that listens for the pop event
+     */
+    pop(options: PopOptions = {}) {
         const nav = this.getPoppableParent();
         if (nav) {
             // Sometimes we need to call the pop event instead (because this adds custom data to the event)
             if (nav.$listeners["pop"]) {
-                nav.$emit("pop");
+                nav.$emit("pop", options);
             } else {
                 console.error("Couldn't pop. Failed");
             }
@@ -51,14 +56,15 @@ export class NavigationMixin extends Vue {
 
     /**
      * Same as pop, but instead dismisses the first parent that was displayed as a modal
+     * @param options Options that should get applied to the pop of the first modal navigation controller or popup that listens for the pop event
      */
-    dismiss() {
+    dismiss(options: PopOptions = {}) {
         const modalNav = this.modalOrPopup as any;
         if (!modalNav) {
             // Chances are this is not displayed as a modal, but on a normal stack
-            this.pop();
+            this.pop(options);
         } else {
-            modalNav?.pop();
+            modalNav?.pop(options);
         }
     }
 
@@ -126,6 +132,9 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
+    /**
+     * Return the first child of a parent that listens for the pop event
+     */
     getPoppableParent(): any | null {
         let prev = this;
         let start: any = this.$parent;
@@ -140,6 +149,9 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
+    /**
+     * Whether the current navivation controller above this component can pop (it has more than one child). Excluding modal view controllers
+     */
     canPop = false;
 
     activated() {
@@ -147,6 +159,6 @@ export class NavigationMixin extends Vue {
     }
 
     calculateCanPop(): boolean {
-        return this.getPoppableParent() != null;
+        return this.navigationController != null && (this.navigationController as any).components.length > 1;
     }
 }
