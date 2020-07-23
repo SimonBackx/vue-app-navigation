@@ -7,6 +7,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import ModalStackComponent from "./ModalStackComponent.vue";
 import Popup from "./Popup.vue";
 import { PopOptions } from './PopOptions';
+import { StackComponent } from '..';
 
 // You can declare mixins as the same style as components.
 @Component
@@ -158,7 +159,26 @@ export class NavigationMixin extends Vue {
         this.canPop = this.calculateCanPop();
     }
 
+    /**
+     * Return the first navigation controller that can get popped, excluding the modal navigation controller and the stack component
+     */
+    private get poppableNavigationController(): NavigationController | null {
+        let start: any = this.$parent;
+        while (start) {
+            if (start instanceof NavigationController) {
+                if (start.animationType == "modal") return null;
+
+                if (start.components.length > 1) {
+                    return start;
+                }
+            }
+
+            start = start.$parent;
+        }
+        return null;
+    }
+
     calculateCanPop(): boolean {
-        return this.navigationController != null && (this.navigationController as any).components.length > 1;
+        return this.poppableNavigationController != null;
     }
 }
