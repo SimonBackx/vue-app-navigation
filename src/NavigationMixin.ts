@@ -154,9 +154,11 @@ export class NavigationMixin extends Vue {
      * Whether the current navivation controller above this component can pop (it has more than one child). Excluding modal view controllers
      */
     canPop = false;
+    canDismiss = false;
 
     activated() {
         this.canPop = this.calculateCanPop();
+        this.canDismiss = this.calculateCanDismiss();
     }
 
     /**
@@ -180,5 +182,9 @@ export class NavigationMixin extends Vue {
 
     calculateCanPop(): boolean {
         return this.poppableNavigationController != null;
+    }
+
+    calculateCanDismiss(): boolean {
+        return this.modalOrPopup != null;
     }
 }
