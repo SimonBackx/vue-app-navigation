@@ -1,6 +1,6 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible">
+        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky}">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
             </div>
@@ -15,6 +15,8 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 
+const visualViewport = (window as any).visualViewport
+
 @Component({
     components: {
         ComponentWithPropertiesInstance,
@@ -24,12 +26,23 @@ export default class Popup extends NavigationMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
+    sticky = false
+
     activated() {
         document.addEventListener("keydown", this.onKey);
+        this.resize();
+
+        if (visualViewport) {
+            visualViewport.addEventListener('resize', this.resize);
+        }
     }
 
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
+
+        if (visualViewport) {
+            visualViewport.removeEventListener('resize', this.resize);
+        }
     }
 
     async popIfPossible() {
@@ -38,6 +51,18 @@ export default class Popup extends NavigationMixin {
             return false;
         }
         this.pop();
+    }
+
+    resize() {
+        if (!visualViewport) {
+            return;
+        }
+        // Check if covered area is more than 200px -> we got a keyboard shown -> switch to sticky mode
+        if (document.documentElement.clientHeight - visualViewport.height > 200) {
+            this.sticky = true
+        } else {
+            this.sticky = false
+        }
     }
 
     onKey(event) {
@@ -72,7 +97,6 @@ export default class Popup extends NavigationMixin {
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    padding: 20px;
 
     // Improve performance
 
@@ -104,6 +128,22 @@ export default class Popup extends NavigationMixin {
         > * {
             // Pass updated vh to children
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
+        }
+    }
+
+    &.sticky {
+        align-items: flex-end;
+
+        > div {
+            max-height: 100vh;
+            height: calc(100vh - 80px);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+
+            > * {
+                // Pass updated vh to children
+                --vh: calc(1vh - 0.8px);
+            }
         }
     }
 
