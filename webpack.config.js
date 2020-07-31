@@ -5,7 +5,7 @@ var FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 const path = require("path");
 
 module.exports = {
-    mode: "development",
+    mode: "production",
     stats: 'none',
     entry: "./index.ts",
     externals: {
