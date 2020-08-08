@@ -16,6 +16,7 @@ export class ComponentWithProperties {
 
     // Keep the vnode alive when it is removed from the VDOM
     public keepAlive = false;
+    public isKeptAlive = false;
     public isMounted = false;
 
     // Counter for debugging. Count of components that are kept alive but are not mounted.
@@ -38,8 +39,11 @@ export class ComponentWithProperties {
 
     beforeMount() {
         if (this.vnode) {
-            ComponentWithProperties.keepAliveCounter--;
-            if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+            if (this.isKeptAlive) {
+                this.isKeptAlive = false;
+                ComponentWithProperties.keepAliveCounter--;
+                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+            }
         }
     }
 
@@ -105,12 +109,23 @@ export class ComponentWithProperties {
         if (this.vnode) {
             if (this.keepAlive) {
                 this.keepAlive = false;
-                ComponentWithProperties.keepAliveCounter++;
-                if (ComponentWithProperties.debug) console.log("Kept component alive " + this.component.name);
-                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
 
+                if (!this.isKeptAlive) {
+                    this.isKeptAlive = true;
+                    ComponentWithProperties.keepAliveCounter++;
+                    if (ComponentWithProperties.debug) console.log("Kept component alive " + this.component.name);
+                    if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+                }
                 return;
             }
+
+            if (this.isKeptAlive) {
+                this.isKeptAlive = false;
+                ComponentWithProperties.keepAliveCounter--;
+                if (ComponentWithProperties.debug) console.log("Freed component from alive stack " + this.component.name);
+                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+            }
+
             if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name);
             this.vnode.componentInstance?.$destroy();
             this.vnode = null;

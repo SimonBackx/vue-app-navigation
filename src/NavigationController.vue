@@ -403,9 +403,17 @@ export default class NavigationController extends Vue {
         this.unfreezeSize();
     }
 
-    beforeDestroy() {
+    destroyed() {
         console.log("Destroyed navigation controller");
-        // Prevent memory issues by removing all references
+
+        // Prevent memory issues by removing all references and destroying kept alive components
+        for (const component of this.components) {
+            // Destroy them one by one
+            if (component.isKeptAlive) {
+                component.destroy();
+            }
+        }
+
         this.components = [];
         this.mainComponent = null;
     }
