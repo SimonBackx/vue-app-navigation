@@ -1,6 +1,6 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky}">
+        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky, 'push-down': pushDown }">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
             </div>
@@ -27,6 +27,14 @@ export default class Popup extends NavigationMixin {
     root!: ComponentWithProperties
 
     sticky = false
+
+    get pushDown() {
+        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup) ?? []
+        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+            return true
+        }
+        return false
+    }
 
     activated() {
         document.addEventListener("keydown", this.onKey);
@@ -66,6 +74,10 @@ export default class Popup extends NavigationMixin {
     }
 
     onKey(event) {
+        if (this.pushDown) {
+            return;
+        }
+
         if (event.defaultPrevented || event.repeat) {
             return;
         }
@@ -97,6 +109,11 @@ export default class Popup extends NavigationMixin {
     align-items: center;
     justify-content: center;
     z-index: 10000;
+    transition: background-color 0.3s;
+
+    ~.popup {
+        background-color: rgba(black, 0.4);
+    }
 
     // Improve performance
 
@@ -124,10 +141,20 @@ export default class Popup extends NavigationMixin {
 
         // Fix chrome bug that scrollbars are not visible anymore
         transform: translate3d(0, 0, 0);
+        transition: transform 0.3s;
+        transform-origin: 50% 0%;
 
         > * {
             // Pass updated vh to children
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
+        }
+    }
+
+    &.push-down {
+        background-color: rgba(black, 0.5);
+
+        & > div {
+            transform: scale(0.95, 0.95) translate3d(0, -10px, 0);
         }
     }
 
@@ -161,7 +188,7 @@ export default class Popup extends NavigationMixin {
         opacity: 0;
 
         & > div {
-            transform: translate(0, 75vh);
+            transform: translate(0, 100vh);
         }
     }
 
