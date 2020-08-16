@@ -1,6 +1,6 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky, 'push-down': pushDown }">
+        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
             </div>
@@ -31,9 +31,12 @@ export default class Popup extends NavigationMixin {
     get pushDown() {
         const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup) ?? []
         if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
-            return true
+            if (popups.length > 1 && popups[popups.length - 2].componentInstance() === this) {
+                return 1
+            }
+            return 2
         }
-        return false
+        return 0
     }
 
     activated() {
@@ -109,7 +112,9 @@ export default class Popup extends NavigationMixin {
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    transition: background-color 0.3s;
+    visibility: visible;
+    opacity: 1;
+    transition: background-color 0.3s, opacity 0.3s, visibility step-start 0.3s;
 
     ~.popup {
         background-color: rgba(black, 0.4);
@@ -150,8 +155,19 @@ export default class Popup extends NavigationMixin {
         }
     }
 
+    &.push-down-full {
+        transition: background-color 0.3s, opacity 0.3s, visibility step-end 0.3s;
+        visibility: hidden;
+        opacity: 0;
+        background-color: rgba(black, 0.6);
+
+        & > div {
+            transform: scale(0.9, 0.9) translate3d(0, -15px, 0);
+        }
+    }
+
     &.push-down {
-        background-color: rgba(black, 0.5);
+        background-color: rgba(black, 0.6);
 
         & > div {
             transform: scale(0.95, 0.95) translate3d(0, -10px, 0);
@@ -178,14 +194,13 @@ export default class Popup extends NavigationMixin {
     &.fade-leave-active,
     &[data-extended-enter="true"] {
         position: fixed;
-        transition: opacity 0.3s;
 
         & > div {
-            transition: opacity 0.3s, transform 0.3s;
+            transition: transform 0.3s;
         }
     }
     &.fade-enter, &.fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-        opacity: 0;
+        background-color: rgba(black, 0);
 
         & > div {
             transform: translate(0, 100vh);
