@@ -276,6 +276,15 @@ export default class NavigationController extends Vue {
             return;
         }
 
+         // Allow scrollTop override in a specified handler
+        // Call before
+        if (this.mainComponent) {
+            const instance: any = this.mainComponent.componentInstance()
+            if (instance && instance.beforeBeforeEnterAnimation) {
+                instance.beforeBeforeEnterAnimation()
+            }
+        }
+
         const scrollElement = this.getScrollElement();
 
         const w = ((element.firstChild as HTMLElement).firstChild as HTMLElement).offsetWidth;
