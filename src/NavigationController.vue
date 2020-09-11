@@ -296,13 +296,38 @@ export default class NavigationController extends Vue {
             // Let the OS rerender once so all the positions are okay after dom insertion
             scrollElement.scrollTop = next;
 
+            // Allow scrollTop override in a specified handler
+            // Call before
+            if (this.mainComponent) {
+                const instance: any = this.mainComponent.componentInstance()
+                if (instance && instance.beforeEnterAnimation) {
+                    instance.beforeEnterAnimation()
+                }
+            }
+
             // Start animation in the next frame
             requestAnimationFrame(() => {
                 // We've reached our initial positioning and can start our animation
                 element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
 
+                // Call start
+                if (this.mainComponent) {
+                    const instance: any = this.mainComponent.componentInstance()
+                    if (instance && instance.beginEnterAnimation) {
+                        instance.beginEnterAnimation()
+                    }
+                }
+
                 setTimeout(() => {
                     scrollElement.style.overflow = "";
+
+                    // Call finished
+                    if (this.mainComponent) {
+                        const instance: any = this.mainComponent.componentInstance()
+                        if (instance && instance.finishedEnterAnimation) {
+                            instance.finishedEnterAnimation()
+                        }
+                    }
 
                     done();
                 }, 350);

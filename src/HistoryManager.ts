@@ -72,7 +72,7 @@ class HistoryManagerStatic {
                 return;
             }
             this.isAdjustingState = true;
-            const newCounter: number | undefined = event.state.counter;
+            const newCounter: number | undefined = event.state?.counter;
 
             if (newCounter !== undefined) {
                 // Foward or backwards?
