@@ -584,12 +584,18 @@ export default class NavigationController extends Vue {
         &-enter {
             & > div {
                 transform: translateX(100%);
+
+                // RTL support
+                transform: translateX(calc(100% * var(--direction-scale-x, 1)));
             }
         }
 
         &-leave-to {
             & > div {
                 transform: translateX(-100%);
+
+                // RTL support
+                transform: translateX(calc(-100% * var(--direction-scale-x, 1)));
             }
         }
     }
@@ -632,12 +638,18 @@ export default class NavigationController extends Vue {
         &-enter {
             & > div {
                 transform: translateX(-100%);
+
+                // RTL support
+                transform: translateX(calc(-100% * var(--direction-scale-x, 1)));
             }
         }
 
         &-leave-to {
             & > div {
                 transform: translateX(100%);
+
+                // RTL support
+                transform: translateX(calc(100% * var(--direction-scale-x, 1)));
             }
         }
     }
