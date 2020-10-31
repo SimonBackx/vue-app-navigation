@@ -14,6 +14,7 @@ import { Component, Prop } from "vue-property-decorator";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
+import { PopOptions } from './PopOptions';
 
 const visualViewport = (window as any).visualViewport
 
@@ -64,10 +65,12 @@ export default class Popup extends NavigationMixin {
         }
     }
 
-    async popIfPossible() {
-        const r = await this.shouldNavigateAway();
-        if (!r) {
-            return false;
+    async popIfPossible(options?: PopOptions) {
+        if (!options?.force) {
+            const r = await this.shouldNavigateAway();
+            if (!r) {
+                return false;
+            }
         }
         this.pop();
     }
