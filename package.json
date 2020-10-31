@@ -2,7 +2,7 @@
     "name": "@simonbackx/vue-app-navigation",
     "main": "./dist/main.js",
     "types": "./dist/index.d.ts",
-    "version": "1.6.11",
+    "version": "1.6.12",
     "sideEffects": [
         "*.vue",
         "*.css"
