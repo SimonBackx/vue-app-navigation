@@ -32,6 +32,14 @@ export default class Sheet extends NavigationMixin {
         document.removeEventListener("keydown", this.onKey);
     }
 
+    get isFocussed() {
+        const popups = this.modalStackComponent?.stackComponent?.components ?? []
+        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+            return false
+        }
+        return true
+    }
+
     async popIfPossible() {
         const r = await this.shouldNavigateAway();
         if (!r) {
@@ -42,6 +50,10 @@ export default class Sheet extends NavigationMixin {
 
     onKey(event) {
         if (event.defaultPrevented || event.repeat) {
+            return;
+        }
+
+        if (!this.isFocussed) {
             return;
         }
 

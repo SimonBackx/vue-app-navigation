@@ -85,11 +85,11 @@ export default class Popup extends NavigationMixin {
     }
 
     onKey(event) {
-        if (!this.isFocussed) {
+        if (event.defaultPrevented || event.repeat) {
             return;
         }
 
-        if (event.defaultPrevented || event.repeat) {
+        if (!this.isFocussed) {
             return;
         }
 
