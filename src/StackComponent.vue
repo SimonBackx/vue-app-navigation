@@ -29,6 +29,16 @@ export default class StackComponent extends Vue {
     }
 
     removeAt(index, key) {
+        if (!this.components[index]) {
+            // Manually search for the key (race conditions with slow events in vue)
+            for (const [i, comp] of this.components.entries()) {
+                if (comp.key === key) {
+                    console.warn("Corrected index from "+index+" to "+i)
+                    index = i;
+                    break;
+                }
+            }
+        }
         if (this.components[index].key === key) {
             this.components.splice(index, 1);
         } else {
