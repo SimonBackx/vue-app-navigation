@@ -39,6 +39,14 @@ export default class Popup extends NavigationMixin {
         return 0
     }
 
+    get isFocussed() {
+        const popups = this.modalStackComponent?.stackComponent?.components ?? []
+        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+            return false
+        }
+        return true
+    }
+
     activated() {
         document.addEventListener("keydown", this.onKey);
         this.resize();
@@ -77,7 +85,7 @@ export default class Popup extends NavigationMixin {
     }
 
     onKey(event) {
-        if (this.pushDown) {
+        if (!this.isFocussed) {
             return;
         }
 
