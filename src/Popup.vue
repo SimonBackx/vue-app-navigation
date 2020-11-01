@@ -72,7 +72,7 @@ export default class Popup extends NavigationMixin {
                 return false;
             }
         }
-        this.pop();
+        this.pop(options);
     }
 
     resize() {
