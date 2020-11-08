@@ -14,6 +14,7 @@ import NavigationController from "./NavigationController.vue";
 import Popup from "./Popup.vue";
 import StackComponent from "./StackComponent.vue";
 import Sheet from './Sheet.vue';
+import { HistoryManager } from './HistoryManager';
 
 @Component({
     components: {
@@ -30,7 +31,13 @@ export default class ModalStackComponent extends Vue {
 
     present(component: ComponentWithProperties) {
         if (component.modalDisplayStyle == "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
-            this.stackComponent.show(new ComponentWithProperties(Popup, { root: component }));
+            const c = new ComponentWithProperties(Popup, { root: component })
+            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+                // todo: fix reference to this and memory handling here!!
+                (c.componentInstance() as (Popup | undefined))?.pop({ animated: canAnimate});
+            });
+            this.stackComponent.show(c);
+            
             return;
         }
 
