@@ -15,6 +15,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
+import { HistoryManager } from './HistoryManager';
 
 const visualViewport = (window as any).visualViewport
 
@@ -73,6 +74,17 @@ export default class Popup extends NavigationMixin {
             }
         }
         this.pop(options);
+
+        // Pop state
+        if (this.$parent && (this.$parent as any).component) {
+            // Simulate the best as we can
+            const component = (this.$parent as any).component as ComponentWithProperties
+            const i = component.getHistoryIndex()
+            if (i === HistoryManager.counter) {
+                // We are active right now
+                HistoryManager.didMountHistoryIndex(i - 1);
+            }
+        }
     }
 
     resize() {
