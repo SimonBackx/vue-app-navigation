@@ -76,14 +76,11 @@ export default class Popup extends NavigationMixin {
         this.pop(options);
 
         // Pop state
-        if (this.$parent && (this.$parent as any).component) {
-            // Simulate the best as we can
-            const component = (this.$parent as any).component as ComponentWithProperties
-            const i = component.getHistoryIndex()
-            if (i === HistoryManager.counter) {
-                // We are active right now
-                HistoryManager.didMountHistoryIndex(i - 1);
-            }
+        // Simulate the best as we can
+        const i = this.root.getHistoryIndex()
+        if (i === HistoryManager.counter) {
+            // We are active right now
+            HistoryManager.didMountHistoryIndex(i - 1);
         }
     }
 
