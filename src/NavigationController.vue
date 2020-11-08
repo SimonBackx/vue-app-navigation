@@ -138,10 +138,12 @@ export default class NavigationController extends Vue {
         this.$emit("didPush");
 
         if (replace == 0) {
-            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
-                // todo: fix reference to this and memory handling here!!
-                this.pop({ animated: animated && canAnimate});
-            });
+            for (let index = 0; index < replaceWith.length + 1; index++) {
+                HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+                    // todo: fix reference to this and memory handling here!!
+                    this.pop({ animated: animated && canAnimate});
+                });
+            }
         }
     }
 
