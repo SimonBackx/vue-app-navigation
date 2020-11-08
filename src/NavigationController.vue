@@ -126,7 +126,7 @@ export default class NavigationController extends Vue {
         if (replace > 0) {
             this.components.splice(this.components.length - replace, replace, ...[...replaceWith, component]);
         } else {
-            this.components.push(component);
+            this.components.push(...[...replaceWith, component]);
         }
 
         if (this.mainComponent) {
