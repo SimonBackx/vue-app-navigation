@@ -61,6 +61,13 @@ export class ComponentWithProperties {
         if (this.modalDisplayStyle == "overlay") {
             return;
         }
+        this.assignHistoryIndex()
+    }
+
+    /**
+     * Call this method to assign a history index to this component (you should only call this when you want to assign a history index to this component that will not get mounted already)
+     */
+    assignHistoryIndex() {
         if (this.historyIndex == null) {
             this.historyIndex = HistoryManager.counter;
         }
