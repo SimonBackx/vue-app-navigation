@@ -98,7 +98,7 @@ export default class NavigationController extends Vue {
         }
     }
 
-    push(component: ComponentWithProperties, animated = true, replace = 0, reverse = false) {
+    push(component: ComponentWithProperties, animated = true, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = []) {
         if (!animated) {
             this.transitionName = "none";
         } else {
@@ -124,7 +124,7 @@ export default class NavigationController extends Vue {
 
         // Make sure the transition name changed, so wait for a rerender
         if (replace > 0) {
-            this.components.splice(this.components.length - replace, replace, component);
+            this.components.splice(this.components.length - replace, replace, ...[...replaceWith, component]);
         } else {
             this.components.push(component);
         }
