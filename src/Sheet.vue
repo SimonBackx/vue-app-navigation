@@ -1,28 +1,27 @@
 <template>
     <transition appear name="fade">
-        <div class="sheet" @mousedown="popIfPossible" @touchdown="popIfPossible">
+        <div class="sheet" @mousedown="dismiss" @touchdown="dismiss">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
+                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
             </div>
         </div>
     </transition>
 </template>
 
 <script lang="ts">
-import { Component, Prop } from "vue-property-decorator";
+import { Vue, Component, Prop } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
-import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
-import { HistoryManager } from "./HistoryManager";
+import { ModalMixin } from './ModalMixin';
 
 @Component({
     components: {
         ComponentWithPropertiesInstance,
-    },
+    }
 })
-export default class Sheet extends NavigationMixin {
+export default class Sheet extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
     
@@ -42,22 +41,14 @@ export default class Sheet extends NavigationMixin {
         return true
     }
 
-    async popIfPossible(options?: PopOptions) {
+    async dismiss(options?: PopOptions) {
         if (!options?.force) {
             const r = await this.shouldNavigateAway();
             if (!r) {
                 return false;
             }
         }
-        this.pop(options);
-
-        // Pop state
-        // Simulate the best as we can
-        const i = this.root.getHistoryIndex()
-        if (i === HistoryManager.counter) {
-            // We are active right now
-            HistoryManager.didMountHistoryIndex(i - 1);
-        }
+        this.pop(options)
     }
 
     onKey(event) {
@@ -72,7 +63,7 @@ export default class Sheet extends NavigationMixin {
         const key = event.key || event.keyCode;
 
         if (key === "Escape" || key === "Esc" || key === 27) {
-            this.popIfPossible();
+            this.dismiss();
             event.preventDefault();
         }
     }

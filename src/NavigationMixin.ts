@@ -1,13 +1,12 @@
 // mixins.js
 import { Component, Vue } from "vue-property-decorator";
 
-import NavigationController from "./NavigationController.vue";
-import SplitViewController from "./SplitViewController.vue";
 import { ComponentWithProperties } from "./ComponentWithProperties";
-import ModalStackComponent from "./ModalStackComponent.vue";
+import NavigationController from "./NavigationController.vue";
+import { PopOptions } from './PopOptions';
 import Popup from "./Popup.vue";
 import Sheet from "./Sheet.vue";
-import { PopOptions } from './PopOptions';
+import SplitViewController from "./SplitViewController.vue";
 
 // You can declare mixins as the same style as components.
 @Component
@@ -62,6 +61,7 @@ export class NavigationMixin extends Vue {
     dismiss(options: PopOptions = {}) {
         const modalNav = this.modalOrPopup as any;
         if (!modalNav) {
+            console.warn("Tried to dismiss without being displayed as a modal. Use pop instead")
             // Chances are this is not displayed as a modal, but on a normal stack
             this.pop(options);
         } else {
@@ -81,18 +81,6 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
-    get modalStackComponent(): ModalStackComponent | null {
-        let start: any = this.$parent;
-        while (start) {
-            if (start instanceof ModalStackComponent) {
-                return start;
-            }
-
-            start = start.$parent;
-        }
-        return null;
-    }
-
     get modalOrPopup(): NavigationController | Popup | Sheet | null {
         let start: any = this.$parent;
         while (start) {
@@ -100,11 +88,11 @@ export class NavigationMixin extends Vue {
                 if (start.animationType == "modal") return start;
             }
 
-            if (start instanceof Popup) {
+            if (start instanceof Sheet) {
                 return start;
             }
 
-            if (start instanceof Sheet) {
+            if (start instanceof Popup) {
                 return start;
             }
 

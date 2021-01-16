@@ -1,3 +1,4 @@
+/* eslint-disable vue/no-mutating-props */
 import Vue, { VNode } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";

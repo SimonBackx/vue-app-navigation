@@ -1,8 +1,8 @@
 <template>
     <transition appear name="fade">
-        <div class="popup" @mousedown="popIfPossible" @touchdown="popIfPossible" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+        <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="popIfPossible" />
+                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
             </div>
         </div>
     </transition>
@@ -12,19 +12,19 @@
 import { Component, Prop } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
-import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
+import { ModalMixin } from './ModalMixin';
 
 const visualViewport = (window as any).visualViewport
 
 @Component({
     components: {
         ComponentWithPropertiesInstance,
-    },
+    }
 })
-export default class Popup extends NavigationMixin {
+export default class Popup extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
@@ -66,14 +66,14 @@ export default class Popup extends NavigationMixin {
         }
     }
 
-    async popIfPossible(options?: PopOptions) {
+    async dismiss(options?: PopOptions) {
         if (!options?.force) {
             const r = await this.shouldNavigateAway();
             if (!r) {
                 return false;
             }
         }
-        this.pop(options);
+        this.pop(options)
 
         // Pop state
         // Simulate the best as we can
@@ -108,7 +108,7 @@ export default class Popup extends NavigationMixin {
         const key = event.key || event.keyCode;
 
         if (key === "Escape" || key === "Esc" || key === 27) {
-            this.popIfPossible();
+            this.dismiss();
             event.preventDefault();
         }
     }
