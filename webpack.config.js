@@ -3,6 +3,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 var FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 const path = require("path");
+const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
     mode: "production",
@@ -47,6 +48,21 @@ module.exports = {
                 ]
             }
         ],
+    },
+    optimization: {
+        minimize: true,
+        minimizer: [new TerserPlugin({
+            extractComments: false,
+            terserOptions: {
+                ecma: "2015",
+                safari10: true,
+                sourceMap: true,
+                keep_classnames: true, // we need this for vue component names
+                output: {
+                    comments: false,
+                },
+            },
+        })],
     },
     plugins: [
         // make sure to include the plugin!
