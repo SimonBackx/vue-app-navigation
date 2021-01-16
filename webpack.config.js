@@ -6,7 +6,6 @@ const path = require("path");
 
 module.exports = {
     mode: "production",
-    stats: 'none',
     entry: "./index.ts",
     externals: {
         vue: 'vue',
@@ -24,7 +23,7 @@ module.exports = {
         filename: '[name].js',
         libraryTarget: 'commonjs2',
     },
-    devtool: "sourcemap",
+    devtool: "source-map",
     module: {
         rules: [
             {
@@ -35,13 +34,6 @@ module.exports = {
                 test: /\.tsx?$/,
                 loader: "ts-loader",
                 options: { appendTsSuffixTo: [/\.vue$/] }
-            },
-            {
-                test: /\.css$/,
-                use: [
-                    'style-loader',
-                    'css-loader',
-                ],
             },
             // this will apply to both plain `.css` files
             // AND `<style>` blocks in `.vue` files
@@ -58,7 +50,7 @@ module.exports = {
     },
     plugins: [
         // make sure to include the plugin!
-        new FriendlyErrorsWebpackPlugin(),
+        //new FriendlyErrorsWebpackPlugin(),
         new CleanWebpackPlugin(), // Clear the dist folder before building
         new VueLoaderPlugin(), // Allow .vue files
         new MiniCssExtractPlugin({ // Make sure CSS is not put inline, but saved to a seperate file
