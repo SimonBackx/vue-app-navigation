@@ -6,8 +6,8 @@ import SplitViewController from "./SplitViewController.vue";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ModalStackComponent from "./ModalStackComponent.vue";
 import Popup from "./Popup.vue";
+import Sheet from "./Sheet.vue";
 import { PopOptions } from './PopOptions';
-import { StackComponent } from '..';
 
 // You can declare mixins as the same style as components.
 @Component
@@ -101,6 +101,10 @@ export class NavigationMixin extends Vue {
             }
 
             if (start instanceof Popup) {
+                return start;
+            }
+
+            if (start instanceof Sheet) {
                 return start;
             }
 

@@ -15,6 +15,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import { NavigationMixin } from "./NavigationMixin";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
+import { HistoryManager } from "./HistoryManager";
 
 @Component({
     components: {
@@ -49,6 +50,14 @@ export default class Sheet extends NavigationMixin {
             }
         }
         this.pop(options);
+
+        // Pop state
+        // Simulate the best as we can
+        const i = this.root.getHistoryIndex()
+        if (i === HistoryManager.counter) {
+            // We are active right now
+            HistoryManager.didMountHistoryIndex(i - 1);
+        }
     }
 
     onKey(event) {
