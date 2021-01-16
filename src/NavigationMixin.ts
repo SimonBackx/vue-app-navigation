@@ -93,7 +93,7 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
-    get modalOrPopup(): NavigationController | Popup | null {
+    get modalOrPopup(): NavigationController | Popup | Sheet | null {
         let start: any = this.$parent;
         while (start) {
             if (start instanceof NavigationController) {
