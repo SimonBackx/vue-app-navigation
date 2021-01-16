@@ -10,6 +10,7 @@ module.exports = {
     entry: "./index.ts",
     externals: {
         vue: 'vue',
+        "vue-class-component": "vue-class-component"
     },
     resolve: {
         // Add `.ts` and `.tsx` as a resolvable extension (so that you don't have to add it explicitly)
