@@ -1,5 +1,5 @@
 <template>
-    <transition appear name="fade">
+    <transition :appear="shouldAppear" name="fade">
         <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
@@ -29,6 +29,10 @@ export default class Popup extends ModalMixin {
     root!: ComponentWithProperties
 
     sticky = false
+
+    get shouldAppear() {
+        return this.root.animated
+    }
 
     get pushDown() {
         const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup) ?? []

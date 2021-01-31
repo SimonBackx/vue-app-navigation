@@ -126,7 +126,7 @@ export default class SplitViewController extends Vue {
         return true;
     }
 
-    async showDetail(component: ComponentWithProperties, animated: boolean = true): Promise<boolean> {
+    async showDetail(component: ComponentWithProperties): Promise<boolean> {
         this.detailKey = component.key;
 
         if (this.shouldCollapse()) {
@@ -135,7 +135,7 @@ export default class SplitViewController extends Vue {
                 return false;
             }
 
-            this.navigationController.push(component, animated);
+            this.navigationController.push(component);
         } else {
             // Replace existing detail component
             // First check if we don't destroy anything

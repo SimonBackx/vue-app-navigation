@@ -1,5 +1,5 @@
 <template>
-    <transition appear name="fade">
+    <transition :appear="shouldAppear" name="fade">
         <div class="sheet" @mousedown="dismiss" @touchdown="dismiss">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
@@ -24,6 +24,10 @@ import { ModalMixin } from './ModalMixin';
 export default class Sheet extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
+
+    get shouldAppear() {
+        return this.root.animated
+    }
     
     activated() {
         document.addEventListener("keydown", this.onKey);

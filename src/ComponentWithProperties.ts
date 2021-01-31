@@ -1,4 +1,5 @@
 import { VNode } from "vue";
+
 import { HistoryManager } from "./HistoryManager";
 
 type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet"
@@ -25,7 +26,10 @@ export class ComponentWithProperties {
     static debug = false;
 
     /// Cover whole screen. Other style = popup
-    public modalDisplayStyle: ModalDisplayStyle = "cover";
+    public modalDisplayStyle: ModalDisplayStyle = "cover"
+
+    // If the display animation should be animated
+    public animated = true
 
     // Hisotry index
     public historyIndex: number | null = null;
@@ -141,6 +145,11 @@ export class ComponentWithProperties {
 
     setDisplayStyle(style: ModalDisplayStyle): ComponentWithProperties {
         this.modalDisplayStyle = style;
+        return this;
+    }
+
+    setAnimated(animated: boolean): ComponentWithProperties {
+        this.animated = animated;
         return this;
     }
 }
