@@ -51,6 +51,9 @@ const ComponentWithPropertiesInstance = Vue.extend({
         if (this.component.vnode) {
             // We need to update the parent here
             this.component.vnode.componentInstance.$parent = this;
+            // Force update children (needed because the new vnode won't restart a lifecycle 
+            // and vue won't update children because that is not supported out of the box)
+            this.$children = [this.component.vnode.componentInstance]
             return this.component.vnode;
         }
 
