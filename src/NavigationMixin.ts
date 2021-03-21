@@ -65,7 +65,11 @@ export class NavigationMixin extends Vue {
             // Chances are this is not displayed as a modal, but on a normal stack
             this.pop(options);
         } else {
-            modalNav?.pop(options);
+            if (modalNav instanceof Sheet || modalNav instanceof Popup) {
+                modalNav.dismiss(options);
+                return
+            }
+            modalNav.pop(options);
         }
     }
 
@@ -177,6 +181,18 @@ export class NavigationMixin extends Vue {
     }
 
     calculateCanDismiss(): boolean {
-        return this.modalOrPopup != null;
+        const modalOrPopup = this.modalOrPopup;
+
+        if (modalOrPopup === null) {
+            return false
+        }
+
+        if (modalOrPopup instanceof NavigationController) {
+            if ((modalOrPopup as any).components.length <= 1) {
+                return false
+            }
+        }
+
+        return true
     }
 }
