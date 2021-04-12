@@ -297,9 +297,26 @@ export default class NavigationController extends Vue {
 
         const scrollElement = this.getScrollElement();
 
-        const w = ((element.firstChild as HTMLElement).firstChild as HTMLElement).offsetWidth;
-        const h = (element.firstChild as HTMLElement).offsetHeight;
+        const w = ((element.firstElementChild as HTMLElement).firstElementChild as HTMLElement).offsetWidth;
+        const h = (element.firstElementChild as HTMLElement).offsetHeight;
+
+        const scrollOuterHeight = this.getScrollOuterHeight(scrollElement);
+
+        // Limit
+
         let next = this.nextScrollPosition;
+
+        console.log("Entering element ", h, next, scrollOuterHeight)
+
+        if (next > h - scrollOuterHeight) {
+            // To much scrolled!
+            console.log("Corrected maximum scroll position")
+            next = Math.max(0, h - scrollOuterHeight);
+
+            // Also propagate this change to the .leave handler
+            this.nextScrollPosition = next
+            console.log("corrected! ", h, next, scrollOuterHeight)
+        }
 
         // Lock position if needed
         // This happens before the beforeLeave animation frame!
@@ -308,8 +325,6 @@ export default class NavigationController extends Vue {
         // Disable scroll during animation (this is to fix overflow elements)
         // We can only allow scroll during transitions when all browser support overflow: clip, which they don't atm
         // This sometimes doesn't work on iOS Safari on body due to a bug
-        // scrollElement.style.overflow = "hidden";
-
         requestAnimationFrame(() => {
             // Wait and execute immediately after beforeLeave's animation frame
             // Let the OS rerender once so all the positions are okay after dom insertion
@@ -338,7 +353,7 @@ export default class NavigationController extends Vue {
                 }
 
                 setTimeout(() => {
-                    scrollElement.style.overflow = "";
+                    //scrollElement.style.overflow = "";
 
                     // Call finished
                     if (this.mainComponent) {
@@ -354,19 +369,7 @@ export default class NavigationController extends Vue {
         });
     }
 
-    leave(element: HTMLElement, done) {
-        if (this.transitionName == "none") {
-            done();
-            return;
-        }
-
-        // Prevent blinking due to slow rerender after scrollTop changes
-        // Create a clone and offset the clone first. After that, adjust the scroll position
-        const current = this.previousScrollPosition;
-        const next = this.nextScrollPosition;
-
-        const scrollElement = this.getScrollElement();
-
+    getScrollOuterHeight(scrollElement: HTMLElement) {
         // we add some extra padding below to fix iOS bug that reports wront clientHeight
         // We need to show some extra area below of the leaving frame, but to do this, we also need
         // to check if there is still content left below the visible client height. So we calculate the area underneath the client height
@@ -383,14 +386,30 @@ export default class NavigationController extends Vue {
                 h = w.visualViewport.height;
             }
         }
+        return h
+    }
 
-        const height = h + "px";
-        console.log("height", height);
+    leave(element: HTMLElement, done) {
+        if (this.transitionName == "none") {
+            done();
+            return;
+        }
+
+        const scrollElement = this.getScrollElement();
+        let h = this.getScrollOuterHeight(scrollElement)
 
         // This animation frame is super important to prevent flickering on Safari and Webkit!
         // This is also one of the reasons why we cannot use the default Vue class additions
         // We do this to improve the timing of the classes and scroll positions
         requestAnimationFrame(() => {
+            // Prevent blinking due to slow rerender after scrollTop changes
+            // Create a clone and offset the clone first. After that, adjust the scroll position
+            const current = this.previousScrollPosition;
+            const next = this.nextScrollPosition;
+
+            const height = h + "px";
+            console.log("height", height);
+
             // Setting the class has to happen in one go.
             // First we need to make our element fixed / absolute positioned, and pinned to all the edges
             // In the same frame, we need to update the scroll position.
