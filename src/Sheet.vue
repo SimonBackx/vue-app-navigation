@@ -102,6 +102,7 @@ export default class Sheet extends ModalMixin {
     & > div {
         max-width: 800px;
         background: white;
+        background: var(--color-white, white);
         border-radius: 5px;
 
         // Rounded corners need overflow hidden on scroll

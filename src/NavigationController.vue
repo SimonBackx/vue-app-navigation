@@ -503,6 +503,7 @@ export default class NavigationController extends Vue {
                     min-height: 100vh;
                     min-height: calc(var(--vh, 1vh) * 100);
                     background: white;
+                    background: var(--color-white, white);
                 }
             }
 
@@ -552,6 +553,7 @@ export default class NavigationController extends Vue {
                 & > div {
                     //overflow: hidden !important;
                     background: white;
+                    background: var(--color-white, white);
                     width: 100%;
                     height: 100%;
                 }

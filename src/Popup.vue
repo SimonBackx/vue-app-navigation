@@ -150,6 +150,7 @@ export default class Popup extends ModalMixin {
         max-width: 800px;
         flex-basis: 100%;
         background: white;
+        background: var(--color-white, white);
         border-radius: 5px;
 
         // Rounded corners need overflow hidden on scroll
