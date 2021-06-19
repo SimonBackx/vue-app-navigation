@@ -9,6 +9,7 @@ class HistoryManagerStatic {
 
     counter = 0;
     active = false;
+    animateHistoryPop = true;
 
     isAdjustingState = false;
     manualStateAction = false;
@@ -81,7 +82,7 @@ class HistoryManagerStatic {
                     // todo (not yet supported)
                 } else {
                     // undo actions
-                    const animate = this.counter - newCounter == 1;
+                    const animate = this.counter - newCounter == 1 && this.animateHistoryPop;
                     while (newCounter < this.counter) {
                         // Undo
                         const undoAction = this.undoActions.get(this.counter);
