@@ -233,7 +233,7 @@ export default class NavigationController extends Vue {
         } else {
             this.transitionName = this.animationType == "modal" ? "modal-pop" : "pop";
         }
-        console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
+        //console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
         this.freezeSize();
         const popped = this.components.splice(this.components.length - count, count);
@@ -306,17 +306,29 @@ export default class NavigationController extends Vue {
 
         let next = this.nextScrollPosition;
 
-        console.log("Entering element ", h, next, scrollOuterHeight)
+        //console.log("Entering element ", h, next, scrollOuterHeight)
 
         if (next > h - scrollOuterHeight) {
             // To much scrolled!
-            console.log("Corrected maximum scroll position")
+            //console.log("Corrected maximum scroll position")
             next = Math.max(0, h - scrollOuterHeight);
 
             // Also propagate this change to the .leave handler
             this.nextScrollPosition = next
-            console.log("corrected! ", h, next, scrollOuterHeight)
+            //console.log("corrected! ", h, next, scrollOuterHeight)
         }
+
+        // Prepare animation
+        const childElement = (element.firstElementChild as HTMLElement)
+        if (this.transitionName == "push" || this.transitionName == "pop") {
+            element.style.willChange = "opacity"
+            childElement.style.willChange = "transform"
+        } else {
+            if (this.transitionName == "modal-push") {
+                element.style.willChange = "top"
+            }
+        }
+        scrollElement.style.willChange = "scroll-position"
 
         // Lock position if needed
         // This happens before the beforeLeave animation frame!
@@ -354,6 +366,9 @@ export default class NavigationController extends Vue {
 
                 setTimeout(() => {
                     //scrollElement.style.overflow = "";
+                    element.style.willChange = ""
+                    childElement.style.willChange = ""
+                    scrollElement.style.willChange = ""
 
                     // Call finished
                     if (this.mainComponent) {
@@ -382,7 +397,7 @@ export default class NavigationController extends Vue {
             // Fix viewport glitch
             const w = window as any;
             if (w.visualViewport) {
-                console.log("Used height " + w.visualViewport.height + " instead of " + h);
+                //console.log("Used height " + w.visualViewport.height + " instead of " + h);
                 h = w.visualViewport.height;
             }
         }
@@ -398,6 +413,20 @@ export default class NavigationController extends Vue {
         const scrollElement = this.getScrollElement();
         let h = this.getScrollOuterHeight(scrollElement)
 
+        // Prepare animation
+        const childElement = (element.firstElementChild as HTMLElement)
+        if (this.transitionName == "push" || this.transitionName == "pop") {
+            element.style.willChange = "opacity,top"
+        } else {
+            element.style.willChange = "top"
+        }
+
+        if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-pop") {
+            childElement.style.willChange = "scroll-position,transform"
+        } else {
+            childElement.style.willChange = "scroll-position"
+        }
+
         // This animation frame is super important to prevent flickering on Safari and Webkit!
         // This is also one of the reasons why we cannot use the default Vue class additions
         // We do this to improve the timing of the classes and scroll positions
@@ -408,7 +437,7 @@ export default class NavigationController extends Vue {
             const next = this.nextScrollPosition;
 
             const height = h + "px";
-            console.log("height", height);
+            //console.log("height", height);
 
             // Setting the class has to happen in one go.
             // First we need to make our element fixed / absolute positioned, and pinned to all the edges
@@ -422,10 +451,10 @@ export default class NavigationController extends Vue {
             element.style.overflow = "hidden";
 
             // Now scroll!
-            (element.firstElementChild as HTMLElement).style.overflow = "hidden";
-            (element.firstElementChild as HTMLElement).style.height = h + "px";
+            childElement.style.overflow = "hidden";
+            childElement.style.height = h + "px";
 
-            (element.firstElementChild as HTMLElement).scrollTop = current;
+            childElement.scrollTop = current;
 
             requestAnimationFrame(() => {
                 // We've reached our initial positioning and can start our animation
@@ -436,7 +465,9 @@ export default class NavigationController extends Vue {
                     element.style.top = "";
                     element.style.height = "";
                     element.style.bottom = "";
-                    (element.firstElementChild as HTMLElement).style.overflow = "";
+                    childElement.style.overflow = "";
+                    element.style.willChange = ""
+                    childElement.style.willChange = ""
 
                     done();
                 }, 350);
@@ -467,7 +498,7 @@ export default class NavigationController extends Vue {
     }
 
     destroyed() {
-        console.log("Destroyed navigation controller");
+        // console.log("Destroyed navigation controller");
 
         // Prevent memory issues by removing all references and destroying kept alive components
         for (const component of this.components) {
