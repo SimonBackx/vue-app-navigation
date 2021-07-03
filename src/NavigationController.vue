@@ -320,6 +320,13 @@ export default class NavigationController extends Vue {
 
         // Prepare animation
         const childElement = (element.firstElementChild as HTMLElement)
+
+        let transitionDuration = 300
+        if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
+            // Pop animations should go faster
+            transitionDuration = 250
+        }
+
         if (this.transitionName == "push" || this.transitionName == "pop") {
             element.style.willChange = "opacity"
             childElement.style.willChange = "transform"
@@ -379,7 +386,7 @@ export default class NavigationController extends Vue {
                     }
 
                     done();
-                }, 350);
+                }, transitionDuration);
             });
         });
     }
@@ -427,6 +434,12 @@ export default class NavigationController extends Vue {
             childElement.style.willChange = "scroll-position"
         }
 
+        let transitionDuration = 300
+        if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
+            // Pop animations should go faster
+            transitionDuration = 250
+        }
+
         // This animation frame is super important to prevent flickering on Safari and Webkit!
         // This is also one of the reasons why we cannot use the default Vue class additions
         // We do this to improve the timing of the classes and scroll positions
@@ -470,7 +483,7 @@ export default class NavigationController extends Vue {
                     childElement.style.willChange = ""
 
                     done();
-                }, 350);
+                }, transitionDuration);
             });
         });
     }
@@ -527,7 +540,7 @@ export default class NavigationController extends Vue {
                 // We animate on the containing div, because animation on the inner div causes issues with position: sticky in webkit
                 position: relative;
                 top: 100vh; // need to animate on top, since transform causes issues on webkit / safari
-                transition: top 0.35s;
+                transition: top 0.30s;
                 z-index: 100;
 
                 & > div {
@@ -565,7 +578,7 @@ export default class NavigationController extends Vue {
         &-pop {
             &-leave-active {
                 & > div {
-                    transition: transform 0.35s;
+                    transition: transform 0.25s;
                 }
             }
 
@@ -606,10 +619,10 @@ export default class NavigationController extends Vue {
     > .push {
         &-enter-active,
         &-leave-active {
-            transition: opacity 0.35s;
+            transition: opacity 0.30s;
 
             & > div {
-                transition: transform 0.35s;
+                transition: transform 0.30s;
             }
         }
 
@@ -665,10 +678,10 @@ export default class NavigationController extends Vue {
     > .pop {
         &-enter-active,
         &-leave-active {
-            transition: opacity 0.35s;
+            transition: opacity 0.25s;
 
             & > div {
-                transition: transform 0.35s;
+                transition: transform 0.25s;
             }
         }
 
