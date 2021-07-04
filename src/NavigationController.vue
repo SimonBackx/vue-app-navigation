@@ -49,7 +49,7 @@ export default class NavigationController extends Vue {
     @Ref()
     child!: FramedComponent;
 
-    mounted() {
+    created() {
         if (this.initialComponents && this.initialComponents.length > 0) {
             this.mainComponent = this.initialComponents[this.initialComponents.length - 1];
             this.components = this.initialComponents.slice(0);
