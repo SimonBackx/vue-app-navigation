@@ -279,6 +279,24 @@ export default class NavigationController extends Vue {
         // Do not even set a class! That will cause flickering on Webkit!
     }
 
+    beforeBeforeEnterAnimation() {
+        if (this.mainComponent) {
+            const instance: any = this.mainComponent.componentInstance()
+            if (instance && instance.beforeBeforeEnterAnimation) {
+                instance.beforeBeforeEnterAnimation()
+            }
+        }
+    }
+
+    finishedEnterAnimation() {
+        if (this.mainComponent) {
+            const instance: any = this.mainComponent.componentInstance()
+            if (instance && instance.finishedEnterAnimation) {
+                instance.finishedEnterAnimation()
+            }
+        }
+    }
+
     enter(element: HTMLElement, done) {
         if (this.transitionName == "none") {
             this.getScrollElement().scrollTop = this.nextScrollPosition;
