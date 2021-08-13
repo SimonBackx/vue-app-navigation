@@ -16,6 +16,7 @@ import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
 import { ModalMixin } from './ModalMixin';
+import Sheet from "./Sheet.vue";
 
 const visualViewport = (window as any).visualViewport
 
@@ -77,15 +78,16 @@ export default class Popup extends ModalMixin {
                 return false;
             }
         }
-        this.pop(options)
 
-        // Pop state
-        // Simulate the best as we can
-        const i = this.root.getHistoryIndex()
-        if (i === HistoryManager.counter) {
-            // We are active right now
-            HistoryManager.didMountHistoryIndex(i - 1);
+        // Check which modal is undernath?
+        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+        if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+            const index = this.root.getHistoryIndex()
+            if (index !== null && index !== undefined) {
+                HistoryManager.didMountHistoryIndex(index - 1);
+            }
         }
+        this.pop(options)
     }
 
     resize() {

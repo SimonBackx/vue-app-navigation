@@ -42,7 +42,12 @@ export default class ModalStackComponent extends Vue {
         }
 
         if (component.modalDisplayStyle == "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
-            this.stackComponent.show(new ComponentWithProperties(Sheet, { root: component }));
+            const c = new ComponentWithProperties(Sheet, { root: component })
+            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+                // todo: fix reference to this and memory handling here!!
+                (c.componentInstance() as (Sheet | undefined))?.pop({ animated: canAnimate});
+            });
+            this.stackComponent.show(c);
             return;
         }
 

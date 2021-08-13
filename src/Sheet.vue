@@ -15,6 +15,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
 import { ModalMixin } from './ModalMixin';
+import { HistoryManager } from "./HistoryManager";
 
 @Component({
     components: {
@@ -50,6 +51,15 @@ export default class Sheet extends ModalMixin {
             const r = await this.shouldNavigateAway();
             if (!r) {
                 return false;
+            }
+        }
+
+        // Check which modal is undernath?
+        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+        if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+            const index = this.root.getHistoryIndex()
+            if (index !== null && index !== undefined) {
+                HistoryManager.didMountHistoryIndex(index - 1);
             }
         }
         this.pop(options)

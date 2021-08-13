@@ -39,7 +39,7 @@ class HistoryManagerStatic {
     didMountHistoryIndex(counter: number) {
         // We'll keep this for debugging and remove it if everything is stable
         if (ComponentWithProperties.debug) {
-            console.log("Did mount history index " + counter + " / " + this.counter);
+            console.log("Did mount history index " + counter + ", coming from " + this.counter);
         }
         if (counter < this.counter) {
             // First delete all actions

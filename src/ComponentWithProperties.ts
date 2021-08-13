@@ -60,6 +60,10 @@ export class ComponentWithProperties {
         this.isMounted = true;
 
         if (this.isContainerView) {
+            // Always make sure it has a saved history index
+            if (this.historyIndex == null) {
+                this.historyIndex = HistoryManager.counter;
+            }
             return;
         }
         if (this.modalDisplayStyle == "overlay") {
