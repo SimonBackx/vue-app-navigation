@@ -25,6 +25,15 @@ const ComponentWithPropertiesInstance = Vue.extend({
 
     activated() {
         this.component.activated();
+
+        // Update container views history index
+        let start: any = this.$parent;
+        while (start) {
+            if (start instanceof ComponentWithPropertiesInstance) {
+                (start.component as ComponentWithProperties).onActivatedChildComponent(this.component)
+            }
+            start = start.$parent;
+        }
     },
 
     mounted() {
@@ -34,7 +43,7 @@ const ComponentWithPropertiesInstance = Vue.extend({
         let start: any = this.$parent;
         while (start) {
             if (start instanceof ComponentWithPropertiesInstance) {
-                (start.component as ComponentWithProperties).isContainerView = true;
+                (start.component as ComponentWithProperties).onMountedChildComponent(this.component)
             }
             start = start.$parent;
         }

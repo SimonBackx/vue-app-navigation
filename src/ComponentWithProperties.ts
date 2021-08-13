@@ -1,4 +1,5 @@
 import { VNode } from "vue";
+import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 
 import { HistoryManager } from "./HistoryManager";
 
@@ -60,8 +61,8 @@ export class ComponentWithProperties {
         this.isMounted = true;
 
         if (this.isContainerView) {
-            // Always make sure it has a saved history index
-            if (this.historyIndex == null) {
+            // Always make sure it has a saved history index on first mount
+            if (this.historyIndex === null) {
                 this.historyIndex = HistoryManager.counter;
             }
             return;
@@ -70,6 +71,16 @@ export class ComponentWithProperties {
             return;
         }
         this.assignHistoryIndex()
+    }
+
+    onMountedChildComponent(child: ComponentWithProperties) {
+        this.isContainerView = true
+        if (ComponentWithProperties.debug) console.log("Container mounted child component: " + this.component.name + " got "+child.component.name);
+    }
+
+    onActivatedChildComponent(child: ComponentWithProperties) {
+        this.isContainerView = true
+        if (ComponentWithProperties.debug) console.log("Container got activated child component: " + this.component.name + " got "+child.component.name);
     }
 
     /**
