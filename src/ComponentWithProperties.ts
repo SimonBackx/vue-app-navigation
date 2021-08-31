@@ -36,6 +36,8 @@ export class ComponentWithProperties {
     public historyIndex: number | null = null;
     public isContainerView = false;
 
+    private static ignoreActivate: ComponentWithProperties | null = null
+
     constructor(component: any, properties: Record<string, any> = {}) {
         this.component = component;
         this.properties = properties;
@@ -43,6 +45,8 @@ export class ComponentWithProperties {
     }
 
     beforeMount() {
+        if (ComponentWithProperties.debug) console.log("Before mount: " + this.component.name);
+
         if (this.vnode) {
             if (this.isKeptAlive) {
                 this.isKeptAlive = false;
@@ -50,15 +54,6 @@ export class ComponentWithProperties {
                 if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
             }
         }
-    }
-
-    getHistoryIndex() {
-        if (this.component) return this.historyIndex;
-    }
-
-    mounted() {
-        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name + " at " + HistoryManager.counter);
-        this.isMounted = true;
 
         if (this.isContainerView) {
             // Always make sure it has a saved history index on first mount
@@ -71,6 +66,21 @@ export class ComponentWithProperties {
             return;
         }
         this.assignHistoryIndex()
+    }
+
+    getHistoryIndex() {
+        if (this.component) return this.historyIndex;
+    }
+
+    mounted() {
+        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name);
+        this.isMounted = true;
+
+        // We pushed some elements and the history index increased during the mounted lifecycle
+        // We now risk that in the next activation cycle (that is only called sometimes, not on all components), the UI will think that it is returning
+        // to a previous history state
+        // So we ignore the activation of only this instance until some other component got activated first
+        ComponentWithProperties.ignoreActivate = this;
     }
 
     onMountedChildComponent(child: ComponentWithProperties) {
@@ -88,14 +98,25 @@ export class ComponentWithProperties {
      */
     assignHistoryIndex() {
         if (this.historyIndex == null) {
+            if (ComponentWithProperties.debug) console.log("Assigned history index: " + this.component.name + " = " + HistoryManager.counter);
             this.historyIndex = HistoryManager.counter;
-        }
-        if (this.historyIndex !== null) {
-            this.historyIndex = HistoryManager.didMountHistoryIndex(this.historyIndex);
+        } else {
+            // This component was never mounted but already got a history index assigned
+            // -> probably pushed on a navigation controller with multiple components at once
+            this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
         }
     }
 
     activated() {
+        if (ComponentWithProperties.debug) console.log("Component activated: " + this.component.name);
+
+        if (ComponentWithProperties.ignoreActivate === this) {
+            if (ComponentWithProperties.debug) console.log("Ignore component activation: " + this.component.name);
+            ComponentWithProperties.ignoreActivate = null
+            return
+        }
+        ComponentWithProperties.ignoreActivate = null
+
         if (this.isContainerView) {
             return;
         }
@@ -103,7 +124,8 @@ export class ComponentWithProperties {
             return;
         }
         if (this.historyIndex !== null) {
-            this.historyIndex = HistoryManager.didMountHistoryIndex(this.historyIndex);
+            // Sometimes, a component will get activated just after mounting it. We ignore that activated event once
+            this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
         }
     }
 

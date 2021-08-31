@@ -99,6 +99,7 @@ export default class NavigationController extends Vue {
     }
 
     push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = []) {
+        if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
         const animated = shouldAnimate === null ? component.animated : shouldAnimate
         if (!animated) {
             this.transitionName = "none";

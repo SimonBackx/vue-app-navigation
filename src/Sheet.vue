@@ -59,7 +59,7 @@ export default class Sheet extends ModalMixin {
         if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
             const index = this.root.getHistoryIndex()
             if (index !== null && index !== undefined) {
-                HistoryManager.didMountHistoryIndex(index - 1);
+                HistoryManager.returnToHistoryIndex(index - 1);
             }
         }
         this.pop(options)

@@ -14,12 +14,35 @@ class HistoryManagerStatic {
     isAdjustingState = false;
     manualStateAction = false;
 
+    /**
+     * Sometimes we need to set an URL when the history api is already popping the state (async!). Then it is not possible
+     * to set the URL. To fix this, we need to delay the replaceState until after the state is popped.
+     */
+    delayedUrlSetting: { url: string; counter: number } | null = null
+
     /// Set the current URL without modifying states
     setUrl(url: string) {
         if (!this.active) {
             return;
         }
 
+        // Sometimes, we need to set a count
+        if (this.manualStateAction) {
+            /*
+            Sometimes we need to set an URL when the history api is already popping the state (async!). Then it is not possible
+            to set the URL. To fix this, we need to delay the replaceState until after the state is popped.
+            */
+
+            if (ComponentWithProperties.debug) {
+                console.log("Setting url, delayed: " + url+", current counter: "+this.counter);
+            }
+            this.delayedUrlSetting = { url, counter: this.counter }
+            return
+        }
+
+        if (ComponentWithProperties.debug) {
+            console.log("Set url: " + url+", current counter: "+this.counter);
+        }
         history.replaceState({ counter: this.counter }, "", url);
     }
 
@@ -36,10 +59,13 @@ class HistoryManagerStatic {
         history.pushState({ counter: this.counter }, "");
     }
 
-    didMountHistoryIndex(counter: number) {
+    /**
+     * Return to a given history point in time, if needed
+     */
+    returnToHistoryIndex(counter: number) {
         // We'll keep this for debugging and remove it if everything is stable
         if (ComponentWithProperties.debug) {
-            console.log("Did mount history index " + counter + ", coming from " + this.counter);
+            console.log("Did return to history index " + counter + ", coming from " + this.counter);
         }
         if (counter < this.counter) {
             // First delete all actions
@@ -54,6 +80,9 @@ class HistoryManagerStatic {
             // Won't trigger any actions, we just deleted them
             if (!this.isAdjustingState) {
                 this.manualStateAction = true;
+
+                // Note: history.go is async, so all replaceState methods stop working until finished!
+                // -> that is why we use delayedUrlSetting
                 history.go(amount); // should be negative
             }
         }
@@ -70,6 +99,11 @@ class HistoryManagerStatic {
             }
             if (this.manualStateAction) {
                 this.manualStateAction = false;
+
+                if (this.delayedUrlSetting && this.counter === this.delayedUrlSetting.counter) {
+                    this.setUrl(this.delayedUrlSetting.url)
+                }
+                this.delayedUrlSetting = null
                 return;
             }
             this.isAdjustingState = true;
@@ -78,8 +112,9 @@ class HistoryManagerStatic {
             if (newCounter !== undefined) {
                 // Foward or backwards?
                 if (newCounter > this.counter) {
-                    // redo actions
-                    // todo (not yet supported)
+                    // Not allowed
+                    const amount = newCounter - this.counter;
+                    history.go(-amount);
                 } else {
                     // undo actions
                     const animate = this.counter - newCounter == 1 && this.animateHistoryPop;
