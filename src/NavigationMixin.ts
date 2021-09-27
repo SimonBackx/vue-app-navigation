@@ -176,6 +176,16 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
+    isFocused() {
+        const modalOrPopup = this.modalOrPopup
+        if ((modalOrPopup instanceof Popup) || (modalOrPopup instanceof Sheet)) {
+            return !!(modalOrPopup as (any)).isFocused()
+        }
+
+        // todo: detect edge case when this element is deactivated
+        return true
+    }
+
     calculateCanPop(): boolean {
         return this.poppableNavigationController != null;
     }

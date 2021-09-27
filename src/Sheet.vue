@@ -38,7 +38,7 @@ export default class Sheet extends ModalMixin {
         document.removeEventListener("keydown", this.onKey);
     }
 
-    get isFocussed() {
+    get isFocused() {
         const popups = this.modalStackComponent?.stackComponent?.components ?? []
         if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
             return false
@@ -70,7 +70,7 @@ export default class Sheet extends ModalMixin {
             return;
         }
 
-        if (!this.isFocussed) {
+        if (!this.isFocused) {
             return;
         }
 
