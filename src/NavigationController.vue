@@ -98,8 +98,34 @@ export default class NavigationController extends Vue {
         }
     }
 
-    push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = []) {
+    /**
+     * popOptions = how to handle the pop of replace. animated and count are ignored
+     */
+    async push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}) {
         if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
+
+        if (replace > 0) {
+            if (replace > this.components.length) {
+                replace = this.components.length
+            }
+
+            // Check if we are allowed to dismiss them all.
+            // If one fails, we skip everything.
+            const destroy = popOptions.destroy ?? true;;
+            const force = popOptions.force ?? false;
+
+            if (destroy && !force) {
+                for (let index = this.components.length - 1; index >= this.components.length - replace; index--) {
+                    const component = this.components[index];
+                    const r = await component.shouldNavigateAway();
+                    if (!r) {
+                        return;
+                    }
+                }
+            }
+
+        }
+
         const animated = shouldAnimate === null ? component.animated : shouldAnimate
         if (!animated) {
             this.transitionName = "none";
@@ -126,7 +152,14 @@ export default class NavigationController extends Vue {
 
         // Make sure the transition name changed, so wait for a rerender
         if (replace > 0) {
-            this.components.splice(this.components.length - replace, replace, ...[...replaceWith, component]);
+            const popped = this.components.splice(this.components.length - replace, replace, ...[...replaceWith, component]);
+            
+            if (!popOptions.destroy) {
+                // Stop destroy
+                for (const comp of popped) {
+                    comp.keepAlive = true;
+                }
+            }
         } else {
             this.components.push(...[...replaceWith, component]);
         }
