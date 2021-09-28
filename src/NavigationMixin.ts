@@ -34,7 +34,7 @@ export class NavigationMixin extends Vue {
         
     }
 
-    present(options: PushOptions) {
+    present(options: PushOptions | ComponentWithProperties) {
         if (options instanceof ComponentWithProperties) {
             this.emitParents("present", { components: [options] });
         } else {
@@ -42,7 +42,7 @@ export class NavigationMixin extends Vue {
         }
     }
 
-    showDetail(options: PushOptions) {
+    showDetail(options: PushOptions | ComponentWithProperties) {
         if (options instanceof ComponentWithProperties) {
             this.emitParents("showDetail", { components: [options] });
         } else {
