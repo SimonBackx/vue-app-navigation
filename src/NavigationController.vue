@@ -101,7 +101,7 @@ export default class NavigationController extends Vue {
     /**
      * popOptions = how to handle the pop of replace. animated and count are ignored
      */
-    async push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}) {
+    async push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = { force: true }) {
         if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
 
         if (replace > 0) {
