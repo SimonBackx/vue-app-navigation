@@ -1,6 +1,7 @@
 // mixins.js
 import { Component, Vue } from "vue-property-decorator";
 
+import { ComponentWithProperties } from "..";
 import NavigationController from "./NavigationController.vue";
 import { PopOptions } from './PopOptions';
 import Popup from "./Popup.vue";
@@ -24,16 +25,29 @@ export class NavigationMixin extends Vue {
         console.warn("No handlers found for event " + event);
     }
 
-    show(options: PushOptions) {
-        this.emitParents("show", options);
+    show(options: PushOptions | ComponentWithProperties) {
+        if (options instanceof ComponentWithProperties) {
+            this.emitParents("show", { components: [options] });
+        } else {
+            this.emitParents("show", options);
+        }
+        
     }
 
     present(options: PushOptions) {
-        this.emitParents("present", options);
+        if (options instanceof ComponentWithProperties) {
+            this.emitParents("present", { components: [options] });
+        } else {
+            this.emitParents("present", options);
+        }
     }
 
     showDetail(options: PushOptions) {
-        this.emitParents("showDetail", options);
+        if (options instanceof ComponentWithProperties) {
+            this.emitParents("showDetail", { components: [options] });
+        } else {
+            this.emitParents("showDetail", options);
+        }
     }
 
     /**
