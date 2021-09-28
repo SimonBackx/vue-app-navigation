@@ -15,6 +15,7 @@ import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import NavigationController from "./NavigationController.vue";
+import { PushOptions } from "./PushOptions";
 
 // Credits https://codeburst.io/throttling-and-debouncing-in-javascript-b01cad5c8edf
 const throttle = (func, limit) => {
@@ -126,7 +127,8 @@ export default class SplitViewController extends Vue {
         return true;
     }
 
-    async showDetail(component: ComponentWithProperties): Promise<boolean> {
+    async showDetail(options: PushOptions): Promise<boolean> {
+        const component = options.components[options.components.length - 1]
         this.detailKey = component.key;
 
         if (this.shouldCollapse()) {
@@ -135,7 +137,7 @@ export default class SplitViewController extends Vue {
                 return false;
             }
 
-            this.navigationController.push(component);
+            this.navigationController.push(options);
         } else {
             // Replace existing detail component
             // First check if we don't destroy anything
@@ -168,7 +170,7 @@ export default class SplitViewController extends Vue {
         this.detail.keepAlive = true;
         const detail = this.detail;
         this.detail = null;
-        this.navigationController.push(detail, false);
+        this.navigationController.push({ components: [detail], animated: false });
     }
 
     async expand() {

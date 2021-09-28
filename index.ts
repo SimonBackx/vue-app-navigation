@@ -12,3 +12,4 @@ export { default as StackComponent } from "./src/StackComponent.vue";
 
 export * from "./src/HistoryManager";
 export * from "./src/PopOptions";
+export * from "./src/PushOptions";

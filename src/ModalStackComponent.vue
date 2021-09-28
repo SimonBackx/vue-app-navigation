@@ -15,6 +15,7 @@ import Popup from "./Popup.vue";
 import StackComponent from "./StackComponent.vue";
 import Sheet from './Sheet.vue';
 import { HistoryManager } from './HistoryManager';
+import { PushOptions } from "./PushOptions";
 
 @Component({
     components: {
@@ -29,7 +30,9 @@ export default class ModalStackComponent extends Vue {
     @Ref()
     stackComponent!: StackComponent;
 
-    present(component: ComponentWithProperties) {
+    present(options: PushOptions) {
+        const component = options.components[options.components.length - 1]
+
         if (component.modalDisplayStyle == "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
             const c = new ComponentWithProperties(Popup, { root: component })
             HistoryManager.pushState({}, "", (canAnimate: boolean) => {
@@ -55,12 +58,15 @@ export default class ModalStackComponent extends Vue {
             this.stackComponent.show(component);
             return;
         }
-        (this.$refs.navigationController as NavigationController).push(component);
+        (this.$refs.navigationController as NavigationController).push(options);
     }
 
+    /**
+     * @deprecated
+     */
     replace(component: ComponentWithProperties, animated = true) {
         const nav = this.$refs.navigationController as NavigationController;
-        nav.push(component, animated, nav.components.length);
+        nav.push({ components: [component], animated, replace: nav.components.length });
     }
 }
 </script>

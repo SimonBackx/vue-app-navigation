@@ -23,6 +23,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
 import { PopOptions } from "./PopOptions"
+import { PushOptions } from "./PushOptions";
 
 @Component({
     components: {
@@ -100,20 +101,30 @@ export default class NavigationController extends Vue {
 
     /**
      * popOptions = how to handle the pop of replace. animated and count are ignored
+     * -> should get moved to separate configurations in the future
      */
-    async push(component: ComponentWithProperties, shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = { force: true }) {
+    async push(options: PushOptions) {
+        if (options.components.length == 0) {
+            console.error("Missing component when pushing")
+            return
+        }
+        const components = options.components
+        const component = components[components.length - 1]
+
+        // shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}
+        const destroy = options.destroy ?? true
+        const force = options.force ?? false
+        const animated = options.animated === undefined ? component.animated : options.animated
+        let replace = options.replace ?? 0
+        if (replace > this.components.length) {
+            replace = this.components.length
+        }
+
         if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
 
         if (replace > 0) {
-            if (replace > this.components.length) {
-                replace = this.components.length
-            }
-
             // Check if we are allowed to dismiss them all.
             // If one fails, we skip everything.
-            const destroy = popOptions.destroy ?? true;;
-            const force = popOptions.force ?? false;
-
             if (destroy && !force) {
                 for (let index = this.components.length - 1; index >= this.components.length - replace; index--) {
                     const component = this.components[index];
@@ -123,14 +134,12 @@ export default class NavigationController extends Vue {
                     }
                 }
             }
-
         }
 
-        const animated = shouldAnimate === null ? component.animated : shouldAnimate
         if (!animated) {
             this.transitionName = "none";
         } else {
-            this.transitionName = this.animationType == "modal" ? "modal-push" : reverse ? "pop" : "push";
+            this.transitionName = this.animationType == "modal" ? "modal-push" : options.reverse ? "pop" : "push";
         }
 
         // Add the client height from the saved height (check pop method for information)
@@ -150,22 +159,22 @@ export default class NavigationController extends Vue {
         // Save width and height
         this.freezeSize();
 
-        // Make sure the transition name changed, so wait for a rerender
+          // Make sure the transition name changed, so wait for a rerender
         if (replace > 0) {
-            const popped = this.components.splice(this.components.length - replace, replace, ...[...replaceWith, component]);
+            const popped = this.components.splice(this.components.length - replace, replace, ...components);
             
-            if (!popOptions.destroy) {
+            if (!destroy) {
                 // Stop destroy
                 for (const comp of popped) {
                     comp.keepAlive = true;
                 }
             }
         } else {
-            this.components.push(...[...replaceWith, component]);
+            this.components.push(...components);
         }
 
         if (this.mainComponent) {
-            // Keep the component alive while it is removed from the DOM
+            // Keep the component alive while it is removed from the DOM, unless it is being replaced
             this.mainComponent.keepAlive = !replace;
         }
 
@@ -174,16 +183,16 @@ export default class NavigationController extends Vue {
 
         if (replace == 0) {
             //
-            for (let index = 0; index < replaceWith.length + 1; index++) {
+            for (let index = 0; index < components.length; index++) {
                 HistoryManager.pushState({}, "", (canAnimate: boolean) => {
                     // todo: fix reference to this and memory handling here!!
                     this.pop({ animated: animated && canAnimate});
                 });
 
-                if (index < replaceWith.length) {
+                if (index < components.length - 1) {
                     // This component will not get mounted, but we need to simulate this to assign
                     // a history index
-                    replaceWith[index].assignHistoryIndex()
+                    components[index].assignHistoryIndex()
                 }
             }
         }
