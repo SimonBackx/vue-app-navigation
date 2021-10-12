@@ -1,6 +1,6 @@
 <template>
     <transition :appear="shouldAppear" name="fade">
-        <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+        <div class="side-view" @mousedown="dismiss" @touchdown="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
             </div>
@@ -24,20 +24,18 @@ const visualViewport = (window as any).visualViewport
         ComponentWithPropertiesInstance,
     }
 })
-export default class Popup extends ModalMixin {
+export default class SideView extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
-
-    sticky = false
 
     get shouldAppear() {
         return this.root.animated
     }
 
     get pushDown() {
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup) ?? []
-        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
-            if (popups.length > 1 && popups[popups.length - 2].componentInstance() === this) {
+        const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === SideView) ?? []
+        if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
+            if (sideViews.length > 1 && sideViews[sideViews.length - 2].componentInstance() === this) {
                 return 1
             }
             return 2
@@ -46,8 +44,8 @@ export default class Popup extends ModalMixin {
     }
 
     get isFocused() {
-        const popups = this.modalStackComponent?.stackComponent?.components ?? []
-        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+        const sideViews = this.modalStackComponent?.stackComponent?.components ?? []
+        if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
             return false
         }
         return true
@@ -79,8 +77,8 @@ export default class Popup extends ModalMixin {
         }
 
         // Check which modal is undernath?
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-        if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+        const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+        if (sideViews.length === 0 || sideViews[sideViews.length - 1].componentInstance() === this) {
             const index = this.root.getHistoryIndex()
             if (index !== null && index !== undefined) {
                 HistoryManager.returnToHistoryIndex(index - 1);
@@ -92,12 +90,6 @@ export default class Popup extends ModalMixin {
     resize() {
         if (!visualViewport) {
             return;
-        }
-        // Check if covered area is more than 200px -> we got a keyboard shown -> switch to sticky mode
-        if (document.documentElement.clientHeight - visualViewport.height > 200) {
-            this.sticky = true
-        } else {
-            this.sticky = false
         }
     }
 
@@ -125,7 +117,7 @@ export default class Popup extends ModalMixin {
 </script>
 
 <style lang="scss">
-.popup {
+.side-view {
     // DO NOT ADD MAX HEIGHT HERE! Always add it to the children of the navigation controllers!
     background: rgba(black, 0.7);
     position: fixed;
@@ -133,33 +125,32 @@ export default class Popup extends ModalMixin {
     top: 0;
     bottom: 0;
     right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 10000;
     visibility: visible;
     opacity: 1;
     transition: background-color 0.3s, opacity 0.3s, visibility step-start 0.3s;
 
-    ~.popup {
+    ~.side-view {
         background-color: rgba(black, 0.4);
     }
 
     // Improve performance
 
     & > div {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 100%;
         max-width: 800px;
-        flex-basis: 100%;
         background: white;
         background: var(--color-white, white);
-        border-radius: 5px;
+        border-radius: 0px;
 
         // Rounded corners need overflow hidden on scroll
         overflow: hidden;
 
-        max-height: 100vh;
-        max-height: calc(var(--vh, 1vh) * 100);
-        height: calc(var(--vh, 1vh) * 100 - 80px);
+        height: 100%;
 
         overflow: hidden;
         overflow-y: auto;
@@ -168,17 +159,12 @@ export default class Popup extends ModalMixin {
 
         box-sizing: border-box;
 
-        --saved-vh: var(--vh, 1vh);
-
         // Fix chrome bug that scrollbars are not visible anymore
         transform: translate3d(0, 0, 0);
-        transition: transform 0.3s;
-        transform-origin: 50% 0%;
 
-        > * {
-            // Pass updated vh to children
-            --vh: calc(var(--saved-vh, 1vh) - 0.8px);
-        }
+        // Push down
+        transition: transform 0.3s, border-radius 0.3s;
+        transform-origin: 0% 50%;
     }
 
     &.push-down-full {
@@ -188,7 +174,8 @@ export default class Popup extends ModalMixin {
         background-color: rgba(black, 0.6);
 
         & > div {
-            transform: scale(0.9, 0.9) translate3d(0, -15px, 0);
+            transform: scale(0.9, 0.9) translate3d(-15px, 0, 0);
+            border-radius: 5px;
         }
     }
 
@@ -196,23 +183,8 @@ export default class Popup extends ModalMixin {
         background-color: rgba(black, 0.6);
 
         & > div {
-            transform: scale(0.95, 0.95) translate3d(0, -10px, 0);
-        }
-    }
-
-    &.sticky {
-        align-items: flex-end;
-
-        > div {
-            max-height: 100vh;
-            height: calc(100vh - 80px);
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-
-            > * {
-                // Pass updated vh to children
-                --vh: calc(1vh - 0.8px);
-            }
+            transform: scale(0.95, 0.95) translate3d(-10px, 0, 0);
+            border-radius: 5px;
         }
     }
 
@@ -229,7 +201,7 @@ export default class Popup extends ModalMixin {
         background-color: rgba(black, 0);
 
         & > div {
-            transform: translate(0, 100vh);
+            transform: translate(100%, 0);
         }
     }
 

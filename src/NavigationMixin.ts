@@ -7,6 +7,7 @@ import { PopOptions } from './PopOptions';
 import Popup from "./Popup.vue";
 import { PushOptions } from "./PushOptions";
 import Sheet from "./Sheet.vue";
+import SideView from "./SideView.vue";
 import SplitViewController from "./SplitViewController.vue";
 
 // You can declare mixins as the same style as components.
@@ -79,7 +80,7 @@ export class NavigationMixin extends Vue {
             // Chances are this is not displayed as a modal, but on a normal stack
             this.pop(options);
         } else {
-            if (modalNav instanceof Sheet || modalNav instanceof Popup) {
+            if (modalNav instanceof Sheet || modalNav instanceof Popup || modalNav instanceof SideView) {
                 modalNav.dismiss(options);
                 return
             }
@@ -99,7 +100,7 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
-    get modalOrPopup(): NavigationController | Popup | Sheet | null {
+    get modalOrPopup(): NavigationController | Popup | Sheet | SideView | null {
         let start: any = this.$parent;
         while (start) {
             if (start instanceof NavigationController) {
@@ -111,6 +112,10 @@ export class NavigationMixin extends Vue {
             }
 
             if (start instanceof Popup) {
+                return start;
+            }
+
+            if (start instanceof SideView) {
                 return start;
             }
 
@@ -192,7 +197,7 @@ export class NavigationMixin extends Vue {
 
     isFocused() {
         const modalOrPopup = this.modalOrPopup
-        if ((modalOrPopup instanceof Popup) || (modalOrPopup instanceof Sheet)) {
+        if ((modalOrPopup instanceof Popup) || (modalOrPopup instanceof Sheet) || (modalOrPopup instanceof SideView)) {
             return !!(modalOrPopup as (any)).isFocused
         }
 

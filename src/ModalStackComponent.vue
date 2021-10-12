@@ -16,6 +16,7 @@ import StackComponent from "./StackComponent.vue";
 import Sheet from './Sheet.vue';
 import { HistoryManager } from './HistoryManager';
 import { PushOptions } from "./PushOptions";
+import SideView from "./SideView.vue";
 
 @Component({
     components: {
@@ -49,6 +50,16 @@ export default class ModalStackComponent extends Vue {
             HistoryManager.pushState({}, "", (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
                 (c.componentInstance() as (Sheet | undefined))?.pop({ animated: canAnimate});
+            });
+            this.stackComponent.show(c);
+            return;
+        }
+
+        if (component.modalDisplayStyle == "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
+            const c = new ComponentWithProperties(SideView, { root: component })
+            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+                // todo: fix reference to this and memory handling here!!
+                (c.componentInstance() as (SideView | undefined))?.pop({ animated: canAnimate});
             });
             this.stackComponent.show(c);
             return;
