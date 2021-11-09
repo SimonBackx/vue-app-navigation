@@ -99,6 +99,10 @@ export default class NavigationController extends Vue {
         }
     }
 
+    shouldAnimate() {
+        return true; // document.body.offsetWidth < 800;
+    }
+
     /**
      * popOptions = how to handle the pop of replace. animated and count are ignored
      * -> should get moved to separate configurations in the future
@@ -114,7 +118,8 @@ export default class NavigationController extends Vue {
         // shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}
         const destroy = options.destroy ?? true
         const force = options.force ?? false
-        const animated = options.animated === undefined ? component.animated : options.animated
+        const animated = this.shouldAnimate() ? (options.animated === undefined ? component.animated : options.animated) : false
+
         let replace = options.replace ?? 0
         if (replace > this.components.length) {
             replace = this.components.length
@@ -235,7 +240,7 @@ export default class NavigationController extends Vue {
      * force: whether "shouldNavigateAway" of child components is ignored
      */
     async pop(options: PopOptions = {}): Promise<ComponentWithProperties[] | undefined> {
-        const animated = options.animated ?? true;
+        const animated = this.shouldAnimate() ? (options.animated ?? true) : false;
         const destroy = options.destroy ?? true;;
         const count = options.count ?? 1;
         const force = options.force ?? false;

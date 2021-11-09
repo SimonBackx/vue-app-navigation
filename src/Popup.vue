@@ -1,8 +1,10 @@
 <template>
-    <transition :appear="shouldAppear" name="fade">
+    <transition :appear="shouldAppear" name="fade" :duration="300">
         <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
+                <div class="scrollable-container">
+                    <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
+                </div>
             </div>
         </div>
     </transition>
@@ -127,7 +129,7 @@ export default class Popup extends ModalMixin {
 <style lang="scss">
 .popup {
     // DO NOT ADD MAX HEIGHT HERE! Always add it to the children of the navigation controllers!
-    background: rgba(black, 0.7);
+    //background: rgba(black, 0.7);
     position: fixed;
     left: 0;
     top: 0;
@@ -137,12 +139,25 @@ export default class Popup extends ModalMixin {
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    visibility: visible;
-    opacity: 1;
-    transition: background-color 0.3s, opacity 0.3s, visibility step-start 0.3s;
+    contain: size layout style paint;
 
-    ~.popup {
-        background-color: rgba(black, 0.4);
+    &:after {
+        background: rgba(black, 0.7);
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        opacity: 1;
+        contain: size layout style paint;
+        will-change: opacity;
+        transition: opacity 0.3s;
+        z-index: 0;
+    }
+
+    ~.popup:after {
+        display: none;
     }
 
     // Improve performance
@@ -161,42 +176,74 @@ export default class Popup extends ModalMixin {
         max-height: calc(var(--vh, 1vh) * 100);
         height: calc(var(--vh, 1vh) * 100 - 80px);
 
-        overflow: hidden;
-        overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: contain;
 
         box-sizing: border-box;
 
+        contain: size layout style paint;
+        will-change: transform, opacity;
+
         --saved-vh: var(--vh, 1vh);
 
         // Fix chrome bug that scrollbars are not visible anymore
         transform: translate3d(0, 0, 0);
-        transition: transform 0.3s;
         transform-origin: 50% 0%;
 
-        > * {
+        visibility: visible;
+        transition: transform 0.3s, opacity 0.3s, visibility step-start 0.3s;
+        z-index: 1;
+        position: relative;
+
+        > .scrollable-container {
+            overflow: hidden;
+            overflow-y: auto;
             // Pass updated vh to children
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
+            height: 100%;
+        }
+
+        &:after {
+            background: rgba(black, 0.4);
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            opacity: 0;
+            contain: size layout style paint;
+            will-change: opacity, visibility;
+            visibility: hidden;
+            z-index: 20000;
+            transition: opacity 0.3s, visibility step-end 0.3s;
         }
     }
 
     &.push-down-full {
-        transition: background-color 0.3s, opacity 0.3s, visibility step-end 0.3s;
-        visibility: hidden;
-        opacity: 0;
-        background-color: rgba(black, 0.6);
-
         & > div {
+            transition: transform 0.3s, opacity 0.3s, visibility step-end 0.3s;
+            visibility: hidden;
+            opacity: 0;
             transform: scale(0.9, 0.9) translate3d(0, -15px, 0);
+
+            &:after {
+                opacity: 1;
+                visibility: visible;
+                transition: opacity 0.3s, visibility step-start 0.3s;
+            }
         }
     }
 
     &.push-down {
-        background-color: rgba(black, 0.6);
-
         & > div {
             transform: scale(0.95, 0.95) translate3d(0, -10px, 0);
+
+            &:after {
+                opacity: 1;
+                visibility: visible;
+                transition: opacity 0.3s, visibility step-start 0.3s;
+            }
         }
     }
 
@@ -216,26 +263,25 @@ export default class Popup extends ModalMixin {
         }
     }
 
-    &.fade-enter-active,
-    &.fade-leave-active,
-    &[data-extended-enter="true"] {
-        position: fixed;
-
-        & > div {
-            transition: transform 0.3s;
+    &.fade-enter-active, &.fade-leave-active {
+        &:after {
+            transition: opacity 0.3s;
         }
-    }
-    &.fade-enter, &.fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-        background-color: rgba(black, 0);
 
         & > div {
-            transform: translate(0, 100vh);
+            transition: transform 0.3s, opacity 0.3s;
         }
     }
 
-    &.fade-enter-active,
-    &.fade-leave-active {
-        z-index: 10000;
+    &.fade-enter, &.fade-leave-to {
+        &:after {
+            opacity: 0;
+        }
+
+        & > div {
+            transform: translate(0, 50vh);
+            opacity: 0;
+        }
     }
 }
 </style>
