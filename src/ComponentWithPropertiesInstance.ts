@@ -3,7 +3,7 @@ import Vue, { VNode } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
-const ComponentWithPropertiesInstance = Vue.extend({
+const ComponentWithPropertiesInstance = Vue.extend({    
     props: {
         component: ComponentWithProperties,
     },
