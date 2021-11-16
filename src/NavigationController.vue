@@ -100,7 +100,7 @@ export default class NavigationController extends Vue {
     }
 
     shouldAnimate() {
-        return true; // document.body.offsetWidth < 800;
+        return this.getScrollElement().offsetWidth <= 900;
     }
 
     /**
@@ -163,7 +163,9 @@ export default class NavigationController extends Vue {
         this.nextScrollPosition = 0;
 
         // Save width and height
-        this.freezeSize();
+        if (animated) {
+            this.freezeSize();
+        }
 
           // Make sure the transition name changed, so wait for a rerender
         if (replace > 0) {
@@ -283,10 +285,10 @@ export default class NavigationController extends Vue {
             this.transitionName = "none";
         } else {
             this.transitionName = this.animationType == "modal" ? "modal-pop" : "pop";
+            this.freezeSize();
         }
         //console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
-        this.freezeSize();
         const popped = this.components.splice(this.components.length - count, count);
 
         if (!destroy) {
