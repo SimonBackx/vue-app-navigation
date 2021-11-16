@@ -36,10 +36,12 @@ export default class ModalStackComponent extends Vue {
 
         if (component.modalDisplayStyle == "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
             const c = new ComponentWithProperties(Popup, { root: component })
-            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
-                // todo: fix reference to this and memory handling here!!
+
+            // Not set or true: push to history
+            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
                 (c.componentInstance() as (Popup | undefined))?.pop({ animated: canAnimate});
             });
+        
             this.stackComponent.show(c);
             
             return;
@@ -47,20 +49,24 @@ export default class ModalStackComponent extends Vue {
 
         if (component.modalDisplayStyle == "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
             const c = new ComponentWithProperties(Sheet, { root: component })
-            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+
+            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
                 (c.componentInstance() as (Sheet | undefined))?.pop({ animated: canAnimate});
             });
+
             this.stackComponent.show(c);
             return;
         }
 
         if (component.modalDisplayStyle == "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
             const c = new ComponentWithProperties(SideView, { root: component })
-            HistoryManager.pushState({}, "", (canAnimate: boolean) => {
+
+            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
                 (c.componentInstance() as (SideView | undefined))?.pop({ animated: canAnimate});
             });
+
             this.stackComponent.show(c);
             return;
         }

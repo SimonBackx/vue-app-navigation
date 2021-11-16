@@ -7,6 +7,11 @@ export interface PushOptions {
     components: ComponentWithProperties[];
 
     /**
+     * The url for this new route.
+     */
+    url?: string;
+
+    /**
      * Use animations if possible. Default value is the animated property of ComponentWithProperties. 
      * In the future, we might remove the animated property of ComponentWithProperties and enable animations by default here.
      */

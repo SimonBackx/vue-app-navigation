@@ -56,7 +56,7 @@ class HistoryManagerStatic {
         if (redoAction) {
             this.redoActions.set(this.counter, redoAction);
         }
-        history.pushState({ counter: this.counter }, "");
+        history.pushState({ counter: this.counter }, "", url);
     }
 
     /**
