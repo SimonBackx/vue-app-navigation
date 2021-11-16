@@ -2,7 +2,7 @@ import { VNode } from "vue";
 
 import { HistoryManager } from "./HistoryManager";
 
-type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
+export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
 
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type

@@ -1,4 +1,4 @@
-import { ComponentWithProperties } from "./ComponentWithProperties";
+import { ComponentWithProperties, ModalDisplayStyle } from "./ComponentWithProperties";
 
 export interface PushOptions {
     /**
@@ -10,6 +10,11 @@ export interface PushOptions {
      * The url for this new route.
      */
     url?: string;
+
+    /**
+     * Whether we should push a new real state in the browser history
+     */
+    adjustHistory?: boolean;
 
     /**
      * Use animations if possible. Default value is the animated property of ComponentWithProperties. 
@@ -40,4 +45,6 @@ export interface PushOptions {
      * Reverse the animation if possible. Defaults to false
      */
     reverse?: boolean;
+
+    modalDisplayStyle?: ModalDisplayStyle
 }

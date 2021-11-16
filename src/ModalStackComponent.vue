@@ -34,44 +34,50 @@ export default class ModalStackComponent extends Vue {
     present(options: PushOptions) {
         const component = options.components[options.components.length - 1]
 
-        if (component.modalDisplayStyle == "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
+        if (options.animated !== undefined) {
+            component.animated = options.animated
+        }
+
+        const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
+        component.setDisplayStyle(style)
+
+        if (style === "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
             const c = new ComponentWithProperties(Popup, { root: component })
 
-            // Not set or true: push to history
-            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
+            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                 (c.componentInstance() as (Popup | undefined))?.pop({ animated: canAnimate});
-            });
+            }, options?.adjustHistory ?? true);
         
             this.stackComponent.show(c);
             
             return;
         }
 
-        if (component.modalDisplayStyle == "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
+        if (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
             const c = new ComponentWithProperties(Sheet, { root: component })
 
-            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
+            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
                 (c.componentInstance() as (Sheet | undefined))?.pop({ animated: canAnimate});
-            });
+            }, options?.adjustHistory ?? true);
 
             this.stackComponent.show(c);
             return;
         }
 
-        if (component.modalDisplayStyle == "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
+        if (style === "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
             const c = new ComponentWithProperties(SideView, { root: component })
 
-            HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
+            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!
                 (c.componentInstance() as (SideView | undefined))?.pop({ animated: canAnimate});
-            });
+            }, options?.adjustHistory ?? true);
 
             this.stackComponent.show(c);
             return;
         }
 
-        if (component.modalDisplayStyle == "overlay") {
+        if (style === "overlay") {
             this.stackComponent.show(component);
             return;
         }

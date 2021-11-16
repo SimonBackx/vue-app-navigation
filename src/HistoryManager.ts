@@ -1,11 +1,23 @@
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
-class HistoryManagerStatic {
-    undoActions: Map<number, (animate: boolean) => void> = new Map();
+type HistoryState = {
+    /// Url of the page, used if the user returns to this page using buttons on the page
+    url?: string;
 
-    /// Some actions can have a forward action. Most of the time this needs a custom
-    // implementation because often validation needs to happen to go foward
-    redoActions: Map<number, () => void> = new Map();
+    /// Counter at which the state was added.
+    index: number;
+
+    /// Whether the history pushState was used to create this state (true) or if this is only a virtual state (false).
+    adjustHistory: boolean;
+
+    /// Action to execute when the user navigates back to the previous state using the browser's back button.
+    undoAction?: (animate: boolean) => void;
+}
+
+class HistoryManagerStatic {
+    // undoActions: Map<number, (animate: boolean) => void> = new Map();
+
+    states: HistoryState[] = [];
 
     counter = 0;
     active = false;
@@ -43,20 +55,34 @@ class HistoryManagerStatic {
         if (ComponentWithProperties.debug) {
             console.log("Set url: " + url+", current counter: "+this.counter);
         }
+
         history.replaceState({ counter: this.counter }, "", url);
+        this.states[this.states.length - 1].url = url;
     }
 
-    pushState(customState: object, url: string | undefined, undoAction: (animate: boolean) => void, redoAction?: () => void) {
+    pushState(url: string | undefined, undoAction: (animate: boolean) => void, adjustHistory: boolean) {
         if (!this.active) {
             return;
         }
 
         this.counter++;
-        this.undoActions.set(this.counter, undoAction);
-        if (redoAction) {
-            this.redoActions.set(this.counter, redoAction);
+
+        this.states.push({
+            url: url,
+            index: this.counter,
+            adjustHistory,
+            undoAction,
+        })
+
+        if (adjustHistory) {
+            history.pushState({ counter: this.counter }, "", url);
+        } else {
+            history.replaceState({ counter: this.counter }, "", url);
         }
-        history.pushState({ counter: this.counter }, "", url);
+
+        if (ComponentWithProperties.debug) {
+            console.log("Push new state " , this.states[this.states.length - 1]);
+        }
     }
 
     /**
@@ -68,22 +94,33 @@ class HistoryManagerStatic {
             console.log("Did return to history index " + counter + ", coming from " + this.counter);
         }
         if (counter < this.counter) {
-            // First delete all actions
+            this.counter = counter;
 
-            const amount = counter - this.counter;
-            while (counter < this.counter) {
-                this.undoActions.delete(this.counter);
-                this.redoActions.delete(this.counter);
-                this.counter--;
-            }
+            // Delete all future states
+            const deletedStates = this.states.splice(this.counter + 1);
 
-            // Won't trigger any actions, we just deleted them
-            if (!this.isAdjustingState) {
+            // Count how many states we have to delete from the history
+            const adjustHistoryCount = deletedStates.filter(state => state.adjustHistory).length;
+
+            // Don't need to call undo actions, because the user did go back by itself, and the undo actions are already done manually
+            if (adjustHistoryCount > 0 && !this.isAdjustingState) {
                 this.manualStateAction = true;
 
                 // Note: history.go is async, so all replaceState methods stop working until finished!
                 // -> that is why we use delayedUrlSetting
-                history.go(amount); // should be negative
+                if (ComponentWithProperties.debug) {
+                    console.log("Adjusting browser history state: popping " + adjustHistoryCount + " items");
+                }
+                history.go(-adjustHistoryCount); // should be negative
+            }
+
+            if (!this.states[this.counter].adjustHistory && this.states[this.counter].url) {
+                if (ComponentWithProperties.debug) {
+                    console.log("Setting manual url without history api: " + this.states[this.counter].url);
+                }
+
+                // Set new url manually again
+                this.setUrl(this.states[this.counter].url!);
             }
         }
 
@@ -93,6 +130,10 @@ class HistoryManagerStatic {
     activate() {
         // Create push pop listener that will execute undo actions
         window.addEventListener("popstate", (event) => {
+            if (ComponentWithProperties.debug) {
+                console.log("HistoryManager popstate");
+            }
+
             if (this.isAdjustingState) {
                 console.warn("Duplicate popstate");
                 return;
@@ -115,30 +156,29 @@ class HistoryManagerStatic {
                     // Not allowed
                     const amount = newCounter - this.counter;
                     history.go(-amount);
-                } else {
-                    // undo actions
-                    const animate = this.counter - newCounter == 1 && this.animateHistoryPop;
-                    while (newCounter < this.counter) {
-                        // Undo
-                        const undoAction = this.undoActions.get(this.counter);
-                        if (undoAction) {
-                            const num = this.counter;
-                            undoAction(animate);
-                            if (this.counter < num) {
-                                // count adjusting was done via didGoBack
-                                continue;
-                            }
-                        }
 
-                        // Delete maps
-                        this.undoActions.delete(this.counter);
-                        this.redoActions.delete(this.counter);
-
-                        this.counter--;
+                    if (ComponentWithProperties.debug) {
+                        console.log("Not allowed to go forward, going back " + amount + " steps");
                     }
-
+                } else {
+                    // Only animate if we only have one undo action and if animations are enabled
+                    const animate = this.counter - newCounter == 1 && this.animateHistoryPop;
+                    
                     // Set new counter position
-                    this.counter = newCounter;
+                    this.counter = newCounter
+                    
+                    // Delete all future states
+                    const deletedStates = this.states.splice(this.counter + 1);
+
+                    // Execute undo actions in right order
+                    for (const state of deletedStates.reverse()) {
+                        if (state.undoAction) {
+                            if (ComponentWithProperties.debug) {
+                                console.log("Executing undoAction...");
+                            }
+                            state.undoAction(animate);
+                        }
+                    }
                 }
             }
             this.isAdjustingState = false;
@@ -148,6 +188,12 @@ class HistoryManagerStatic {
 
         // Set counter of initial history
         history.replaceState({ counter: this.counter }, "");
+
+        this.states.push({
+            index: this.counter,
+            adjustHistory: false,
+            url: "/"
+        })
     }
 }
 

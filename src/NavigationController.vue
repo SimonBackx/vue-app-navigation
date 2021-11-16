@@ -112,6 +112,7 @@ export default class NavigationController extends Vue {
             console.error("Missing component when pushing")
             return
         }
+        (document.activeElement as any)?.blur()
         const components = options.components
         const component = components[components.length - 1]
 
@@ -189,10 +190,10 @@ export default class NavigationController extends Vue {
         if (replace == 0 && this) {
             //
             for (let index = 0; index < components.length; index++) {
-                HistoryManager.pushState({}, options?.url, (canAnimate: boolean) => {
+                HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                     // todo: fix reference to this and memory handling here!!
                     this.pop({ animated: animated && canAnimate});
-                });
+                }, options?.adjustHistory ?? true);
 
                 if (index < components.length - 1) {
                     // This component will not get mounted, but we need to simulate this to assign
@@ -240,6 +241,8 @@ export default class NavigationController extends Vue {
      * force: whether "shouldNavigateAway" of child components is ignored
      */
     async pop(options: PopOptions = {}): Promise<ComponentWithProperties[] | undefined> {
+        (document.activeElement as any)?.blur()
+
         const animated = this.shouldAnimate() ? (options.animated ?? true) : false;
         const destroy = options.destroy ?? true;;
         const count = options.count ?? 1;
@@ -450,9 +453,8 @@ export default class NavigationController extends Vue {
                             instance.finishedEnterAnimation()
                         }
                     }
-
                     done();
-                }, transitionDuration);
+                }, transitionDuration + 25);
             });
         });
     }
@@ -547,9 +549,8 @@ export default class NavigationController extends Vue {
                     childElement.style.overflow = "";
                     element.style.willChange = ""
                     childElement.style.willChange = ""
-
                     done();
-                }, transitionDuration);
+                }, transitionDuration + 25);
             });
         });
     }
@@ -563,12 +564,10 @@ export default class NavigationController extends Vue {
     }
 
     afterEnter(element: HTMLElement) {
-        this.unfreezeSize();
-
         if (this.transitionName == "none") {
             return;
         }
-
+        this.unfreezeSize();
         element.className = "";
     }
 
@@ -685,6 +684,7 @@ export default class NavigationController extends Vue {
     > .push {
         &-enter-active,
         &-leave-active {
+            user-select: none;
             transition: opacity 0.30s;
 
             & > div {
@@ -744,6 +744,7 @@ export default class NavigationController extends Vue {
     > .pop {
         &-enter-active,
         &-leave-active {
+            user-select: none;
             transition: opacity 0.25s;
 
             & > div {
