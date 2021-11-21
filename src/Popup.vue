@@ -201,6 +201,7 @@ export default class Popup extends ModalMixin {
             // Pass updated vh to children
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
             height: 100%;
+            will-change: scroll-position;
         }
 
         &:after {
@@ -263,13 +264,25 @@ export default class Popup extends ModalMixin {
         }
     }
 
-    &.fade-enter-active, &.fade-leave-active {
+    &.fade-enter-active {
         &:after {
             transition: opacity 0.3s;
         }
 
         & > div {
-            transition: transform 0.3s, opacity 0.3s;
+            // Decelerated easing
+            transition: transform 0.3s cubic-bezier(0.0, 0.0, 0.2, 1), opacity 0.3s;
+        }
+    }
+
+   &.fade-leave-active {
+        &:after {
+            transition: opacity 0.3s;
+        }
+
+        & > div {
+            // Accelerated easing
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 1, 1), opacity 0.3s;
         }
     }
 

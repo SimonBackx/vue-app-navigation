@@ -105,7 +105,7 @@ export default class Sheet extends ModalMixin {
     contain: size layout style paint;
 
     .navigation-controller {
-        transition: height 0.25s;
+        transition: height 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
         will-change: height;
     }
 
@@ -156,19 +156,33 @@ export default class Sheet extends ModalMixin {
         transform: translate3d(0, 0, 0);
         transform-origin: 50% 50%;
         z-index: 1;
+        contain: layout style paint;
+        will-change: transform, opacity, scroll-position;
 
         > * {
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);
         }
     }
 
-    &.fade-enter-active, &.fade-leave-active {
+    &.fade-enter-active {
         &:after {
             transition: opacity 0.3s;
         }
 
         & > div {
-            transition: transform 0.3s, opacity 0.3s;
+            // Decelerated easing
+            transition: transform 0.3s cubic-bezier(0.0, 0.0, 0.2, 1), opacity 0.3s;
+        }
+    }
+
+   &.fade-leave-active {
+        &:after {
+            transition: opacity 0.3s;
+        }
+
+        & > div {
+            // Accelerated easing
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 1, 1), opacity 0.3s;
         }
     }
 
@@ -178,7 +192,7 @@ export default class Sheet extends ModalMixin {
         }
 
         & > div {
-            transform: translate(0, 20vh);
+            transform: translate(0, 30vh);
             opacity: 0;
         }
     }

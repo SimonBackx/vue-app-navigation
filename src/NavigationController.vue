@@ -600,6 +600,10 @@ export default class NavigationController extends Vue {
     overflow: visible;
     position: relative;
 
+    > * > div {
+        will-change: transform;
+    }
+
     > .modal {
         &-push {
             &-enter,
@@ -607,9 +611,10 @@ export default class NavigationController extends Vue {
                 // We animate on the containing div, because animation on the inner div causes issues with position: sticky in webkit
                 position: relative;
                 top: 100vh; // need to animate on top, since transform causes issues on webkit / safari
-                transition: top 0.30s;
+                transition: top 0.30s cubic-bezier(0.0, 0.0, 0.2, 1);
                 z-index: 100;
-
+                will-change: top;
+                
                 & > div {
                     min-height: 100vh;
                     min-height: calc(var(--vh, 1vh) * 100);
@@ -629,6 +634,10 @@ export default class NavigationController extends Vue {
                 left: 0px;
                 right: 0px;
                 bottom: 0px;
+                contain: strict;
+
+                // Darkness in sync with enter animation
+                transition: filter 0.30s;
 
                 & > div {
                     //overflow: hidden !important;
@@ -640,12 +649,16 @@ export default class NavigationController extends Vue {
             &-enter-to {
                 top: 0;
             }
+
+            &-leave-to {
+                filter: brightness(80%);
+            }
         }
 
         &-pop {
             &-leave-active {
                 & > div {
-                    transition: transform 0.25s;
+                    transition: transform 0.25s cubic-bezier(0.4, 0.0, 1, 1);
                 }
             }
 
@@ -661,6 +674,7 @@ export default class NavigationController extends Vue {
                 left: 0px;
                 right: 0px;
                 bottom: 0px;
+
                 & > div {
                     //overflow: hidden !important;
                     background: white;
@@ -684,10 +698,19 @@ export default class NavigationController extends Vue {
     }
 
     > .push {
-        &-enter-active,
+        &-enter-active {
+            user-select: none;
+
+            & > div {
+                transition: transform 0.30s;
+            }
+        }
+
         &-leave-active {
             user-select: none;
-            transition: opacity 0.30s;
+
+            // Darkness in sync with enter animation
+            transition: filter 0.30s;
 
             & > div {
                 transition: transform 0.30s;
@@ -697,6 +720,7 @@ export default class NavigationController extends Vue {
         &-enter,
         &-enter-active {
             position: relative;
+            z-index: 100;
         }
 
         &-leave,
@@ -720,9 +744,13 @@ export default class NavigationController extends Vue {
             }
         }
 
-        &-enter, &-leave-to /* .fade-leave-active below version 2.1.8 */ {
-            opacity: 0;
+        &-leave-to /* .fade-leave-active below version 2.1.8 */ {
+            filter: brightness(80%);
         }
+
+        /*&-enter, &-leave-to {
+            opacity: 0;
+        }*/
 
         &-enter {
             & > div {
@@ -735,19 +763,28 @@ export default class NavigationController extends Vue {
 
         &-leave-to {
             & > div {
-                transform: translateX(-100%);
+                transform: translateX(-40%);
 
                 // RTL support
-                transform: translateX(calc(-100% * var(--direction-scale-x, 1)));
+                transform: translateX(calc(-40% * var(--direction-scale-x, 1)));
             }
         }
     }
 
     > .pop {
-        &-enter-active,
+         &-enter-active {
+            user-select: none;
+
+            // Opacity in sync with leave
+            transition: filter 0.25s;
+
+            & > div {
+                transition: transform 0.25s;
+            }
+        }
+
         &-leave-active {
             user-select: none;
-            transition: opacity 0.25s;
 
             & > div {
                 transition: transform 0.25s;
@@ -757,6 +794,7 @@ export default class NavigationController extends Vue {
         &-enter,
         &-enter-active {
             position: relative;
+            z-index: -100;
         }
 
         &-leave,
@@ -767,6 +805,7 @@ export default class NavigationController extends Vue {
             left: 0px;
             right: 0px;
             bottom: 0px;
+            z-index: 100;
 
             & > div {
                 //overflow: hidden !important;
@@ -775,16 +814,16 @@ export default class NavigationController extends Vue {
             }
         }
 
-        &-enter, &-leave-to /* .fade-leave-active below version 2.1.8 */ {
-            opacity: 0;
+        &-enter/*, &-leave-to *//* .fade-leave-active below version 2.1.8 */ {
+            filter: brightness(80%);
         }
 
         &-enter {
             & > div {
-                transform: translateX(-100%);
+                transform: translateX(-40%);
 
                 // RTL support
-                transform: translateX(calc(-100% * var(--direction-scale-x, 1)));
+                transform: translateX(calc(-40% * var(--direction-scale-x, 1)));
             }
         }
 
