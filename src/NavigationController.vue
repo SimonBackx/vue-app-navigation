@@ -600,10 +600,6 @@ export default class NavigationController extends Vue {
     overflow: visible;
     position: relative;
 
-    > * > div {
-        will-change: transform;
-    }
-
     > .modal {
         &-push {
             &-enter,
