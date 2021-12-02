@@ -155,7 +155,7 @@ export default class SplitViewController extends Vue {
     }
 
     shouldCollapse() {
-        return (this.$el as HTMLElement).offsetWidth < 800;
+        return (this.$el as HTMLElement).offsetWidth < 850;
     }
 
     collapse() {
