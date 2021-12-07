@@ -38,6 +38,9 @@ export default class NavigationController extends Vue {
     nextScrollPosition = 0;
     previousScrollPosition = 0;
 
+    nextInternalScrollPosition = 0
+    savedInternalScrollPositions: number[] = [];
+
     @Prop()
     root!: ComponentWithProperties;
 
@@ -81,6 +84,11 @@ export default class NavigationController extends Vue {
         const el = this.$el as HTMLElement;
         el.style.width = "";
         el.style.height = "";
+    }
+
+    getInternalScrollElement(element: HTMLElement | null = null) {
+        const mightBe = (element ?? this.$el as HTMLElement).querySelector("main")
+        return mightBe ? this.getScrollElement(mightBe) : null;
     }
 
     getScrollElement(element: HTMLElement | null = null): HTMLElement {
@@ -149,6 +157,11 @@ export default class NavigationController extends Vue {
         }
 
         // Add the client height from the saved height (check pop method for information)
+
+        // Check if we have an internal scroll position
+        const internalScrollElement = this.getInternalScrollElement()
+
+        // The scroll element can also be located inside the component, and should be marked as the main element
         const scrollElement = this.getScrollElement();
         const w = window as any;
 
@@ -157,10 +170,14 @@ export default class NavigationController extends Vue {
             clientHeight = w.visualViewport.height;
         }
 
+        let internalClientHeight = internalScrollElement?.clientHeight;
+
         // Save scroll position
         this.previousScrollPosition = scrollElement.scrollTop;
         this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
+        this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
         this.nextScrollPosition = 0;
+        this.nextInternalScrollPosition = 0;
 
         // Save width and height
         if (animated) {
@@ -309,6 +326,7 @@ export default class NavigationController extends Vue {
         }
 
         this.nextScrollPosition = Math.max(0, (this.savedScrollPositions.pop() ?? 0) - clientHeight);
+        this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
 
         this.mainComponent = this.components[this.components.length - 1];
         this.$emit("didPop");
@@ -353,6 +371,12 @@ export default class NavigationController extends Vue {
     enter(element: HTMLElement, done) {
         if (this.transitionName == "none") {
             this.getScrollElement().scrollTop = this.nextScrollPosition;
+
+            const internal = this.getInternalScrollElement(element)
+            if (internal) {
+                internal.scrollTop = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
+            }
+
             done();
             return;
         }
@@ -389,6 +413,18 @@ export default class NavigationController extends Vue {
             //console.log("corrected! ", h, next, scrollOuterHeight)
         }
 
+        const internal = this.getInternalScrollElement(element)
+        let nextInternal = this.nextInternalScrollPosition
+        if (internal) {
+            nextInternal = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
+            const scrollOuterHeight = this.getScrollOuterHeight(internal);
+            const h = internal.scrollHeight
+
+            if (nextInternal > h - scrollOuterHeight) {
+                nextInternal = Math.max(0, h - scrollOuterHeight);
+            }
+        }
+
         // Prepare animation
         const childElement = (element.firstElementChild as HTMLElement)
 
@@ -398,15 +434,17 @@ export default class NavigationController extends Vue {
             transitionDuration = 250
         }
 
-        if (this.transitionName == "push" || this.transitionName == "pop") {
-            element.style.willChange = "opacity"
+        if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-push") {
             childElement.style.willChange = "transform"
-        } else {
-            if (this.transitionName == "modal-push") {
-                element.style.willChange = "top"
-            }
         }
-        scrollElement.style.willChange = "scroll-position"
+
+        if (scrollElement.scrollTop !== next) {
+            scrollElement.style.willChange = "scroll-position"
+        }
+
+        if (internal && internal.scrollTop !== nextInternal) {
+            internal.style.willChange = "scroll-position"
+        }
 
         // Lock position if needed
         // This happens before the beforeLeave animation frame!
@@ -419,6 +457,10 @@ export default class NavigationController extends Vue {
             // Wait and execute immediately after beforeLeave's animation frame
             // Let the OS rerender once so all the positions are okay after dom insertion
             scrollElement.scrollTop = next;
+
+            if (internal) {
+                internal.scrollTop = nextInternal;
+            }
 
             // Allow scrollTop override in a specified handler
             // Call before
@@ -447,6 +489,9 @@ export default class NavigationController extends Vue {
                     element.style.willChange = ""
                     childElement.style.willChange = ""
                     scrollElement.style.willChange = ""
+                    if (internal) {
+                        internal.style.willChange = ""
+                    }
 
                     // Call finished
                     if (this.mainComponent) {
@@ -492,17 +537,7 @@ export default class NavigationController extends Vue {
 
         // Prepare animation
         const childElement = (element.firstElementChild as HTMLElement)
-        if (this.transitionName == "push" || this.transitionName == "pop") {
-            element.style.willChange = "opacity,top"
-        } else {
-            element.style.willChange = "top"
-        }
-
-        if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-pop") {
-            childElement.style.willChange = "scroll-position,transform"
-        } else {
-            childElement.style.willChange = "scroll-position"
-        }
+        childElement.style.willChange = "scroll-position,transform"
 
         let transitionDuration = 300
         if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
@@ -549,7 +584,6 @@ export default class NavigationController extends Vue {
                     element.style.height = "";
                     element.style.bottom = "";
                     childElement.style.overflow = "";
-                    element.style.willChange = ""
                     childElement.style.willChange = ""
                     done();
                 }, transitionDuration + 25);
@@ -604,18 +638,19 @@ export default class NavigationController extends Vue {
         &-push {
             &-enter,
             &-enter-active {
-                // We animate on the containing div, because animation on the inner div causes issues with position: sticky in webkit
                 position: relative;
-                top: 100vh; // need to animate on top, since transform causes issues on webkit / safari
-                transition: top 0.30s cubic-bezier(0.0, 0.0, 0.2, 1);
                 z-index: 100;
-                will-change: top;
                 
                 & > div {
                     min-height: 100vh;
                     min-height: calc(var(--vh, 1vh) * 100);
                     background: white;
                     background: var(--color-white, white);
+
+                    will-change: transform;
+
+                    transition: transform 0.30s cubic-bezier(0.0, 0.0, 0.2, 1);
+                    transform: translateY(100vh);
                 }
             }
 
@@ -643,7 +678,9 @@ export default class NavigationController extends Vue {
             }
 
             &-enter-to {
-                top: 0;
+                & > div {
+                    transform: translateY(0);
+                }
             }
 
             &-leave-to {
