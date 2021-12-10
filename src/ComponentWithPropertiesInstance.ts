@@ -68,6 +68,9 @@ const ComponentWithPropertiesInstance = Vue.extend({
 
         this.component.vnode = createElement(this.component.component, {
             props: this.component.properties,
+
+            // Also pass properties, so a component catch properties that are not defined in the component
+            attrs: this.component.properties,
             key: this.component.key,
         });
 
