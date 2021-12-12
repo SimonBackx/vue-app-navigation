@@ -39,7 +39,7 @@ export default class StackComponent extends Vue {
                 }
             }
         }
-        if (this.components[index].key === key) {
+        if (this.components[index] !== undefined && this.components[index].key === key) {
             this.components.splice(index, 1);
         } else {
             console.warn("Expected component with key " + key + " at index" + index);
