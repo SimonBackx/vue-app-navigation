@@ -66,11 +66,36 @@ const ComponentWithPropertiesInstance = Vue.extend({
             return this.component.vnode;
         }
 
+        // Only pass attrs that are not at props
+        // Else they will get added to the DOM, and we don't want that
+        let attrs = {}
+
+        if (this.component.component?.options?.props) {
+            // Loop all passed properties to the component, and only add
+            // the properties that are not defined as prop in the component to attrs
+            // which is the same bahviour as vue
+            for (const key in this.component.properties) {
+                if (Object.prototype.hasOwnProperty.call(this.component.properties, key)) {
+                    if (!Object.prototype.hasOwnProperty.call(this.component.component.options.props, key)) {
+                        // This property doesn't exist in the component, so 
+                        // we'll add it as an attribute instead
+                        attrs[key] = this.component.properties[key];
+                    }
+                }
+            }
+        } else {
+            attrs = this.component.properties;
+        }
+
+        // Disable component inheritAttrs
+        // Make sure we allow to pass props
+        this.component.component.options.inheritAttrs = false
+
         this.component.vnode = createElement(this.component.component, {
             props: this.component.properties,
 
             // Also pass properties, so a component catch properties that are not defined in the component
-            attrs: this.component.properties,
+            attrs,
             key: this.component.key,
         });
 
