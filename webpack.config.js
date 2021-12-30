@@ -4,7 +4,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 var FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 const path = require("path");
 const TerserPlugin = require("terser-webpack-plugin");
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+//const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
     mode: "production",
@@ -37,8 +37,8 @@ module.exports = {
                 loader: "ts-loader",
                 options: { 
                     appendTsSuffixTo: [/\.vue$/],
-                    transpileOnly: true,
-                    happyPackMode: true,
+                    //transpileOnly: true,
+                    //happyPackMode: true,
                 },
             },
             // this will apply to both plain `.css` files
@@ -81,7 +81,7 @@ module.exports = {
             filename: '[name].css',
             chunkFilename: '[id].css',
         }),
-        new ForkTsCheckerWebpackPlugin(
+        /*new ForkTsCheckerWebpackPlugin(
             {
                 typescript: {
                     enabled: true,
@@ -96,6 +96,6 @@ module.exports = {
                     }
                 },
             }
-        )
+        )*/
     ]
 };
