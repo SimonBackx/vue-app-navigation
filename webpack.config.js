@@ -4,6 +4,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 var FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 const path = require("path");
 const TerserPlugin = require("terser-webpack-plugin");
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
     mode: "production",
@@ -34,7 +35,11 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: "ts-loader",
-                options: { appendTsSuffixTo: [/\.vue$/] }
+                options: { 
+                    appendTsSuffixTo: [/\.vue$/],
+                    transpileOnly: true,
+                    happyPackMode: true,
+                },
             },
             // this will apply to both plain `.css` files
             // AND `<style>` blocks in `.vue` files
@@ -55,13 +60,16 @@ module.exports = {
             extractComments: false,
             terserOptions: {
                 ecma: "2015",
-                safari10: true,
+                safari10: false,
                 sourceMap: true,
                 keep_classnames: true, // we need this for vue component names
                 output: {
                     comments: false,
                 },
-            },
+                compress: {
+                    pure_funcs: ["console.log"] // remove console.logs in production output
+                }
+            }
         })],
     },
     plugins: [
@@ -72,6 +80,22 @@ module.exports = {
         new MiniCssExtractPlugin({ // Make sure CSS is not put inline, but saved to a seperate file
             filename: '[name].css',
             chunkFilename: '[id].css',
-        })
+        }),
+        new ForkTsCheckerWebpackPlugin(
+            {
+                typescript: {
+                    enabled: true,
+                    extensions: {
+                        vue: {
+                            enabled: true,
+                        }
+                    },
+                    diagnosticOptions: {
+                        semantic: true,
+                        syntactic: true,
+                    }
+                },
+            }
+        )
     ]
 };
