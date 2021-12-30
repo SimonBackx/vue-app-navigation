@@ -97,7 +97,14 @@ export default class NavigationController extends Vue {
         }
 
         const style = window.getComputedStyle(element);
-        if (style.overflowY == "scroll" || style.overflow == "scroll" || style.overflow == "auto" || style.overflowY == "auto") {
+        if (
+            style.overflowY == "scroll" 
+            || style.overflow == "scroll" 
+            || style.overflow == "auto" 
+            || style.overflowY == "auto"  
+            // Windows:
+            || style.overflow == "overlay" 
+            || style.overflowY == "overlay") {
             return element;
         } else {
             if (!element.parentElement) {
@@ -108,7 +115,7 @@ export default class NavigationController extends Vue {
     }
 
     shouldAnimate() {
-        return this.getScrollElement().offsetWidth <= 900;
+        return (this.$el as HTMLElement).offsetWidth <= 1600;
     }
 
     /**
