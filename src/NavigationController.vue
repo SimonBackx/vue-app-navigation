@@ -1,5 +1,5 @@
 <template>
-    <div class="navigation-controller" :data-animation-type="animationType">
+    <div class="navigation-controller">
         <transition
             v-if="mainComponent"
             :css="false"
@@ -11,7 +11,7 @@
             @after-enter="afterEnter"
             @enter-cancelled="enterCancelled"
         >
-            <FramedComponent :key="mainComponent.key" ref="child" :root="mainComponent" :name="mainComponent.key" @push="push" @show="push" @pop="pop" />
+            <FramedComponent :key="mainComponent.key" ref="child" :root="mainComponent" @push="push" @show="push" @pop="pop" />
         </transition>
     </div>
 </template>
@@ -664,6 +664,7 @@ export default class NavigationController extends Vue {
             &-leave,
             &-leave-active {
                 position: absolute;
+                pointer-events: none;
 
                 // During leave animation, the div inside this container will transition to the left, causing scroll offsets
                 // We'll need to ignore these
@@ -706,6 +707,7 @@ export default class NavigationController extends Vue {
             &-leave-active {
                 position: absolute;
                 z-index: 10000;
+                pointer-events: none;
 
                 // During leave animation, the div inside this container will transition to the left, causing scroll offsets
                 // We'll need to ignore these
@@ -760,12 +762,13 @@ export default class NavigationController extends Vue {
         &-enter,
         &-enter-active {
             position: relative;
-            z-index: 100;
+            z-index: 1000;
         }
 
         &-leave,
         &-leave-active {
             position: absolute;
+            pointer-events: none;
 
             // During leave animation, the div inside this container will transition to the left, causing scroll offsets
             // We'll need to ignore these
@@ -834,18 +837,18 @@ export default class NavigationController extends Vue {
         &-enter,
         &-enter-active {
             position: relative;
-            z-index: -100;
         }
 
         &-leave,
         &-leave-active {
             position: absolute;
+            pointer-events: none;
             //overflow: hidden !important;
             top: 0px;
             left: 0px;
             right: 0px;
             bottom: 0px;
-            z-index: 100;
+            z-index: 1000;
 
             & > div {
                 //overflow: hidden !important;
