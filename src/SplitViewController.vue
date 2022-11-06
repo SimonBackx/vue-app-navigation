@@ -68,6 +68,9 @@ export default class SplitViewController extends Vue {
     activated() {
         (this as any).listener = throttle(this.onResize, 200);
         window.addEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
+        
+        // Recheck if we need to show the detail
+        this.onResize();
     }
 
     mounted() {

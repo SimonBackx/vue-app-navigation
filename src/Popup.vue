@@ -1,6 +1,6 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{sticky: sticky, 'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+        <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
             <div @mousedown.stop="" @touchdown.stop="">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
@@ -30,8 +30,6 @@ export default class Popup extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
-    sticky = false
-
     get shouldAppear() {
         return this.root.animated
     }
@@ -57,19 +55,10 @@ export default class Popup extends ModalMixin {
 
     activated() {
         document.addEventListener("keydown", this.onKey);
-        this.resize();
-
-        if (visualViewport) {
-            visualViewport.addEventListener('resize', this.resize);
-        }
     }
 
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
-
-        if (visualViewport) {
-            visualViewport.removeEventListener('resize', this.resize);
-        }
     }
 
     async dismiss(options?: PopOptions) {
@@ -80,7 +69,7 @@ export default class Popup extends ModalMixin {
             }
         }
 
-        // Check which modal is undernath?
+        // Check which modal is underneath?
         const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
         if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
             const index = this.root.getHistoryIndex()
@@ -89,18 +78,6 @@ export default class Popup extends ModalMixin {
             }
         }
         this.pop(options)
-    }
-
-    resize() {
-        if (!visualViewport) {
-            return;
-        }
-        // Check if covered area is more than 200px -> we got a keyboard shown -> switch to sticky mode
-        if (document.documentElement.clientHeight - visualViewport.height > 200) {
-            this.sticky = true
-        } else {
-            this.sticky = false
-        }
     }
 
     onKey(event) {
@@ -244,22 +221,6 @@ export default class Popup extends ModalMixin {
                 opacity: 1;
                 visibility: visible;
                 transition: opacity 0.3s, visibility step-start 0.3s;
-            }
-        }
-    }
-
-    &.sticky {
-        align-items: flex-end;
-
-        > div {
-            max-height: 100vh;
-            height: calc(100vh - 80px);
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-
-            > * {
-                // Pass updated vh to children
-                --vh: calc(1vh - 0.8px);
             }
         }
     }

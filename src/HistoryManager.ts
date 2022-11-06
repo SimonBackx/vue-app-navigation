@@ -64,7 +64,6 @@ class HistoryManagerStatic {
         if (!this.active) {
             return;
         }
-
         this.counter++;
 
         this.states.push({

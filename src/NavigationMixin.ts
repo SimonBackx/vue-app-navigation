@@ -178,8 +178,9 @@ export class NavigationMixin extends Vue {
 
     /**
      * Return the first navigation controller that can get popped, excluding the modal navigation controller and the stack component
+     * Note: this shouldn't be a getter to disable vue caching getters
      */
-    private get poppableNavigationController(): NavigationController | null {
+    private getPoppableNavigationController(): NavigationController | null {
         let start: any = this.$parent;
         while (start) {
             if (start instanceof NavigationController) {
@@ -206,7 +207,7 @@ export class NavigationMixin extends Vue {
     }
 
     calculateCanPop(): boolean {
-        return this.poppableNavigationController != null;
+        return this.getPoppableNavigationController() != null;
     }
 
     calculateCanDismiss(): boolean {

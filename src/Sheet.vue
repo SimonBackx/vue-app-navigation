@@ -158,6 +158,7 @@ export default class Sheet extends ModalMixin {
         z-index: 1;
         contain: layout style paint;
         will-change: transform, opacity, scroll-position;
+        transition: transform 0.3s, opacity 0.3s;
 
         > * {
             --vh: calc(var(--saved-vh, 1vh) - 0.8px);

@@ -9,6 +9,9 @@ const TerserPlugin = require("terser-webpack-plugin");
 module.exports = {
     mode: "production",
     entry: "./index.ts",
+    experiments: {
+        outputModule: true
+    },
     externals: {
         vue: 'vue',
         "vue-class-component": "vue-class-component"
@@ -23,7 +26,7 @@ module.exports = {
         // Development:
         path: path.resolve(__dirname, "dist"),
         filename: '[name].js',
-        libraryTarget: 'commonjs2',
+        libraryTarget: 'module',
     },
     devtool: "source-map",
     module: {
@@ -67,7 +70,7 @@ module.exports = {
                     comments: false,
                 },
                 compress: {
-                    pure_funcs: ["console.log"] // remove console.logs in production output
+                    //pure_funcs: ["console.log"] // remove console.logs in production output
                 }
             }
         })],
