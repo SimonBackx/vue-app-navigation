@@ -70,7 +70,7 @@ module.exports = {
                     comments: false,
                 },
                 compress: {
-                    //pure_funcs: ["console.log"] // remove console.logs in production output
+                    pure_funcs: ["console.log"] // remove console.logs in production output
                 }
             }
         })],
