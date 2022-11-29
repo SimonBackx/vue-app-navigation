@@ -96,7 +96,7 @@ export default class SplitViewController extends Vue {
     }
 
     get lastIsDetail() {
-        return this.detailKey != null && (this.$refs.navigationController as NavigationController).mainComponent?.key == this.detailKey;
+        return this.detailKey != null && (this.$refs.navigationController as NavigationController)?.mainComponent?.key == this.detailKey;
     }
 
     getScrollElement(element: HTMLElement | null = null): HTMLElement {

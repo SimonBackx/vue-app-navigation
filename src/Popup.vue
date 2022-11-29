@@ -1,7 +1,7 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="popup" @mousedown="dismiss" @touchdown="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
-            <div @mousedown.stop="" @touchdown.stop="">
+        <div class="popup" @click="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+            <div @click.stop="">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
                 </div>

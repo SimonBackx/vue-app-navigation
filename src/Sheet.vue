@@ -1,7 +1,7 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="sheet" @mousedown="dismiss" @touchdown="dismiss">
-            <div @mousedown.stop="" @touchdown.stop="">
+        <div class="sheet" @click="dismiss">
+            <div @click.stop="">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
             </div>
         </div>
