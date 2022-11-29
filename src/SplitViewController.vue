@@ -83,6 +83,10 @@ export default class SplitViewController extends Vue {
         window.removeEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
     }
 
+    beforeDestroy() {
+        window.removeEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
+    }
+
     onResize() {
         if (this.shouldCollapse()) {
             if (this.detail) {
@@ -162,6 +166,10 @@ export default class SplitViewController extends Vue {
     }
 
     collapse() {
+        if (!this.navigationController) {
+            console.error("Cannot collapse without navigation controller");
+            return;
+        }
         if (this.lastIsDetail) {
             console.error("Cannot collapse when the detail is already collaped");
             return;
@@ -177,6 +185,10 @@ export default class SplitViewController extends Vue {
     }
 
     async expand() {
+        if (!this.navigationController) {
+            console.error("Cannot expand without navigation controller");
+            return;
+        }
         if (this.detail) {
             console.error("Cannot expand when detail is already visible");
             return;
