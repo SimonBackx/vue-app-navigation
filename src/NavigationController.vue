@@ -625,7 +625,7 @@ export default class NavigationController extends Vue {
         for (const component of this.components) {
             // Destroy them one by one
             if (component.isKeptAlive) {
-                component.destroy();
+                component.destroy(component.vnode);
             }
         }
 

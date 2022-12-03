@@ -58,15 +58,12 @@ export default class SplitViewController extends Vue {
     navigationController!: NavigationController;
 
     @Ref()
-    detailKeepAlive!: Vue; // = KeepAlive internal class
-
-    @Ref()
     masterElement!: HTMLElement; // = KeepAlive internal class
 
     detailKey: number | null = null;
 
     activated() {
-        (this as any).listener = throttle(this.onResize, 200);
+        (this as any).listener = throttle(this.onResize, 100);
         window.addEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
         
         // Recheck if we need to show the detail

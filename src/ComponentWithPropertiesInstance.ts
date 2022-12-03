@@ -52,12 +52,14 @@ const ComponentWithPropertiesInstance = Vue.extend({
     destroyed() {
         // This component got removed (with v-if, v-for, ...) in some way.
         // This doesn't mean we want to destroy it
-        this.component.destroy();
+        this.component.destroy(this.$children[0]?.$vnode);
     },
 
     render(createElement): VNode {
         // Only create the vnode once
         if (this.component.vnode) {
+            console.log('Reused render component: ' + this.component.component.name);
+
             // We need to update the parent here
             this.component.vnode.componentInstance.$parent = this;
             // Force update children (needed because the new vnode won't restart a lifecycle 
@@ -96,8 +98,11 @@ const ComponentWithPropertiesInstance = Vue.extend({
 
             // Also pass properties, so a component catch properties that are not defined in the component
             attrs,
-            key: this.component.key,
+
+            // Use a new key every time, we don't want to reuse previous nodes
+            key: 'component-instance-' + ComponentWithProperties.keyCounter++,
         });
+        console.log('New render component: ' + this.component.component.name, this.component.vnode);
 
         // Magic trick: we are now responsible for deallocating the component
         this.component.vnode.data.keepAlive = true;

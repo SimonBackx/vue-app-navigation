@@ -26,11 +26,51 @@ class HistoryManagerStatic {
     isAdjustingState = false;
     manualStateAction = false;
 
-    /**
-     * Sometimes we need to set an URL when the history api is already popping the state (async!). Then it is not possible
-     * to set the URL. To fix this, we need to delay the replaceState until after the state is popped.
-     */
-    delayedUrlSetting: { url: string; counter: number } | null = null
+    // Manipulating the history is async and can cause issues when fast calls happen without awaiting the previous one
+    historyQueue: (() => Promise<void>)[] = [];
+    isQueueRunning = false;
+
+    private addToQueue(action: () => Promise<void>) {
+        this.historyQueue.push(action);
+        if (!this.isQueueRunning) {
+            this.runQueue();
+        }
+    }
+
+    private runQueue() {
+        this.isQueueRunning = true;
+        const action = this.historyQueue.shift();
+        if (action) {
+            console.log('Running history queue action');
+            action().finally(() => this.runQueue());
+        } else {
+            console.log('History queue done');
+            this.isQueueRunning = false;
+        }
+    }
+
+    private go(delta: number) {
+        this.addToQueue(async () => {
+            return new Promise<void>((resolve) => {
+                this.manualStateAction = true;
+                console.log('history.go', delta)
+                history.go(delta); // should be negative
+                let timer 
+                let listener = () => {
+                    clearTimeout(timer);
+                    resolve();
+                    window.removeEventListener("popstate", listener);
+                };
+                window.addEventListener("popstate", listener);
+
+                // Timeout
+                timer = setTimeout(() => {
+                    console.warn("Timeout while waiting for history.go");
+                    listener();
+                }, 200);
+            });
+        });
+    }
 
     /// Set the current URL without modifying states
     setUrl(url: string) {
@@ -38,25 +78,18 @@ class HistoryManagerStatic {
             return;
         }
 
-        // Sometimes, we need to set a count
-        if (this.manualStateAction) {
-            /*
-            Sometimes we need to set an URL when the history api is already popping the state (async!). Then it is not possible
-            to set the URL. To fix this, we need to delay the replaceState until after the state is popped.
-            */
-
-            if (ComponentWithProperties.debug) {
-                console.log("Setting url, delayed: " + url+", current counter: "+this.counter);
-            }
-            this.delayedUrlSetting = { url, counter: this.counter }
-            return
-        }
-
         if (ComponentWithProperties.debug) {
             console.log("Set url: " + url+", current counter: "+this.counter);
         }
 
-        history.replaceState({ counter: this.counter }, "", url);
+        const count = this.states[this.states.length - 1].index;
+
+        this.addToQueue(async () => {
+            if (ComponentWithProperties.debug) {
+                console.log('history.replaceState', count, url)
+            }
+            history.replaceState({ counter: count }, "", url);
+        });
         this.states[this.states.length - 1].url = url;
     }
 
@@ -72,11 +105,22 @@ class HistoryManagerStatic {
             adjustHistory,
             undoAction,
         })
+        const c = this.counter;
 
         if (adjustHistory) {
-            history.pushState({ counter: this.counter }, "", url);
+            this.addToQueue(async () => {
+                if (ComponentWithProperties.debug) {
+                    console.log('history.pushState', c, url)
+                }
+                history.pushState({ counter: c }, "", url);
+            });
         } else {
-            history.replaceState({ counter: this.counter }, "", url);
+            this.addToQueue(async () => {
+                if (ComponentWithProperties.debug) {
+                    console.log('history.replaceState', c, url)
+                }
+                history.replaceState({ counter: c }, "", url);
+            });
         }
 
         if (ComponentWithProperties.debug) {
@@ -102,15 +146,12 @@ class HistoryManagerStatic {
             const adjustHistoryCount = deletedStates.filter(state => state.adjustHistory).length;
 
             // Don't need to call undo actions, because the user did go back by itself, and the undo actions are already done manually
-            if (adjustHistoryCount > 0 && !this.isAdjustingState) {
-                this.manualStateAction = true;
-
+            if (adjustHistoryCount > 0) {
                 // Note: history.go is async, so all replaceState methods stop working until finished!
-                // -> that is why we use delayedUrlSetting
                 if (ComponentWithProperties.debug) {
                     console.log("Adjusting browser history state: popping " + adjustHistoryCount + " items");
                 }
-                history.go(-adjustHistoryCount); // should be negative
+                this.go(-adjustHistoryCount);
             }
 
             if (!this.states[this.counter].adjustHistory && this.states[this.counter].url) {
@@ -139,11 +180,6 @@ class HistoryManagerStatic {
             }
             if (this.manualStateAction) {
                 this.manualStateAction = false;
-
-                if (this.delayedUrlSetting && this.counter === this.delayedUrlSetting.counter) {
-                    this.setUrl(this.delayedUrlSetting.url)
-                }
-                this.delayedUrlSetting = null
                 return;
             }
             this.isAdjustingState = true;
@@ -154,7 +190,7 @@ class HistoryManagerStatic {
                 if (newCounter > this.counter) {
                     // Not allowed
                     const amount = newCounter - this.counter;
-                    history.go(-amount);
+                    this.go(-amount);
 
                     if (ComponentWithProperties.debug) {
                         console.log("Not allowed to go forward, going back " + amount + " steps");

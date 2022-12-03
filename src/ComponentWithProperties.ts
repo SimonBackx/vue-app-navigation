@@ -43,6 +43,10 @@ export class ComponentWithProperties {
         this.key = ComponentWithProperties.keyCounter++;
     }
 
+    clone() {
+        return new ComponentWithProperties(this.component, this.properties);
+    }
+
     beforeMount() {
         if (ComponentWithProperties.debug) console.log("Before mount: " + this.component.name);
 
@@ -51,6 +55,11 @@ export class ComponentWithProperties {
                 this.isKeptAlive = false;
                 ComponentWithProperties.keepAliveCounter--;
                 if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+            } else {
+                if (ComponentWithProperties.debug) console.warn("About to mount a component that was not destroyed properly " + this.component.name);
+
+                // Destroy the old vnode (unless keep alive), we should not reuse this one
+                this.destroy(this.vnode);
             }
         }
 
@@ -150,10 +159,14 @@ export class ComponentWithProperties {
         return true;
     }
 
-    destroy() {
+    destroy(vnode) {
         this.isMounted = false;
 
         if (this.vnode) {
+            if (vnode !== this.vnode) {
+                console.warn('Received destroy event from old/different vnode', this.vnode, vnode);
+                return;
+            }
             if (this.keepAlive) {
                 this.keepAlive = false;
 
@@ -173,7 +186,7 @@ export class ComponentWithProperties {
                 if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
             }
 
-            if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name);
+            if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name, this.vnode);
             this.vnode.componentInstance?.$destroy();
             this.vnode = null;
         }
