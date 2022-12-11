@@ -172,8 +172,13 @@ export class NavigationMixin extends Vue {
     canDismiss = false;
 
     activated() {
-        this.canPop = this.calculateCanPop();
-        this.canDismiss = this.calculateCanDismiss();
+        Vue.set(this, "canPop", this.calculateCanPop());
+        Vue.set(this, "canDismiss", this.calculateCanDismiss());
+    }
+
+    beforeMount() {
+        Vue.set(this, "canPop", this.calculateCanPop());
+        Vue.set(this, "canDismiss", this.calculateCanDismiss());
     }
 
     /**
