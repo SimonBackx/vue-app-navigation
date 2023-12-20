@@ -1,7 +1,7 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="popup" @click="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
-            <div @click.stop="">
+        <div class="popup" @click="onClick" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+            <div ref="mainContent">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
                 </div>
@@ -18,8 +18,6 @@ import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
 import { ModalMixin } from './ModalMixin';
-
-const visualViewport = (window as any).visualViewport
 
 @Component({
     components: {
@@ -51,6 +49,15 @@ export default class Popup extends ModalMixin {
             return false
         }
         return true
+    }
+
+    onClick(event) {
+        const mainContent = this.$refs.mainContent as HTMLElement
+        // Check click is inside mainContent
+        if (mainContent && !mainContent.contains(event.target)) {
+            this.dismiss()
+            event.preventDefault()
+        }
     }
 
     activated() {

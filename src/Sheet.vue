@@ -1,7 +1,7 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="sheet" @click="dismiss">
-            <div @click.stop="">
+        <div class="sheet" @click="onClick">
+            <div ref="mainContent">
                 <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
             </div>
         </div>
@@ -28,6 +28,15 @@ export default class Sheet extends ModalMixin {
 
     get shouldAppear() {
         return this.root.animated
+    }
+
+    onClick(event) {
+        const mainContent = this.$refs.mainContent as HTMLElement
+        // Check click is inside mainContent
+        if (mainContent && !mainContent.contains(event.target)) {
+            this.dismiss()
+            event.preventDefault()
+        }
     }
     
     activated() {
