@@ -54,7 +54,7 @@ export default class Popup extends ModalMixin {
     onClick(event) {
         const mainContent = this.$refs.mainContent as HTMLElement
         // Check click is inside mainContent
-        if (mainContent && !mainContent.contains(event.target)) {
+        if (mainContent && !mainContent.contains(event.target) && document.body.contains(event.target)) {
             this.dismiss()
             event.preventDefault()
         }
