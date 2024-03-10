@@ -98,7 +98,7 @@ export default class Sheet extends ModalMixin {
 </script>
 
 <style lang="scss">
-.sheet {
+.sheet-old {
     // DO NOT ADD MAX HEIGHT HERE! Always add it to the children of the navigation controllers!
     // background: rgba(black, 0.7);
     position: fixed;

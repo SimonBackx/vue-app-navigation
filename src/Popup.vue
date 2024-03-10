@@ -1,6 +1,6 @@
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div class="popup" @click="onClick" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+        <div @click="onClick" :class="buildClass">
             <div ref="mainContent">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
@@ -28,12 +28,21 @@ export default class Popup extends ModalMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
+    @Prop({ required: false, default: 'popup' })
+    className!: string
+
+    get buildClass() {
+        const pushDown = {'push-down': this.pushDown == 1, 'push-down-full': this.pushDown > 1 };
+        const j = Object.keys(pushDown).filter(p => !!pushDown[p]).join(' ');
+        return j + (j ? ' ' : '') + (this.className ? this.className : 'popup')
+    }
+
     get shouldAppear() {
         return this.root.animated
     }
 
     get pushDown() {
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup) ?? []
+        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (this.className ?? 'popup')) ?? []
         if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
             if (popups.length > 1 && popups[popups.length - 2].componentInstance() === this) {
                 return 1
@@ -111,7 +120,7 @@ export default class Popup extends ModalMixin {
 </script>
 
 <style lang="scss">
-.popup {
+.popup-old {
     // DO NOT ADD MAX HEIGHT HERE! Always add it to the children of the navigation controllers!
     //background: rgba(black, 0.7);
     position: fixed;

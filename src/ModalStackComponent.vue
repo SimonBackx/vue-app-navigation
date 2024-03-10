@@ -41,8 +41,8 @@ export default class ModalStackComponent extends Vue {
         const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
         component.setDisplayStyle(style)
 
-        if (style === "popup" && (this.$el as HTMLElement).offsetWidth > 800) {
-            const c = new ComponentWithProperties(Popup, { root: component })
+        if ((style === "popup" || style === "sheet") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
+            const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
 
             HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                 (c.componentInstance() as (Popup | undefined))?.pop({ animated: canAnimate});
@@ -53,20 +53,8 @@ export default class ModalStackComponent extends Vue {
             return;
         }
 
-        if (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700) {
-            const c = new ComponentWithProperties(Sheet, { root: component })
-
-            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
-                // todo: fix reference to this and memory handling here!!
-                (c.componentInstance() as (Sheet | undefined))?.pop({ animated: canAnimate});
-            }, options?.adjustHistory ?? true);
-
-            this.stackComponent.show(c);
-            return;
-        }
-
         if (style === "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
-            const c = new ComponentWithProperties(SideView, { root: component })
+            const c = new ComponentWithProperties(SideView, { root: component, className: options.modalClass })
 
             HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
                 // todo: fix reference to this and memory handling here!!

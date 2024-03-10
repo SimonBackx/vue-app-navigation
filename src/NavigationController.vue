@@ -69,8 +69,12 @@ export default class NavigationController extends Vue {
     freezeSize() {
         const el = this.$el as HTMLElement;
 
-        el.style.width = el.offsetWidth + "px";
-        el.style.height = el.offsetHeight + "px";
+        // First do reads, then writes to avoid 2 layouts
+        const w = el.offsetWidth;
+        const h = el.offsetHeight;
+
+        el.style.width = w + "px";
+        el.style.height = h + "px";
     }
 
     growSize(width: number, height: number) {
@@ -88,34 +92,37 @@ export default class NavigationController extends Vue {
 
     getInternalScrollElement(element: HTMLElement | null = null) {
         const mightBe = (element ?? this.$el as HTMLElement).querySelector("main")
-        return mightBe ? this.getScrollElement(mightBe) : null;
+        return mightBe ? mightBe : null;
     }
 
     getScrollElement(element: HTMLElement | null = null): HTMLElement {
-        if (!element) {
-            element = this.$el as HTMLElement;
-        }
+        // Deprecated
+        return document.documentElement;
 
-        const style = window.getComputedStyle(element);
-        if (
-            style.overflowY == "scroll" 
-            || style.overflow == "scroll" 
-            || style.overflow == "auto" 
-            || style.overflowY == "auto"  
-            // Windows:
-            || style.overflow == "overlay" 
-            || style.overflowY == "overlay") {
-            return element;
-        } else {
-            if (!element.parentElement) {
-                return document.documentElement;
-            }
-            return this.getScrollElement(element.parentElement);
-        }
+        // if (!element) {
+        //     element = this.$el as HTMLElement;
+        // }
+// 
+        // const style = window.getComputedStyle(element);
+        // if (
+        //     style.overflowY == "scroll" 
+        //     || style.overflow == "scroll" 
+        //     || style.overflow == "auto" 
+        //     || style.overflowY == "auto"  
+        //     // Windows:
+        //     || style.overflow == "overlay" 
+        //     || style.overflowY == "overlay") {
+        //     return element;
+        // } else {
+        //     if (!element.parentElement) {
+        //         return document.documentElement;
+        //     }
+        //     return this.getScrollElement(element.parentElement);
+        // }
     }
 
     shouldAnimate() {
-        return (this.$el as HTMLElement).offsetWidth <= 1600;
+        return (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     }
 
     /**
@@ -180,7 +187,7 @@ export default class NavigationController extends Vue {
         let internalClientHeight = internalScrollElement?.clientHeight;
 
         // Save scroll position
-        this.previousScrollPosition = scrollElement.scrollTop;
+        this.previousScrollPosition = 0; //scrollElement.scrollTop;
         this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
         this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
         this.nextScrollPosition = 0;
@@ -303,7 +310,7 @@ export default class NavigationController extends Vue {
             }
         }
 
-        this.previousScrollPosition = this.getScrollElement().scrollTop;
+        this.previousScrollPosition = 0; //this.getScrollElement().scrollTop;
 
         if (!animated) {
             this.transitionName = "none";
@@ -324,15 +331,7 @@ export default class NavigationController extends Vue {
 
         // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
         // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
-        const scrollElement = this.getScrollElement();
-        const w = window as any;
-
-        let clientHeight = scrollElement.clientHeight;
-        if (scrollElement === document.documentElement && w.visualViewport) {
-            clientHeight = w.visualViewport.height;
-        }
-
-        this.nextScrollPosition = Math.max(0, (this.savedScrollPositions.pop() ?? 0) - clientHeight);
+        this.nextScrollPosition = 0; //Math.max(0, (this.savedScrollPositions.pop() ?? 0));
         this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
 
         this.mainComponent = this.components[this.components.length - 1];
@@ -388,127 +387,132 @@ export default class NavigationController extends Vue {
             return;
         }
 
-         // Allow scrollTop override in a specified handler
+        // Allow scrollTop override in a specified handler
         // Call before
-        if (this.mainComponent) {
-            const instance: any = this.mainComponent.componentInstance()
-            if (instance && instance.beforeBeforeEnterAnimation) {
-                instance.beforeBeforeEnterAnimation()
-            }
-        }
+        // if (this.mainComponent) {
+        //     const instance: any = this.mainComponent.componentInstance()
+        //     if (instance && instance.beforeBeforeEnterAnimation) {
+        //         instance.beforeBeforeEnterAnimation()
+        //     }
+        // }
 
-        const scrollElement = this.getScrollElement();
-
-        const w = ((element.firstElementChild as HTMLElement).firstElementChild as HTMLElement).offsetWidth;
-        const h = (element.firstElementChild as HTMLElement).offsetHeight;
-
-        const scrollOuterHeight = this.getScrollOuterHeight(scrollElement);
-
-        // Limit
-
-        let next = this.nextScrollPosition;
-
-        //console.log("Entering element ", h, next, scrollOuterHeight)
-
-        if (next > h - scrollOuterHeight) {
-            // To much scrolled!
-            //console.log("Corrected maximum scroll position")
-            next = Math.max(0, h - scrollOuterHeight);
-
-            // Also propagate this change to the .leave handler
-            this.nextScrollPosition = next
-            //console.log("corrected! ", h, next, scrollOuterHeight)
-        }
-
-        const internal = this.getInternalScrollElement(element)
-        let nextInternal = this.nextInternalScrollPosition
-        if (internal) {
-            nextInternal = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
-            const scrollOuterHeight = this.getScrollOuterHeight(internal);
-            const h = internal.scrollHeight
-
-            if (nextInternal > h - scrollOuterHeight) {
-                nextInternal = Math.max(0, h - scrollOuterHeight);
-            }
-        }
-
-        // Prepare animation
-        const childElement = (element.firstElementChild as HTMLElement)
-
-        let transitionDuration = 300
-        if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
-            // Pop animations should go faster
-            transitionDuration = 250
-        }
-
-        if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-push") {
-            childElement.style.willChange = "transform"
-        }
-
-        if (scrollElement.scrollTop !== next) {
-            scrollElement.style.willChange = "scroll-position"
-        }
-
-        if (internal && internal.scrollTop !== nextInternal) {
-            internal.style.willChange = "scroll-position"
-        }
-
-        // Lock position if needed
-        // This happens before the beforeLeave animation frame!
-        this.growSize(w, h);
-
-        // Disable scroll during animation (this is to fix overflow elements)
-        // We can only allow scroll during transitions when all browser support overflow: clip, which they don't atm
-        // This sometimes doesn't work on iOS Safari on body due to a bug
         requestAnimationFrame(() => {
-            // Wait and execute immediately after beforeLeave's animation frame
-            // Let the OS rerender once so all the positions are okay after dom insertion
-            scrollElement.scrollTop = next;
+            // First group all the reads before making layout changes
+
+            const w = ((element.firstElementChild as HTMLElement).firstElementChild as HTMLElement).offsetWidth;
+            const h = (element.firstElementChild as HTMLElement).offsetHeight;
+
+            // Request a frame, to avoid forced synchronous layout by fetching element sizes
+
+            // const scrollElement = this.getScrollElement();
+// 
+            
+// 
+            // const scrollOuterHeight = this.getScrollOuterHeight(scrollElement);
+// 
+            // // Limit
+// 
+            // let next = this.nextScrollPosition;
+// 
+            // //console.log("Entering element ", h, next, scrollOuterHeight)
+// 
+            // if (next > h - scrollOuterHeight) {
+            //     // To much scrolled!
+            //     //console.log("Corrected maximum scroll position")
+            //     next = Math.max(0, h - scrollOuterHeight);
+// 
+            //     // Also propagate this change to the .leave handler
+            //     this.nextScrollPosition = next
+            //     //console.log("corrected! ", h, next, scrollOuterHeight)
+            // }
+
+            const internal = this.getInternalScrollElement(element)
+            let nextInternal = this.nextInternalScrollPosition
+            if (internal) {
+                nextInternal = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
+                const scrollOuterHeight = this.getScrollOuterHeight(internal);
+                const h = internal.scrollHeight
+
+                if (nextInternal > h - scrollOuterHeight) {
+                    nextInternal = Math.max(0, h - scrollOuterHeight);
+                }
+            }
+
+            // Prepare animation
+            const childElement = (element.firstElementChild as HTMLElement)
+
+            let transitionDuration = 300
+            if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
+                // Pop animations should go faster
+                transitionDuration = 250
+            }
+
+            // Layout changes
+
+            if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-push") {
+                childElement.style.willChange = "transform"
+            }
 
             if (internal) {
-                internal.scrollTop = nextInternal;
+                internal.style.willChange = "scroll-position"
             }
 
-            // Allow scrollTop override in a specified handler
-            // Call before
-            if (this.mainComponent) {
-                const instance: any = this.mainComponent.componentInstance()
-                if (instance && instance.beforeEnterAnimation) {
-                    instance.beforeEnterAnimation()
-                }
-            }
+            // Lock position if needed
+            // This happens before the beforeLeave animation frame!
+            this.growSize(w, h);
 
-            // Start animation in the next frame
+            // Disable scroll during animation (this is to fix overflow elements)
+            // We can only allow scroll during transitions when all browser support overflow: clip, which they don't atm
+            // This sometimes doesn't work on iOS Safari on body due to a bug
             requestAnimationFrame(() => {
-                // We've reached our initial positioning and can start our animation
-                element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
-
-                // Call start
-                if (this.mainComponent) {
-                    const instance: any = this.mainComponent.componentInstance()
-                    if (instance && instance.beginEnterAnimation) {
-                        instance.beginEnterAnimation()
-                    }
+                // Wait and execute immediately after beforeLeave's animation frame
+                // Let the OS rerender once so all the positions are okay after dom insertion
+                if (internal) {
+                    internal.scrollTop = nextInternal;
                 }
+                //element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
 
-                setTimeout(() => {
-                    //scrollElement.style.overflow = "";
-                    element.style.willChange = ""
-                    childElement.style.willChange = ""
-                    scrollElement.style.willChange = ""
-                    if (internal) {
-                        internal.style.willChange = ""
-                    }
+                // Allow scrollTop override in a specified handler
+                // Call before
+                // if (this.mainComponent) {
+                //     const instance: any = this.mainComponent.componentInstance()
+                //     if (instance && instance.beforeEnterAnimation) {
+                //         instance.beforeEnterAnimation()
+                //     }
+                // }
 
-                    // Call finished
-                    if (this.mainComponent) {
-                        const instance: any = this.mainComponent.componentInstance()
-                        if (instance && instance.finishedEnterAnimation) {
-                            instance.finishedEnterAnimation()
+                // Start animation in the next frame
+                //requestAnimationFrame(() => {
+                    // We've reached our initial positioning and can start our animation
+                    element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
+
+                    // Call start
+                    // if (this.mainComponent) {
+                    //     const instance: any = this.mainComponent.componentInstance()
+                    //     if (instance && instance.beginEnterAnimation) {
+                    //         instance.beginEnterAnimation()
+                    //     }
+                    // }
+
+                    setTimeout(() => {
+                        //scrollElement.style.overflow = "";
+                        element.style.willChange = ""
+                        childElement.style.willChange = ""
+                        //scrollElement.style.willChange = ""
+                        if (internal) {
+                            internal.style.willChange = ""
                         }
-                    }
-                    done();
-                }, transitionDuration + 25);
+
+                        // Call finished
+                        // if (this.mainComponent) {
+                        //     const instance: any = this.mainComponent.componentInstance()
+                        //     if (instance && instance.finishedEnterAnimation) {
+                        //         instance.finishedEnterAnimation()
+                        //     }
+                        // }
+                        done();
+                    }, transitionDuration + 25);
+                //});
             });
         });
     }
@@ -539,12 +543,9 @@ export default class NavigationController extends Vue {
             return;
         }
 
-        const scrollElement = this.getScrollElement();
-        let h = this.getScrollOuterHeight(scrollElement)
-
         // Prepare animation
         const childElement = (element.firstElementChild as HTMLElement)
-        childElement.style.willChange = "scroll-position,transform"
+        childElement.style.willChange = "transform"
 
         let transitionDuration = 300
         if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
@@ -558,10 +559,14 @@ export default class NavigationController extends Vue {
         requestAnimationFrame(() => {
             // Prevent blinking due to slow rerender after scrollTop changes
             // Create a clone and offset the clone first. After that, adjust the scroll position
-            const current = this.previousScrollPosition;
-            const next = this.nextScrollPosition;
+            //const current = this.previousScrollPosition;
+            //const next = this.nextScrollPosition;
 
+            const h = (this.$el as HTMLElement).offsetHeight;
+            const w = (this.$el as HTMLElement).offsetWidth;
             const height = h + "px";
+            const width = w + "px";
+
             //console.log("height", height);
 
             // Setting the class has to happen in one go.
@@ -570,16 +575,19 @@ export default class NavigationController extends Vue {
             // If we switch the ordering, this won't work!
             element.className = this.transitionName + "-leave-active " + this.transitionName + "-leave";
 
-            element.style.top = next + "px";
+            element.style.top = "0px";
             element.style.height = height;
+            element.style.width = width;
+
             element.style.bottom = "auto";
             element.style.overflow = "hidden";
 
             // Now scroll!
             childElement.style.overflow = "hidden";
-            childElement.style.height = h + "px";
+            childElement.style.height = height;
+            childElement.style.width = width;
 
-            childElement.scrollTop = current;
+            //childElement.scrollTop = current;
 
             requestAnimationFrame(() => {
                 // We've reached our initial positioning and can start our animation
@@ -591,7 +599,7 @@ export default class NavigationController extends Vue {
                     element.style.height = "";
                     element.style.bottom = "";
                     childElement.style.overflow = "";
-                    childElement.style.willChange = ""
+                    childElement.style.willChange = "";
                     done();
                 }, transitionDuration + 25);
             });
@@ -763,6 +771,10 @@ export default class NavigationController extends Vue {
         &-enter-active {
             position: relative;
             z-index: 1000;
+
+            & > div {
+                will-change: transform;
+            }
         }
 
         &-leave,
@@ -777,6 +789,8 @@ export default class NavigationController extends Vue {
             left: 0px;
             right: 0px;
             bottom: 0px;
+            will-change: filter;
+            contain: strict;
 
             // Top, left and bottom will get adjusted
 
@@ -784,6 +798,8 @@ export default class NavigationController extends Vue {
                 //overflow: hidden !important;
                 width: 100%;
                 height: 100%;
+                contain: strict;
+                will-change: transform;
             }
         }
 
@@ -837,6 +853,10 @@ export default class NavigationController extends Vue {
         &-enter,
         &-enter-active {
             position: relative;
+
+            & > div {
+                will-change: transform;
+            }
         }
 
         &-leave,
@@ -850,10 +870,14 @@ export default class NavigationController extends Vue {
             bottom: 0px;
             z-index: 1000;
 
+            contain: strict;
+
             & > div {
                 //overflow: hidden !important;
                 width: 100%;
                 height: 100%;
+                will-change: transform;
+                contain: strict;
             }
         }
 

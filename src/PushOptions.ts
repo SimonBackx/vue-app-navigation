@@ -47,4 +47,5 @@ export interface PushOptions {
     reverse?: boolean;
 
     modalDisplayStyle?: ModalDisplayStyle
+    modalClass?: string
 }
