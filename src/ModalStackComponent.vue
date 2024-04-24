@@ -1,7 +1,7 @@
 <template>
     <!-- Components taking up the whole document. Listens to show-modal -->
     <div>
-        <NavigationController ref="navigationController" animation-type="modal" :root="root" @present="present" />
+        <NavigationController ref="navigationController" animation-type="modal" :root="root" :initialComponents="initialComponents" @present="present" />
         <StackComponent ref="stackComponent" @present="present" />
     </div>
 </template>
@@ -10,13 +10,12 @@
 import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
+import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
 import Popup from "./Popup.vue";
-import StackComponent from "./StackComponent.vue";
-import Sheet from './Sheet.vue';
-import { HistoryManager } from './HistoryManager';
 import { PushOptions } from "./PushOptions";
 import SideView from "./SideView.vue";
+import StackComponent from "./StackComponent.vue";
 
 @Component({
     components: {
@@ -27,6 +26,9 @@ import SideView from "./SideView.vue";
 export default class ModalStackComponent extends Vue {
     @Prop()
     readonly root!: ComponentWithProperties;
+
+    @Prop({ default: null })
+    readonly initialComponents: ComponentWithProperties[] | null;
 
     @Ref()
     stackComponent!: StackComponent;
