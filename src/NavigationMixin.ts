@@ -9,7 +9,6 @@ import { PushOptions } from "./PushOptions";
 import Sheet from "./Sheet.vue";
 import SideView from "./SideView.vue";
 import SplitViewController from "./SplitViewController.vue";
-import ModalStackComponent from "./ModalStackComponent.vue";
 
 // You can declare mixins as the same style as components.
 @Component
@@ -149,18 +148,6 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
-    get modalStackComponent(): ModalStackComponent | null {
-        let start: any = this.$parent;
-        while (start) {
-            if (start instanceof ModalStackComponent) {
-                return start;
-            }
-
-            start = start.$parent;
-        }
-        return null;
-    }
-
     /**
      * Return the first child of a parent that listens for the pop event
      */
@@ -214,7 +201,7 @@ export class NavigationMixin extends Vue {
         return null;
     }
 
-    isFocused(): boolean {
+    isFocused() {
         const modalOrPopup = this.modalOrPopup
         if ((modalOrPopup instanceof Popup) || (modalOrPopup instanceof Sheet) || (modalOrPopup instanceof SideView)) {
             return !!(modalOrPopup as (any)).isFocused
