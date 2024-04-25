@@ -17,14 +17,14 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
 import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
-import { ModalMixin } from './ModalMixin';
+import { NavigationMixin } from "./NavigationMixin";
 
 @Component({
     components: {
         ComponentWithPropertiesInstance,
     }
 })
-export default class Popup extends ModalMixin {
+export default class Popup extends NavigationMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
@@ -52,12 +52,12 @@ export default class Popup extends ModalMixin {
         return 0
     }
 
-    get isFocused() {
+    isFocused() {
         const popups = this.modalStackComponent?.stackComponent?.components ?? []
         if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
             return false
         }
-        return true
+        return super.isFocused()
     }
 
     onClick(event) {
@@ -101,7 +101,7 @@ export default class Popup extends ModalMixin {
             return;
         }
 
-        if (!this.isFocused) {
+        if (!this.isFocused()) {
             return;
         }
 

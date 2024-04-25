@@ -13,9 +13,9 @@ import { Component, Prop } from "vue-property-decorator";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
-import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
-import { ModalMixin } from './ModalMixin';
+import { NavigationMixin } from "./NavigationMixin";
+import { PopOptions } from './PopOptions';
 
 const visualViewport = (window as any).visualViewport
 
@@ -24,7 +24,7 @@ const visualViewport = (window as any).visualViewport
         ComponentWithPropertiesInstance,
     }
 })
-export default class SideView extends ModalMixin {
+export default class SideView extends NavigationMixin {
     @Prop({ required: true })
     root!: ComponentWithProperties
 
@@ -43,12 +43,12 @@ export default class SideView extends ModalMixin {
         return 0
     }
 
-    get isFocused() {
+    isFocused() {
         const sideViews = this.modalStackComponent?.stackComponent?.components ?? []
         if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
             return false
         }
-        return true
+        return super.isFocused()
     }
 
     activated() {
@@ -98,7 +98,7 @@ export default class SideView extends ModalMixin {
             return;
         }
 
-        if (!this.isFocused) {
+        if (!this.isFocused()) {
             return;
         }
 
