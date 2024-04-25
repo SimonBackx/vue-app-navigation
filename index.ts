@@ -10,6 +10,7 @@ export { default as Sheet } from "./src/Sheet.vue";
 export { default as SideView } from "./src/SideView.vue";
 export { default as SplitViewController } from "./src/SplitViewController.vue";
 export { default as StackComponent } from "./src/StackComponent.vue";
+export * from "./src/ModalStackComponentFinderMixin";
 
 export * from "./src/HistoryManager";
 export * from "./src/PopOptions";

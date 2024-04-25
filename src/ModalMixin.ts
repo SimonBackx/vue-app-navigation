@@ -1,23 +1,11 @@
-import { Component, Vue } from "vue-property-decorator";
+import { Component } from "vue-property-decorator";
 
-import ModalStackComponent from "./ModalStackComponent.vue";
+import { ModalStackComponentFinderMixin } from "./ModalStackComponentFinderMixin";
 import { PopOptions } from "./PopOptions";
 
 // You can declare mixins as the same style as components.
 @Component
-export class ModalMixin extends Vue {
-    get modalStackComponent(): ModalStackComponent | null {
-        let start: any = this.$parent;
-        while (start) {
-            if (start instanceof ModalStackComponent) {
-                return start;
-            }
-
-            start = start.$parent;
-        }
-        return null;
-    }
-
+export class ModalMixin extends ModalStackComponentFinderMixin {
     /**
      * Call one of the pop listeners of a parent or grandparent. E.g. to go back in a navigation controller.
      * @param options Options that should get applied to the pop of the first parent that listens for the pop event
