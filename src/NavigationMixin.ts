@@ -32,7 +32,6 @@ export class NavigationMixin extends Vue {
         } else {
             this.emitParents("show", options);
         }
-        
     }
 
     present(options: PushOptions | ComponentWithProperties) {

@@ -12,6 +12,7 @@ import { Component, Prop, Ref, Vue } from "vue-property-decorator";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
+import { NavigationMixin } from "./NavigationMixin";
 import Popup from "./Popup.vue";
 import { PushOptions } from "./PushOptions";
 import SideView from "./SideView.vue";
@@ -23,7 +24,7 @@ import StackComponent from "./StackComponent.vue";
         StackComponent,
     },
 })
-export default class ModalStackComponent extends Vue {
+export default class ModalStackComponent extends NavigationMixin {
     @Prop()
     readonly root!: ComponentWithProperties;
 
