@@ -1,19 +1,24 @@
-import { VNode } from "vue";
+import { type ComponentPublicInstance, inject, markRaw, type VNode } from "vue";
 
 import { HistoryManager } from "./HistoryManager";
 
 export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
 
+export function useCurrentComponent(): ComponentWithProperties {
+    return inject('navigation_currentComponent') as ComponentWithProperties
+}
+
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
     public component: any;
     public properties: Record<string, any>;
-    public key: number | null = null;
+    public key: number;
     public type: string | null = null;
     public hide = false;
 
     /// Saved vnode of this instance
     public vnode: VNode | null = null;
+    public unmount: ((vnode: VNode) => void) | null = null;
 
     // Keep the vnode alive when it is removed from the VDOM
     public keepAlive = false;
@@ -41,6 +46,9 @@ export class ComponentWithProperties {
         this.component = component;
         this.properties = properties;
         this.key = ComponentWithProperties.keyCounter++;
+
+        // Prevent becoming reactive in any way
+        markRaw(this);
     }
 
     clone() {
@@ -105,6 +113,12 @@ export class ComponentWithProperties {
      * Call this method to assign a history index to this component (you should only call this when you want to assign a history index to this component that will not get mounted already)
      */
     assignHistoryIndex() {
+        
+        if (!HistoryManager.active) {
+            console.warn('HistoryManager is disabled.')
+            return
+        }
+
         if (this.historyIndex == null) {
             if (ComponentWithProperties.debug) console.log("Assigned history index: " + this.component.name + " = " + HistoryManager.counter);
             this.historyIndex = HistoryManager.counter;
@@ -131,14 +145,18 @@ export class ComponentWithProperties {
         if (this.modalDisplayStyle == "overlay") {
             return;
         }
+
+        if (!HistoryManager.active) {
+            return
+        }
         if (this.historyIndex !== null) {
             // Sometimes, a component will get activated just after mounting it. We ignore that activated event once
             this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
         }
     }
 
-    componentInstance(): Vue | undefined {
-        return this.vnode?.componentInstance;
+    componentInstance(): ComponentPublicInstance | null {
+        return this.vnode?.component?.proxy ?? null;
     }
 
     async shouldNavigateAway(): Promise<boolean> {
@@ -159,7 +177,7 @@ export class ComponentWithProperties {
         return true;
     }
 
-    destroy(vnode) {
+    destroy(vnode: VNode) {
         this.isMounted = false;
 
         if (this.vnode) {
@@ -187,7 +205,15 @@ export class ComponentWithProperties {
             }
 
             if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name, this.vnode);
-            this.vnode.componentInstance?.$destroy();
+            
+            if (this.unmount) {
+                this.unmount(this.vnode);
+
+                // Remove reference to unmount method
+                this.unmount = null;
+            } else {
+                console.error("No unmount function for component " + this.vnode);
+            }
             this.vnode = null;
         }
     }

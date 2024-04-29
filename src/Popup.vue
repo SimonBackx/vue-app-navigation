@@ -1,122 +1,254 @@
+<!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div @click="onClick" :class="buildClass">
+        <div :class="buildClass" @click="onClick">
             <div ref="mainContent">
                 <div class="scrollable-container">
-                    <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
+                    <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
                 </div>
             </div>
         </div>
     </transition>
 </template>
 
+<script setup lang="ts">
+import { computed, getCurrentInstance, onActivated, onDeactivated, provide,ref } from 'vue';
+
+import { type ComponentWithProperties,useCurrentComponent } from './ComponentWithProperties';
+import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
+import { HistoryManager } from './HistoryManager';
+import { useModalStackComponent } from './ModalStackComponent.vue';
+import { usePop } from './NavigationMixin';
+import type { PopOptions } from './PopOptions';
+
+// Self reference
+const instance = getCurrentInstance()
+const Popup = instance!.type
+
+const props = withDefaults(
+    defineProps<{
+        root: ComponentWithProperties,
+        className: string
+    }>(),
+    {
+        className: 'popup'
+    }
+)
+
+// ComponentWithProperties is never reactive, so we don't need computed
+const shouldAppear = props.root.animated
+console.log('shouldAppear', shouldAppear)
+const modalStackComponent = useModalStackComponent();
+const pop = usePop();
+const mainContent = ref<HTMLElement | null>(null)
+const component = useCurrentComponent()
+
+provide('reactive_navigation_dismiss', async (options?: PopOptions) => {
+    // This adds shouldNavigateAway behaviour
+    return await dismiss(options)
+});
+
+provide('reactive_navigation_pop', async (options?: PopOptions) => {
+    // If there are no navigationControllers
+    console.warn('Using .pop() inside a Popup without a NavigationController dismisses the Popup. It is recommended to use .dismiss() instead.')
+    return await dismiss(options)
+});
+
+provide('reactive_navigation_focused', () => {
+    return isFocused
+});
+
+const pushDown = computed(() => {
+    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (props.className ?? 'popup')) ?? []
+    console.log('popups', popups, instance)
+    if (popups.length > 0 && popups[popups.length - 1] !== component) {
+        if (popups.length > 1 && popups[popups.length - 2] === component) {
+            return 1
+        }
+        return 2
+    }
+    return 0
+}) 
+
+const buildClass = computed(() => {
+    console.log('psuhdown', pushDown.value)
+    const vvv = {'push-down': pushDown.value == 1, 'push-down-full': pushDown.value > 1 };
+    const j = Object.keys(vvv).filter(p => !!(vvv as any)[p]).join(' ');
+    return j + (j ? ' ' : '') + (props.className ? props.className : 'popup')
+})
+
+const isFocused = computed(() => {
+    const popups = modalStackComponent.value.stackComponent?.components ?? []
+    if (popups.length > 0 && popups[popups.length - 1] !== component) {
+        return false
+    }
+    return true
+})
+
+const onKey = (event: { defaultPrevented: any; repeat: any; key: any; keyCode: any; preventDefault: () => void; }) => {
+    if (event.defaultPrevented || event.repeat) {
+        return;
+    }
+
+    if (!isFocused.value) {
+        return;
+    }
+
+    const key = event.key || event.keyCode;
+
+    if (key === "Escape" || key === "Esc" || key === 27) {
+        dismiss().catch(console.error);
+        event.preventDefault();
+    }
+}
+
+const shouldNavigateAway = () => {
+    return props.root.shouldNavigateAway()
+}
+
+const dismiss = async (options?: PopOptions) => {
+    if (!options?.force) {
+        const r = await shouldNavigateAway();
+        if (!r) {
+            return false;
+        }
+    }
+
+    // Check which modal is underneath?
+    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+    if (popups.length === 0 || popups[popups.length - 1] === component) {
+        const index = props.root.getHistoryIndex()
+        if (index !== null && index !== undefined) {
+            HistoryManager.returnToHistoryIndex(index - 1);
+        }
+    }
+    pop(options)
+}
+
+const onClick = (event: MouseEvent) => {
+    // Check click is inside mainContent
+    if (mainContent.value && !mainContent.value.contains(event.target as any) && document.body.contains(event.target as any)) {
+        dismiss().catch(console.error)
+        event.preventDefault()
+    }
+}
+
+onActivated(() => {
+    document.addEventListener("keydown", onKey);
+})
+
+onDeactivated(() => {
+    document.removeEventListener("keydown", onKey);
+})
+
+</script>
+
 <script lang="ts">
-import { Component, Prop } from "vue-property-decorator";
+/*import { defineComponent, type PropType } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
-import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
 import { ModalMixin } from './ModalMixin';
+import { type PopOptions } from './PopOptions';
 
-@Component({
+const Popup = defineComponent({
     components: {
         ComponentWithPropertiesInstance,
-    }
-})
-export default class Popup extends ModalMixin {
-    @Prop({ required: true })
-    root!: ComponentWithProperties
-
-    @Prop({ required: false, default: 'popup' })
-    className!: string
-
-    get buildClass() {
-        const pushDown = {'push-down': this.pushDown == 1, 'push-down-full': this.pushDown > 1 };
-        const j = Object.keys(pushDown).filter(p => !!pushDown[p]).join(' ');
-        return j + (j ? ' ' : '') + (this.className ? this.className : 'popup')
-    }
-
-    get shouldAppear() {
-        return this.root.animated
-    }
-
-    get pushDown() {
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (this.className ?? 'popup')) ?? []
-        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
-            if (popups.length > 1 && popups[popups.length - 2].componentInstance() === this) {
-                return 1
+    },
+    extends: ModalMixin,
+    props: {
+        root: { required: true,
+            type: Object as PropType<ComponentWithProperties>
+        },
+        className: { required: false, default: 'popup',
+            type: String
+        }
+    },
+    computed: {
+        buildClass(): any {
+            const pushDown = {'push-down': this.pushDown == 1, 'push-down-full': this.pushDown > 1 };
+            const j = Object.keys(pushDown).filter(p => !!(pushDown as any)[p]).join(' ');
+            return j + (j ? ' ' : '') + (this.className ? this.className : 'popup')
+        },
+        shouldAppear() {
+            return this.root.animated
+        },
+        pushDown() {
+            const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (this.className ?? 'popup')) ?? []
+            if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+                if (popups.length > 1 && popups[popups.length - 2].componentInstance() === this) {
+                    return 1
+                }
+                return 2
             }
-            return 2
+            return 0
+        },
+        isFocused() {
+            const popups = this.modalStackComponent?.stackComponent?.components ?? []
+            if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+                return false
+            }
+            return true
         }
-        return 0
-    }
-
-    get isFocused() {
-        const popups = this.modalStackComponent?.stackComponent?.components ?? []
-        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
-            return false
-        }
-        return true
-    }
-
-    onClick(event) {
-        const mainContent = this.$refs.mainContent as HTMLElement
-        // Check click is inside mainContent
-        if (mainContent && !mainContent.contains(event.target) && document.body.contains(event.target)) {
-            this.dismiss()
-            event.preventDefault()
-        }
-    }
-
+    },
     activated() {
         document.addEventListener("keydown", this.onKey);
-    }
-
+    },
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
-    }
-
-    async dismiss(options?: PopOptions) {
-        if (!options?.force) {
-            const r = await this.shouldNavigateAway();
-            if (!r) {
-                return false;
+    },
+    methods: {
+        onClick(event: MouseEvent) {
+            const mainContent = this.$refs.mainContent as HTMLElement
+            // Check click is inside mainContent
+            if (mainContent && !mainContent.contains(event.target as any) && document.body.contains(event.target as any)) {
+                this.dismiss().catch(console.error)
+                event.preventDefault()
             }
-        }
-
-        // Check which modal is underneath?
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-        if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
-            const index = this.root.getHistoryIndex()
-            if (index !== null && index !== undefined) {
-                HistoryManager.returnToHistoryIndex(index - 1);
+        },
+        async dismiss(options?: PopOptions) {
+            if (!options?.force) {
+                const r = await this.shouldNavigateAway();
+                if (!r) {
+                    return false;
+                }
             }
+
+            // Check which modal is underneath?
+            const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+            if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+                const index = this.root.getHistoryIndex()
+                if (index !== null && index !== undefined) {
+                    HistoryManager.returnToHistoryIndex(index - 1);
+                }
+            }
+            this.pop(options)
+        },
+        onKey(event: { defaultPrevented: any; repeat: any; key: any; keyCode: any; preventDefault: () => void; }) {
+            if (event.defaultPrevented || event.repeat) {
+                return;
+            }
+
+            if (!this.isFocused) {
+                return;
+            }
+
+            const key = event.key || event.keyCode;
+
+            if (key === "Escape" || key === "Esc" || key === 27) {
+                this.dismiss().catch(console.error);
+                event.preventDefault();
+            }
+        },
+        shouldNavigateAway() {
+            return this.root.shouldNavigateAway()
         }
-        this.pop(options)
     }
+})
 
-    onKey(event) {
-        if (event.defaultPrevented || event.repeat) {
-            return;
-        }
-
-        if (!this.isFocused) {
-            return;
-        }
-
-        const key = event.key || event.keyCode;
-
-        if (key === "Escape" || key === "Esc" || key === 27) {
-            this.dismiss();
-            event.preventDefault();
-        }
-    }
-
-    shouldNavigateAway() {
-        return this.root.shouldNavigateAway()
-    }
-}
+export default Popup
+*/
 </script>
 
 <style lang="scss">

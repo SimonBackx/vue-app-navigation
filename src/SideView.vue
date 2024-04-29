@@ -1,56 +1,57 @@
+<!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
     <transition :appear="shouldAppear" name="fade">
-        <div class="side-view" @mousedown="dismiss" @touchdown="dismiss" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }">
+        <div class="side-view" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }" @mousedown="dismiss()" @touchdown="dismiss()">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
+                <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
             </div>
         </div>
     </transition>
 </template>
 
 <script lang="ts">
-import { Component, Prop } from "vue-property-decorator";
+import { defineComponent, type PropType } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
-import { PopOptions } from './PopOptions';
 import { HistoryManager } from './HistoryManager';
 import { ModalMixin } from './ModalMixin';
+import { type PopOptions } from './PopOptions';
 
 const visualViewport = (window as any).visualViewport
 
-@Component({
+const SideView = defineComponent({
     components: {
         ComponentWithPropertiesInstance,
-    }
-})
-export default class SideView extends ModalMixin {
-    @Prop({ required: true })
-    root!: ComponentWithProperties
-
-    get shouldAppear() {
-        return this.root.animated
-    }
-
-    get pushDown() {
-        const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === SideView) ?? []
-        if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
-            if (sideViews.length > 1 && sideViews[sideViews.length - 2].componentInstance() === this) {
-                return 1
+    },
+    extends: ModalMixin,
+    props: {
+        root: { required: true,
+            type: Object as PropType<ComponentWithProperties>
+        }
+    },
+    computed: {
+        shouldAppear() {
+            return this.root.animated
+        },
+        pushDown() {
+            const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.component === SideView) ?? []
+            if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
+                if (sideViews.length > 1 && sideViews[sideViews.length - 2].componentInstance() === this) {
+                    return 1
+                }
+                return 2
             }
-            return 2
+            return 0
+        },
+        isFocused() {
+            const sideViews = this.modalStackComponent?.stackComponent?.components ?? []
+            if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
+                return false
+            }
+            return true
         }
-        return 0
-    }
-
-    get isFocused() {
-        const sideViews = this.modalStackComponent?.stackComponent?.components ?? []
-        if (sideViews.length > 0 && sideViews[sideViews.length - 1].componentInstance() !== this) {
-            return false
-        }
-        return true
-    }
-
+    },
     activated() {
         document.addEventListener("keydown", this.onKey);
         this.resize();
@@ -58,62 +59,62 @@ export default class SideView extends ModalMixin {
         if (visualViewport) {
             visualViewport.addEventListener('resize', this.resize);
         }
-    }
-
+    },
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
 
         if (visualViewport) {
             visualViewport.removeEventListener('resize', this.resize);
         }
-    }
-
-    async dismiss(options?: PopOptions) {
-        if (!options?.force) {
-            const r = await this.shouldNavigateAway();
-            if (!r) {
-                return false;
+    },
+    methods: {
+        async dismiss(options?: PopOptions) {
+            if (!options?.force) {
+                const r = await this.shouldNavigateAway();
+                if (!r) {
+                    return false;
+                }
             }
-        }
 
-        // Check which modal is undernath?
-        const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-        if (sideViews.length === 0 || sideViews[sideViews.length - 1].componentInstance() === this) {
-            const index = this.root.getHistoryIndex()
-            if (index !== null && index !== undefined) {
-                HistoryManager.returnToHistoryIndex(index - 1);
+            // Check which modal is undernath?
+            const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+            if (sideViews.length === 0 || sideViews[sideViews.length - 1].componentInstance() === this) {
+                const index = this.root.getHistoryIndex()
+                if (index !== null && index !== undefined) {
+                    HistoryManager.returnToHistoryIndex(index - 1);
+                }
             }
+            this.pop(options)
+        },
+        resize() {
+            if (!visualViewport) {
+                return;
+            }
+        },
+        onKey(event: KeyboardEvent) {
+            if (event.defaultPrevented || event.repeat) {
+                return;
+            }
+
+            if (!this.isFocused) {
+                return;
+            }
+
+            const key = event.key || event.keyCode;
+
+            if (key === "Escape" || key === "Esc" || key === 27) {
+                this.dismiss().catch(console.error);
+                event.preventDefault();
+            }
+        },
+        shouldNavigateAway() {
+            return this.root.shouldNavigateAway()
         }
-        this.pop(options)
     }
+})
 
-    resize() {
-        if (!visualViewport) {
-            return;
-        }
-    }
+export default SideView
 
-    onKey(event) {
-        if (event.defaultPrevented || event.repeat) {
-            return;
-        }
-
-        if (!this.isFocused) {
-            return;
-        }
-
-        const key = event.key || event.keyCode;
-
-        if (key === "Escape" || key === "Esc" || key === 27) {
-            this.dismiss();
-            event.preventDefault();
-        }
-    }
-
-    shouldNavigateAway() {
-        return this.root.shouldNavigateAway()
-    }
-}
 </script>
 
 <style lang="scss">

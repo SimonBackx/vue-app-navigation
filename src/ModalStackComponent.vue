@@ -1,86 +1,109 @@
 <template>
-    <!-- Components taking up the whole document. Listens to show-modal -->
     <div>
-        <NavigationController ref="navigationController" animation-type="modal" :root="root" :initialComponents="initialComponents" @present="present" />
+        <NavigationController ref="navigationController" animation-type="modal" :root="root" :initial-components="initialComponents" @present="present" />
         <StackComponent ref="stackComponent" @present="present" />
     </div>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref, Vue } from "vue-property-decorator";
+import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
-import { NavigationMixin } from "./NavigationMixin";
 import Popup from "./Popup.vue";
-import { PushOptions } from "./PushOptions";
+import type { PushOptions } from "./PushOptions";
 import SideView from "./SideView.vue";
 import StackComponent from "./StackComponent.vue";
 
-@Component({
-    components: {
-        NavigationController,
-        StackComponent,
-    },
-})
-export default class ModalStackComponent extends NavigationMixin {
-    @Prop()
-    readonly root!: ComponentWithProperties;
-
-    @Prop({ default: null })
-    readonly initialComponents: ComponentWithProperties[] | null;
-
-    @Ref()
-    stackComponent!: StackComponent;
-
-    present(options: PushOptions) {
-        const component = options.components[options.components.length - 1]
-
-        if (options.animated !== undefined) {
-            component.animated = options.animated
-        }
-
-        const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
-        component.setDisplayStyle(style)
-
-        if ((style === "popup" || style === "sheet") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
-            const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
-
-            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
-                (c.componentInstance() as (Popup | undefined))?.pop({ animated: canAnimate});
-            }, options?.adjustHistory ?? true);
-        
-            this.stackComponent.show(c);
-            
-            return;
-        }
-
-        if (style === "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
-            const c = new ComponentWithProperties(SideView, { root: component, className: options.modalClass })
-
-            HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
-                // todo: fix reference to this and memory handling here!!
-                (c.componentInstance() as (SideView | undefined))?.pop({ animated: canAnimate});
-            }, options?.adjustHistory ?? true);
-
-            this.stackComponent.show(c);
-            return;
-        }
-
-        if (style === "overlay") {
-            this.stackComponent.show(component);
-            return;
-        }
-        (this.$refs.navigationController as NavigationController).push(options);
-    }
-
-    /**
-     * @deprecated
-     */
-    replace(component: ComponentWithProperties, animated = true) {
-        const nav = this.$refs.navigationController as NavigationController;
-        nav.push({ components: [component], animated, replace: nav.components.length });
-    }
+export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComponent>> {
+    const c = inject('reactive_modalStackComponent') as InstanceType<typeof ModalStackComponent>|Ref<InstanceType<typeof ModalStackComponent>>;
+    return shallowRef(c);
 }
+
+const ModalStackComponent = defineComponent({
+    components: {
+        'NavigationController': NavigationController,
+        'StackComponent': StackComponent,
+    },
+    provide() {
+        return {
+            reactive_modalStackComponent: this,
+            reactive_navigation_present: this.present,
+        }
+    },
+    props: {
+        root: {
+            required: true,
+            type: Object as PropType<ComponentWithProperties>
+        },
+        initialComponents: { 
+            default: null,
+            type: Object as PropType<ComponentWithProperties[] | null>
+        }
+    },
+    computed: {
+        stackComponent() {
+            return this.$refs["stackComponent"] as InstanceType<typeof StackComponent>;
+        },
+        navigationController() {
+            return this.$refs["navigationController"] as InstanceType<typeof NavigationController>;
+        }
+    },
+    mounted() {
+        console.log(this.$el);
+    },
+    //extends: NavigationMixin,
+    methods: {
+        present(options: PushOptions) {
+            console.log('ModalStackComponent.present', options, this.$el, (this.$el as HTMLElement).offsetWidth);
+
+            const component = options.components[options.components.length - 1]
+
+            if (options.animated !== undefined) {
+                component.animated = options.animated
+            }
+
+            const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
+            component.setDisplayStyle(style)
+
+            if ((style === "popup" || style === "sheet") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
+                const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
+
+                HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
+                    (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate});
+                }, options?.adjustHistory ?? true);
+                    
+                this.stackComponent.show(c);
+                        
+                return;
+            }
+
+            if (style === "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
+                const c = new ComponentWithProperties(SideView, { root: component, className: options.modalClass })
+
+                HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
+                    // todo: fix reference to this and memory handling here!!
+                    (c.componentInstance() as (InstanceType<typeof SideView> | undefined))?.pop({ animated: canAnimate});
+                }, options?.adjustHistory ?? true);
+
+                this.stackComponent.show(c);
+                return;
+            }
+
+            if (style === "overlay") {
+                this.stackComponent.show(component);
+                return;
+            }
+
+            this.navigationController.push(options);
+        },
+        replace(component: ComponentWithProperties, animated = true) {
+            const nav = this.navigationController;
+            nav.push({ components: [component], animated, replace: nav.components.length });
+        }
+    }
+})
+export default ModalStackComponent;
+
 </script>

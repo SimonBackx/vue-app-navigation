@@ -1,4 +1,4 @@
-import { ComponentWithProperties, ModalDisplayStyle } from "./ComponentWithProperties";
+import type { ComponentWithProperties, ModalDisplayStyle } from "./ComponentWithProperties";
 
 export interface PushOptions {
     /**

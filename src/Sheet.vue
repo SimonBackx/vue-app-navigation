@@ -2,99 +2,99 @@
     <transition :appear="shouldAppear" name="fade" :duration="300">
         <div class="sheet" @click="onClick">
             <div ref="mainContent">
-                <ComponentWithPropertiesInstance :component="root" :key="root.key" @pop="dismiss" />
+                <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
             </div>
         </div>
     </transition>
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from "vue-property-decorator";
+import { defineComponent, type PropType } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
-import { PopOptions } from './PopOptions';
-import { ModalMixin } from './ModalMixin';
 import { HistoryManager } from "./HistoryManager";
+import { ModalMixin } from './ModalMixin';
+import type { PopOptions } from './PopOptions';
 
-@Component({
+export default defineComponent({
     components: {
         ComponentWithPropertiesInstance,
-    }
-})
-export default class Sheet extends ModalMixin {
-    @Prop({ required: true })
-    root!: ComponentWithProperties
-
-    get shouldAppear() {
-        return this.root.animated
-    }
-
-    onClick(event) {
-        const mainContent = this.$refs.mainContent as HTMLElement
-        // Check click is inside mainContent
-        if (mainContent && !mainContent.contains(event.target) && document.body.contains(event.target)) {
-            this.dismiss()
-            event.preventDefault()
+    },
+    extends: ModalMixin,
+    props: {
+        root: { 
+            required: true,
+            type: Object as PropType<ComponentWithProperties>
         }
-    }
-    
+    },
+    computed: {
+        shouldAppear() {
+            return this.root.animated
+        },
+        isFocused() {
+            const popups = this.modalStackComponent?.stackComponent?.components ?? []
+            if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
+                return false
+            }
+            return true
+        }
+    },
     activated() {
         document.addEventListener("keydown", this.onKey);
-    }
-
+    },
     deactivated() {
         document.removeEventListener("keydown", this.onKey);
-    }
-
-    get isFocused() {
-        const popups = this.modalStackComponent?.stackComponent?.components ?? []
-        if (popups.length > 0 && popups[popups.length - 1].componentInstance() !== this) {
-            return false
-        }
-        return true
-    }
-
-    async dismiss(options?: PopOptions) {
-        if (!options?.force) {
-            const r = await this.shouldNavigateAway();
-            if (!r) {
-                return false;
+    },
+    methods: {
+        onClick(event: MouseEvent) {
+            const mainContent = this.$refs.mainContent as HTMLElement
+            // Check click is inside mainContent
+            if (mainContent && !mainContent.contains(event.target as any) && document.body.contains(event.target as any)) {
+                this.dismiss().catch(console.error)
+                event.preventDefault()
             }
-        }
-
-        // Check which modal is undernath?
-        const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-        if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
-            const index = this.root.getHistoryIndex()
-            if (index !== null && index !== undefined) {
-                HistoryManager.returnToHistoryIndex(index - 1);
+        },
+        async dismiss(options?: PopOptions) {
+            if (!options?.force) {
+                const r = await this.shouldNavigateAway();
+                if (!r) {
+                    return false;
+                }
             }
+
+            // Check which modal is undernath?
+            const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+            if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+                const index = this.root.getHistoryIndex()
+                if (index !== null && index !== undefined) {
+                    HistoryManager.returnToHistoryIndex(index - 1);
+                }
+            }
+            this.pop(options)
+        },
+        onKey(event: KeyboardEvent) {
+            if (event.defaultPrevented || event.repeat) {
+                return;
+            }
+
+            if (!this.isFocused) {
+                return;
+            }
+
+            const key = event.key || event.keyCode;
+
+            if (key === "Escape" || key === "Esc" || key === 27) {
+                this.dismiss().catch(console.error);
+                event.preventDefault();
+            }
+        },
+        shouldNavigateAway() {
+            return this.root.shouldNavigateAway()
         }
-        this.pop(options)
     }
+})
 
-    onKey(event) {
-        if (event.defaultPrevented || event.repeat) {
-            return;
-        }
-
-        if (!this.isFocused) {
-            return;
-        }
-
-        const key = event.key || event.keyCode;
-
-        if (key === "Escape" || key === "Esc" || key === 27) {
-            this.dismiss();
-            event.preventDefault();
-        }
-    }
-
-    shouldNavigateAway() {
-        return this.root.shouldNavigateAway()
-    }
-}
 </script>
 
 <style lang="scss">

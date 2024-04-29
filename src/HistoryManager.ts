@@ -42,7 +42,7 @@ class HistoryManagerStatic {
         const action = this.historyQueue.shift();
         if (action) {
             console.log('Running history queue action');
-            action().finally(() => this.runQueue());
+            action().finally(() => this.runQueue()).catch(console.error);
         } else {
             console.log('History queue done');
             this.isQueueRunning = false;
@@ -55,8 +55,8 @@ class HistoryManagerStatic {
                 this.manualStateAction = true;
                 console.log('history.go', delta)
                 history.go(delta); // should be negative
-                let timer 
-                let listener = () => {
+                let timer: number | undefined = undefined
+                const listener = () => {
                     clearTimeout(timer);
                     resolve();
                     window.removeEventListener("popstate", listener);

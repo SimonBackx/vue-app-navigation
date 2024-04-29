@@ -2,7 +2,7 @@
     <!-- Element that will get displayed fixed left, top, right bottom during transitions -->
     <div>
         <!-- Element that will take over the document scroll position during transitions -->
-        <div ref="scrollContainer">
+        <div>
             <!-- Actual content with padding -->
             <ComponentWithPropertiesInstance :component="root" />
         </div>
@@ -10,29 +10,29 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Ref,Vue } from "vue-property-decorator";
 
-import { ComponentWithProperties } from "./ComponentWithProperties";
-import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
+import { ComponentWithProperties } from './ComponentWithProperties';
+import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
 
-@Component({
+export default {
     components: {
-        ComponentWithPropertiesInstance,
+        ComponentWithPropertiesInstance
     },
-})
-export default class FramedComponent extends Vue {
-    @Prop()
-    root!: ComponentWithProperties;
-
-    @Ref()
-    scrollContainer!: HTMLElement;
-
-    pop(data) {
-        this.$emit("pop", data);
-    }
-
-    push(data) {
-        this.$emit("push", data);
-    }
+    provide() {
+        return {
+            ...(this.customProvide ?? {})
+        }
+    },
+    props: {
+        root: {
+            type: ComponentWithProperties,
+            required: true
+        },
+        customProvide: {
+            type: Object,
+            default: null
+        }
+    },
+    emits: ['show', 'push', 'pop'],
 }
 </script>
