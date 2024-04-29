@@ -24,12 +24,12 @@
 </template>
 
 <script lang="ts">
-import { computed, type PropType, unref } from "vue";
+import { computed, type PropType } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
-import { NavigationMixin, usePop } from "./NavigationMixin";
+import { usePop } from "./NavigationMixin";
 import { type PopOptions } from "./PopOptions";
 import { type PushOptions } from "./PushOptions";
 
@@ -37,7 +37,11 @@ export default {
     components: {
         FramedComponent,
     },
-    inject: ['reactive_navigation_pop'],
+    inject: {
+        reactive_navigation_pop: {
+            default: null
+        }
+    },
     provide() {
         let extra = {}
         if (this.animationType === 'modal') {

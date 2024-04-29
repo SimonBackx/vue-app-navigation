@@ -13,7 +13,6 @@ import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
 import Popup from "./Popup.vue";
 import type { PushOptions } from "./PushOptions";
-import SideView from "./SideView.vue";
 import StackComponent from "./StackComponent.vue";
 
 export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComponent>> {
@@ -50,9 +49,6 @@ const ModalStackComponent = defineComponent({
             return this.$refs["navigationController"] as InstanceType<typeof NavigationController>;
         }
     },
-    mounted() {
-        console.log(this.$el);
-    },
     //extends: NavigationMixin,
     methods: {
         present(options: PushOptions) {
@@ -67,27 +63,16 @@ const ModalStackComponent = defineComponent({
             const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
             component.setDisplayStyle(style)
 
-            if ((style === "popup" || style === "sheet") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
+            if ((style === "popup" || style === "sheet" || style === "side-view") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
                 const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
 
                 HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
+                    console.log(c.componentInstance());
                     (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate});
                 }, options?.adjustHistory ?? true);
                     
                 this.stackComponent.show(c);
                         
-                return;
-            }
-
-            if (style === "side-view" && (this.$el as HTMLElement).offsetWidth > 800) {
-                const c = new ComponentWithProperties(SideView, { root: component, className: options.modalClass })
-
-                HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
-                    // todo: fix reference to this and memory handling here!!
-                    (c.componentInstance() as (InstanceType<typeof SideView> | undefined))?.pop({ animated: canAnimate});
-                }, options?.adjustHistory ?? true);
-
-                this.stackComponent.show(c);
                 return;
             }
 

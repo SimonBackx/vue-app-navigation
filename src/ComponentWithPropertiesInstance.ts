@@ -1,5 +1,5 @@
-import { invokeArrayFns,ShapeFlags } from "@vue/shared";
-import { callWithAsyncErrorHandling,type ComponentInternalInstance, type ComponentOptions,computed,type ElementNamespace, ErrorCodes,getCurrentInstance, h,isProxy,onActivated, onBeforeMount,onBeforeUnmount,provide,queuePostFlushCb, ref,type RendererElement, type RendererNode, setTransitionHooks,shallowRef,triggerRef,unref,type VNode,warn, watch } from "vue";
+import { invokeArrayFns, ShapeFlags } from "@vue/shared";
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
@@ -55,82 +55,13 @@ declare module '@vue/runtime-core' {
     }
 }
 
-export function getInternalChildlren(
-    instance: ComponentInternalInstance,
-): ComponentInternalInstance[] {
-    const root = instance.subTree
-    const children: ComponentInternalInstance[] = []
-    if (root) {
-        walk(root, children)
-    }
-    return children
-}
-  
-function walk(vnode: VNode, children: ComponentInternalInstance[]) {
-    if (vnode.component) {
-        children.push(vnode.component)
-    } else if (vnode.shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-        const vnodes = vnode.children as VNode[]
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
-        for (let i = 0; i < vnodes.length; i++) {
-            walk(vnodes[i], children)
-        }
-    }
-}
-
-function updateComponentInstanceWithUpdatedProvides(instance: ComponentInternalInstance, oldParentProvides?: Record<string, unknown>) {
-    const parent = instance.parent as ComponentInternalInstance
-    if (!parent) {
-        console.warn('Updating provides, but could not find a parent to inherit from')
-        return
-    }
-
-    const oldProvides = instance.provides
-    const ownProperties = Object.getOwnPropertyNames(oldProvides)
-
-    if (oldProvides === oldParentProvides) {
-        console.log('Copying provides from parent to child because no injects were found in the component')
-
-        // Copy from parent
-        instance.provides = parent.provides
-    } else if (ownProperties.length === 0) {
-        console.log('Copying provides from parent to child because no injects were found in the component')
-
-        // Copy from parent
-        instance.provides = parent.provides
-    } else {
-        console.log('This component injected the following properties:', ownProperties)
-        const provides = instance.provides = Object.create(parent.provides);
-    
-        for (const key of ownProperties) {
-            provides[key] = oldProvides[key]
-        }
-    }
-
-    console.log('Updated provides for component:', instance, instance.provides)
-    
-    // Continue for all children
-    const children = getInternalChildlren(instance)
-    for (const child of children) {
-        updateComponentInstanceWithUpdatedProvides(child, oldProvides)
-    }
-    return
-}
-
 /**
  * Because 'inject()' just returns a reference that isn't reactive, this creates the issue that when a component swithces
  * location in the component tree, the 'injects' don't read the new value when the parent provides change.
  */
 function makeProvidesParentReactive(instance: ComponentInternalInstance) {
     // This makes instance / parent reactive
-    const reactiveInstance = shallowRef({
-        instance
-    });
-
-    watch(reactiveInstance, (newParent) => {
-        console.log('reactiveInstance changed', newParent)
-    });
-
+    const reactiveInstance = shallowRef(instance);
     const originalProvides = instance.provides
 
     // Detect own provides (because these won't need to be proxied)
@@ -154,7 +85,7 @@ function makeProvidesParentReactive(instance: ComponentInternalInstance) {
             // so that is why we need computed, so all provides will return the correct value
             //return instance.parent?.provides[key];
             return computed(() => {
-                return unref(reactiveInstance.value.instance.parent?.provides[key])
+                return unref(reactiveInstance.value.parent?.provides[key])
             });
         },
         // Vue valides keys using 'a' in obj, so we need to handle this correctly
@@ -199,14 +130,13 @@ export default {
 
         const {
             renderer: {
-                p: patch,
+                //p: patch,
                 m: move,
                 um: _unmount,
                 o: { createElement },
             },
         } = sharedContext
         const storageContainer = createElement('div')
-        console.log('storageContainer', storageContainer)
         const parentSuspense = (instance as any).suspense
 
         sharedContext.activate = (
@@ -270,9 +200,8 @@ export default {
                 const _innerVnode = getInnerChild(subTree);
 
                 if (vnode.type === _innerVnode.type && vnode.key === _innerVnode.key) {
-                    console.log('unmounting currently visible comonent, not calling unmount manually')
-
                     // current instance will be unmounted as part of keep-alive's unmount
+                    // so we should not call unmount manually - only the deactivate hook will be called manually
                     resetShapeFlag(_innerVnode)
                     // but invoke its deactivated hook here
                     const da = _innerVnode.component!.da
@@ -283,26 +212,31 @@ export default {
 
             resetShapeFlag(vnode);
 
-            if (!vnode.component) {
-                console.error('Somehow trying to unmount a vnode without a component', instance)
-                // Can't contineu since that would throw errors
-                return
-            }
             // reset the shapeFlag so it can be properly unmounted
             _unmount(vnode, instance, parentSuspense, true)
         }
 
         let current: VNode | null = null
 
+        function getChildVNode() {
+            return instance.vnode?.component?.subTree?.component?.vnode
+        }
+
         onBeforeUnmount(() => {
             if (!current) {
-                console.warn('No vnode to unmount in ComponentWithPropertiesInstance')
+                // Not yet correctly mounted, or already unmounted.
+                return
+            }
+
+            const child = getChildVNode();
+            if (!child) {
+                console.error('No child found in ComponentWithPropertiesInstance.beforeUnmount')
                 return
             }
             
             // we need to know this inside the .destroy method, so we can properly unmount it
             if (props.component.unmount === unmount) {
-                props.component.destroy(current)
+                props.component.destroy(getChildVNode())
             } else {
                 console.warn('ComponentWithPropertiesInstance unmount called with different unmount function')
             }
@@ -320,7 +254,27 @@ export default {
             props.component.beforeMount();
         });
 
+        let pendingCacheKey: any | null = null
+
+        // cache sub tree after render
+        const cacheSubtree = () => {
+            if (current && pendingCacheKey != null) {
+                const child = getChildVNode();
+                if (!child) {
+                    console.error('No child found in ComponentWithPropertiesInstance.cacheSubtree')
+                    return
+                }
+                props.component.vnode = child;
+                props.component.unmount = unmount;
+                (child as any)._reactiveInstance = reactiveInstance
+            }
+        }
+        onMounted(cacheSubtree)
+        onUpdated(cacheSubtree)
+
         return () => {
+            pendingCacheKey = null
+
             if (!props.component) {
                 warn('No component provided to ComponentWithPropertiesInstance')
                 current = null
@@ -328,6 +282,9 @@ export default {
             }
 
             const vnode = h(props.component.component, props.component.properties);
+            const comp = vnode.type
+            const key = vnode.key == null ? comp : vnode.key
+            pendingCacheKey = key
 
             // If we have a cached vnode: copy the mounted state
             if (props.component.vnode) {
@@ -339,38 +296,10 @@ export default {
                 vnode.el = cachedVNode.el
                 vnode.component = cachedVNode.component
 
-                // Correct parent
-                if (vnode.component) {
-
-                    const vnodeComponent = (vnode.component as any)
-                    const oldParent = vnodeComponent.parent as any
-                    vnode.component.parent = parent
-
-                    // parent.children = [vnode.component]
-
-                    // We need to patch the provides chain of the instance
-                    // console.log('patching provides chain...')
-                    // 
-                    // // Because Vue cleanly uses prototype inheritance, we can cleanly differentiate between the provides of the instance and the intherited provides
-                    // // we ditch all the inherited provides.
-                    // if (oldParent.provides === vnodeComponent.provides) {
-                    //     // The instance didn't inject anything and can safely inherit from the new parent
-                    //     // without creating a copy (just like in Vue internals)
-                    //     vnodeComponent.provides = parent.provides
-                    //     console.log('Reused new parent provides since the component did not inject anything')
-                    // } else {
-                    //     updateComponentInstanceWithUpdatedProvides(vnodeComponent)
-                    // }
-                    
-                }
-
                 if (!(cachedVNode as any)._reactiveInstance) {
                     console.warn('Missing _reactiveInstance on vnode')
                 } else {
-                    console.log('reactive instance patched', (cachedVNode as any)._reactiveInstance);
-                    console.log('isMaster: ', parent.provides.isMaster);
-                    (cachedVNode as any)._reactiveInstance.value = {instance: parent}
-                    //triggerRef((cachedVNode as any)._reactiveInstance)
+                    (cachedVNode as any)._reactiveInstance.value = parent
                 }
                 
                 if (vnode.transition) {
@@ -380,41 +309,12 @@ export default {
 
                 // avoid vnode being mounted as fresh
                 vnode.shapeFlag |= ShapeFlags.COMPONENT_KEPT_ALIVE
-
-                // console.log('Reused render component: ' + props.component.component.name);
-                // 
-                // props.component.vnode.shapeFlag |= ShapeFlags.COMPONENT_KEPT_ALIVE
-                // 
-                // // We need to update the parent here
-                // props.component.vnode.component!.parent = instance;
-                // // Force update children (needed because the new vnode won't restart a lifecycle 
-                // // and vue won't update children because that is not supported out of the box)
-                // //instance.children = [this.component.vnode.componentInstance]
-                // 
-                // return props.component.vnode;
-                // 
-                // // We need to update the parent here
-                // // this.component.vnode.componentInstance.$parent = this;
-                // // // Force update children (needed because the new vnode won't restart a lifecycle 
-                // // // and vue won't update children because that is not supported out of the box)
-                // // this.$children = [this.component.vnode.componentInstance]
-                // // return this.component.vnode;
-                console.log('Reused render component');
-            } else {
-                console.log('New render component');
-                
-                // This component will inherit the provides from the parent
-                (vnode as any)._reactiveInstance = reactiveInstance
             }
 
-            
             // avoid vnode being unmounted
             vnode.shapeFlag |= ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE
 
-            // Cache the VNode
-            props.component.unmount = unmount
-            props.component.vnode = vnode;
-
+            // We'll only cache the vnode on the mount/update hooks because the vnode might still get swapped by vue
             current = vnode
             return vnode;
         }

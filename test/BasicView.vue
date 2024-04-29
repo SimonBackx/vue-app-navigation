@@ -18,6 +18,10 @@
             <p v-if="isDetail">
                 Detail
             </p>
+            <p v-if="popup">
+                Inside popup
+            </p>
+
             <p>
                 This is a basic view.
             </p>
@@ -74,8 +78,7 @@ const BasicView = defineComponent({
         }
     },
     activated() {
-        console.log("Activated " +this.count);
-        console.log('provides', this.$.provides)
+        console.log("activated " +this.count);
     },
     deactivated() {
         console.log("deactivated " +this.count);
@@ -92,7 +95,7 @@ const BasicView = defineComponent({
                 new ComponentWithProperties(BasicView, {
                     count: this.count + 1
                 })
-            )
+            ).catch(console.error)
         },
 
         pushDetail() {
@@ -102,7 +105,7 @@ const BasicView = defineComponent({
                         count: this.count + 1
                     })
                 })
-            )
+            ).catch(console.error)
         },
 
         popop() {
@@ -116,8 +119,13 @@ const BasicView = defineComponent({
                     })
                 ],
                 modalDisplayStyle: "popup"
-            })
+            }).catch(console.error)
         },
+
+        shouldNavigateAway() {
+            console.log("shouldNavigateAway");
+            return true;
+        }
     },
 })
 export default BasicView;

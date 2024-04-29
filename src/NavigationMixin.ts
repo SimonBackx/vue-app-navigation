@@ -1,7 +1,8 @@
-import { type ComponentPublicInstance, computed,inject, isRef,type Ref,ref, unref, warn } from "vue";
+import { computed, type DefineComponent, inject, isRef, type Ref,unref, warn } from "vue";
 
 import type { ComponentWithProperties } from "./ComponentWithProperties";
 import type { PopOptions } from "./PopOptions";
+import type Popup from "./Popup.vue";
 import type { PushOptions } from "./PushOptions";
 
 export function usePop() {
@@ -54,7 +55,7 @@ export function useShow() {
 }
 
 export function usePresent() {
-    const rawPresent = inject('reactive_navigation_present', null) as Ref<(options: PushOptions|ComponentWithProperties) => Promise<void>|undefined>|null
+    const rawPresent = inject('reactive_navigation_present', null) as Ref<((options: PushOptions|ComponentWithProperties) => Promise<void>)|undefined>|null
     
     return (options: PushOptions|ComponentWithProperties) => {
         const present = unref(rawPresent) // not always reactive
@@ -94,12 +95,19 @@ export function useCanPop(): Ref<boolean> {
 }
 
 export function useCanDismiss(): Ref<boolean> {
-    const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<(options?: PopOptions) => Promise<void>|undefined>|null
+    const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<((options?: PopOptions) => Promise<void>)|undefined>|null
     return computed(() => !!unref(rawDismiss))
 }
 
 export function useFocused() {
     return inject('reactive_navigation_focused', true) as Ref<boolean>|boolean
+}
+
+/**
+ * @returns To detect whether you are in a popup
+ */
+export function usePopup(): Ref<InstanceType<typeof Popup>|null>|InstanceType<typeof Popup>|null {
+    return inject('reactive_popup', null) as Ref<InstanceType<typeof Popup>|null>|InstanceType<typeof Popup>|null
 }
 
 export const NavigationMixin = {
@@ -114,7 +122,11 @@ export const NavigationMixin = {
             dismiss: useDismiss(),
             canPop: useCanPop(),
             canDismiss: useCanDismiss(),
-            isFocused: useFocused()
+            isFocused: useFocused(),
+            emitParents: () => {
+                throw new Error('emitParents has been removed and should no longer be needed')
+            },
+            popup: usePopup()
         };
 
         const ctx = this.$.ctx;
@@ -124,13 +136,11 @@ export const NavigationMixin = {
             if (!isRef(definitions[key])) {
                 ctx[key] = definitions[key]
             } else {
-                console.log('defineProperty', key, definitions[key])
                 const val = definitions[key]
                 Object.defineProperty(ctx, key, {
                     enumerable: true,
                     configurable: true,
                     get: () => {
-                        console.log('Accessing', key, val.value)
                         return val.value
                     },
                     set: () => {
@@ -138,12 +148,22 @@ export const NavigationMixin = {
                     },
                 })
             }
-
-            
         }
+
         return definitions;
     }
-}
+// eslint-disable-next-line @typescript-eslint/ban-types
+} as DefineComponent<{}, {
+    show: ReturnType<typeof useShow>,
+    showDetail: ReturnType<typeof useShowDetail>,
+    present: ReturnType<typeof usePresent>,
+    pop: ReturnType<typeof usePop>,
+    dismiss: ReturnType<typeof useDismiss>,
+    canPop: ReturnType<typeof useCanPop>,
+    canDismiss: ReturnType<typeof useCanDismiss>,
+    isFocused: ReturnType<typeof useFocused>,
+    popup: ReturnType<typeof usePopup>
+}>;
 
 /*
 export const NavigationMixin = defineComponent({

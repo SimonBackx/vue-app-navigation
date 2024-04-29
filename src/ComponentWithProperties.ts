@@ -1,4 +1,4 @@
-import { type ComponentPublicInstance, inject, markRaw, type VNode } from "vue";
+import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,type VNode } from "vue";
 
 import { HistoryManager } from "./HistoryManager";
 
@@ -6,6 +6,30 @@ export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-
 
 export function useCurrentComponent(): ComponentWithProperties {
     return inject('navigation_currentComponent') as ComponentWithProperties
+}
+
+// Sadly getExposeProxy is not exposed from Vue so we have to mimic it
+function getExposeProxy(instance: ComponentInternalInstance) {
+    if (!instance.exposed) {
+        return;
+    }
+    if (instance.exposeProxy) {
+        return instance.exposeProxy as ComponentPublicInstance;
+    }
+
+    const extendingProxy = instance.proxy as any;
+    instance.exposeProxy = new Proxy(proxyRefs(markRaw(instance.exposed)), {
+        get(target, key: string) {
+            if (key in target) {
+                return target[key]
+            } 
+            return extendingProxy[key]
+        },
+        has(target, key: string) {
+            return key in target || key in extendingProxy
+        },
+    });
+    return instance.exposeProxy as ComponentPublicInstance;
 }
 
 export class ComponentWithProperties {
@@ -156,7 +180,11 @@ export class ComponentWithProperties {
     }
 
     componentInstance(): ComponentPublicInstance | null {
-        return this.vnode?.component?.proxy ?? null;
+        if (!this.vnode?.component) {
+            return null;
+        }
+        // proxy is not always the one we should use - because vue also has exposeProxy, which contains exposed properties too
+        return getExposeProxy(this.vnode?.component) || this.vnode?.component?.proxy;
     }
 
     async shouldNavigateAway(): Promise<boolean> {
