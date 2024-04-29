@@ -2,7 +2,7 @@
     "name": "@simonbackx/vue-app-navigation",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "version": "2.0.0-alpha.0",
+    "version": "2.0.0-alpha.1",
     "sideEffects": [
         "*.vue",
         "*.css"
@@ -30,9 +30,7 @@
         "vue": "^3.4.25"
     },
     "peerDependencies": {
-        "vue": "^2.7",
-        "vue-class-component": "^7.2.6",
-        "vue-property-decorator": "^9.1.2"
+        "vue": "^3.4.25"
     },
     "dependencies": {
         "@typescript-eslint/parser": "^7.7.1",
