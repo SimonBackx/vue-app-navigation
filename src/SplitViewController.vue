@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from "vue";
+import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
@@ -40,13 +40,19 @@ const throttle = (func: any, limit: any) => {
     };
 };
 
-export default defineComponent({
+export function useSplitViewController(): Ref<InstanceType<typeof SplitViewController>> {
+    const c = inject('reactive_splitViewController') as InstanceType<typeof SplitViewController>|Ref<InstanceType<typeof SplitViewController>>;
+    return shallowRef(c);
+}
+
+const SplitViewController = defineComponent({
     components: {
         NavigationController,
         FramedComponent,
     },
     provide() {
         return {
+            reactive_splitViewController: this,
             reactive_navigation_show_detail: this.showDetail,
         }
     },
@@ -58,7 +64,11 @@ export default defineComponent({
         },
         rootDetail: {
             default: null as ComponentWithProperties | null,
-            type: Object as PropType<ComponentWithProperties>
+            type: Object as PropType<ComponentWithProperties|null>
+        },
+        getDefaultDetail: {
+            default: null as (() => ComponentWithProperties | null) | null,
+            type: Function as PropType<() => ComponentWithProperties | null>
         },
         detailWidth: {
             default: null,
@@ -67,8 +77,8 @@ export default defineComponent({
     },
     data() {
         return {
-            detail: this.rootDetail as ComponentWithProperties | null,
-            detailKey: this.rootDetail?.key ?? null as number | null
+            detail: null as ComponentWithProperties | null,
+            detailKey: null as number | null,
         };
     },
     computed: {
@@ -80,6 +90,13 @@ export default defineComponent({
         },
         masterElement() {
             return this.$refs["masterElement"] as HTMLElement;
+        },
+        correctedRootDetail(): ComponentWithProperties | null {
+            if (this.getDefaultDetail) {
+                return this.getDefaultDetail()
+            } else {
+                return this.rootDetail;
+            }
         }
     },
     mounted() {
@@ -193,7 +210,7 @@ export default defineComponent({
                 return false;
             }
             if (!this.lastIsDetail) {
-                if (!this.rootDetail) {
+                if (!this.correctedRootDetail) {
                     return false;
                 }
                 return true;
@@ -211,13 +228,13 @@ export default defineComponent({
             }
             if (!this.lastIsDetail) {
                 // Expand with rootDetail
-                if (!this.rootDetail) {
+                if (!this.correctedRootDetail) {
                     console.error("Cannot expand with rootDetail when there is no rootDetail");
                     return;
                 }
 
                 console.log('pushing root detail', this.rootDetail)
-                this.detail = this.rootDetail.clone();
+                this.detail = this.correctedRootDetail.clone();
                 this.detailKey = this.detail.key;
 
                 return;
@@ -237,6 +254,8 @@ export default defineComponent({
         }
     }
 })
+
+export default SplitViewController;
 
 </script>
 

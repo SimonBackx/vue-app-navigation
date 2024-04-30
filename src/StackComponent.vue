@@ -6,7 +6,6 @@
             ref="children"
             :component="component"
             :custom-provide="getCustomProvide(index, component.key)"
-            @pop="removeAt(index, component.key)"
         />
     </div>
 </template>

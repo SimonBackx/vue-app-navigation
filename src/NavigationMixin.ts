@@ -1,114 +1,23 @@
-import { computed, type DefineComponent, inject, isRef, type Ref,unref, warn } from "vue";
+import { type DefineComponent, inject, type Ref } from "vue";
 
-import type { ComponentWithProperties } from "./ComponentWithProperties";
-import type { PopOptions } from "./PopOptions";
+import { useModalStackComponent } from "./ModalStackComponent.vue";
+import { useNavigationController } from "./NavigationController.vue";
 import type Popup from "./Popup.vue";
-import type { PushOptions } from "./PushOptions";
+import { useSplitViewController } from "./SplitViewController.vue";
+import { injectHooks } from "./utils/injectHooks";
+import { useCanDismiss, useCanPop, useDismiss, useFocused, usePop, usePresent, useShow, useShowDetail } from "./utils/navigationHooks";
 
-export function usePop() {
-    const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => void)|undefined>|null
-    
-    return (options?: PopOptions) => {
-        const pop = unref(rawPop) // not always reactive
-        if (!pop) {
-            console.warn('Failed to perform pop')
-            return;
-        }
-        return pop(options)
-    }
-}
-
-export function useShowDetail() {
-    const rawShowDetail = inject('reactive_navigation_show_detail') as  Ref<(options: PushOptions|ComponentWithProperties) => Promise<void>>
-
-    return (options: PushOptions|ComponentWithProperties) => {
-        const showDetail = unref(rawShowDetail) // not always reactive
-
-        if (!showDetail) {
-            console.warn('Failed to perform showDetail')
-            return Promise.resolve();
-        }
-
-        if (!(options as any).components) {
-            return showDetail({ components: [options as ComponentWithProperties] });
-        }
-        return showDetail(options)
-    }
-}
-
-export function useShow() {
-    const rawShow = inject('reactive_navigation_show') as Ref<(options: PushOptions|ComponentWithProperties) => Promise<void>>
-
-    return (options: PushOptions|ComponentWithProperties) => {
-        const show = unref(rawShow) // not always reactive
-
-        if (!show) {
-            console.warn('Failed to perform show')
-            return Promise.resolve();
-        }
-
-        if (!(options as any).components) {
-            return show({ components: [options as ComponentWithProperties] });
-        }
-        return show(options)
-    }
-}
-
-export function usePresent() {
-    const rawPresent = inject('reactive_navigation_present', null) as Ref<((options: PushOptions|ComponentWithProperties) => Promise<void>)|undefined>|null
-    
-    return (options: PushOptions|ComponentWithProperties) => {
-        const present = unref(rawPresent) // not always reactive
-
-        if (!present) {
-            console.warn('Failed to perform present')
-            return Promise.resolve();
-        }
-
-        if (!(options as any).components) {
-            return present({ components: [options as ComponentWithProperties] });
-        }
-        return present(options)
-    }
-}
-
-export function useDismiss() {
-    const rawDismiss = inject('reactive_navigation_dismiss') as Ref<(options?: PopOptions) => Promise<void>>
-
-    return (options?: PopOptions) => {
-        const dismiss = unref(rawDismiss) // not always reactive
-
-        if (!dismiss) {
-            console.warn('Failed to perform dismiss')
-            return Promise.resolve();
-        }
-
-        return dismiss(options)
-    }
-}
-
-export function useCanPop(): Ref<boolean> {
-    const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => void)|undefined>|null
-    return computed(() => {
-        return !!unref(rawPop)
-    })
-}
-
-export function useCanDismiss(): Ref<boolean> {
-    const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<((options?: PopOptions) => Promise<void>)|undefined>|null
-    return computed(() => !!unref(rawDismiss))
-}
-
-export function useFocused() {
-    return inject('reactive_navigation_focused', true) as Ref<boolean>|boolean
-}
+// WARNING: do not add this mixin as a dependency in components that the navigationMixin also depens on -> circular dependency
+// Inject the navigation hooks into the component manually in that case
 
 /**
  * @returns To detect whether you are in a popup
  */
-export function usePopup(): Ref<InstanceType<typeof Popup>|null>|InstanceType<typeof Popup>|null {
-    return inject('reactive_popup', null) as Ref<InstanceType<typeof Popup>|null>|InstanceType<typeof Popup>|null
+export function usePopup(): Ref<InstanceType<typeof Popup> | null> | InstanceType<typeof Popup> | null {
+    return inject('reactive_popup', null) as Ref<InstanceType<typeof Popup> | null> | InstanceType<typeof Popup> | null
 }
+
+type Unref<T> = T extends Ref<infer U> ? U : T;
 
 export const NavigationMixin = {
     created(this: any) {
@@ -126,43 +35,29 @@ export const NavigationMixin = {
             emitParents: () => {
                 throw new Error('emitParents has been removed and should no longer be needed')
             },
-            popup: usePopup()
+            popup: usePopup(),
+            modalStackComponent: useModalStackComponent(),
+            navigationController: useNavigationController(),
+            splitViewController: useSplitViewController(),
         };
 
-        const ctx = this.$.ctx;
-
-        for (const key in definitions) {
-            // ref on how to extend a proxy context: core/packages/runtime-core/src/componentOptions.ts
-            if (!isRef(definitions[key])) {
-                ctx[key] = definitions[key]
-            } else {
-                const val = definitions[key]
-                Object.defineProperty(ctx, key, {
-                    enumerable: true,
-                    configurable: true,
-                    get: () => {
-                        return val.value
-                    },
-                    set: () => {
-                        warn(`Cannot assign to '${key}' of navigation mixin. This is a read-only property.`)
-                    },
-                })
-            }
-        }
-
-        return definitions;
+        injectHooks(this, definitions)
     }
-// eslint-disable-next-line @typescript-eslint/ban-types
-} as DefineComponent<{}, {
+    // eslint-disable-next-line @typescript-eslint/ban-types
+} as DefineComponent<{}, {}, {
+    canPop: Unref<ReturnType<typeof useCanPop>>,
+    canDismiss: Unref<ReturnType<typeof useCanDismiss>>,
+    isFocused: Unref<ReturnType<typeof useFocused>>,
+    popup: Unref<ReturnType<typeof usePopup>>,
+    modalStackComponent: Unref<ReturnType<typeof useModalStackComponent>>,
+    navigationController: Unref<ReturnType<typeof useNavigationController>>,
+    splitViewController: Unref<ReturnType<typeof useSplitViewController>>
+}, {}, {
     show: ReturnType<typeof useShow>,
     showDetail: ReturnType<typeof useShowDetail>,
     present: ReturnType<typeof usePresent>,
     pop: ReturnType<typeof usePop>,
     dismiss: ReturnType<typeof useDismiss>,
-    canPop: ReturnType<typeof useCanPop>,
-    canDismiss: ReturnType<typeof useCanDismiss>,
-    isFocused: ReturnType<typeof useFocused>,
-    popup: ReturnType<typeof usePopup>
 }>;
 
 /*
@@ -289,7 +184,7 @@ export const NavigationMixin = defineComponent({
                 if (prev.vnode.props?.onPop) {
                     return prev;
                 }
-    
+
                 prev = start;
                 start = start.parent;
             }
@@ -318,7 +213,7 @@ export const NavigationMixin = defineComponent({
             }
             rawPop(options)
         },
-        
+
         show(options: PushOptions | ComponentWithProperties) {
             if (!(options as any).components) {
                 return(this as any).rawShow({ components: [options] });

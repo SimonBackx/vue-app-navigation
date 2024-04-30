@@ -14,6 +14,8 @@ import NavigationController from "./NavigationController.vue";
 import Popup from "./Popup.vue";
 import type { PushOptions } from "./PushOptions";
 import StackComponent from "./StackComponent.vue";
+import { injectHooks } from "./utils/injectHooks";
+import { usePresent } from "./utils/navigationHooks";
 
 export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComponent>> {
     const c = inject('reactive_modalStackComponent') as InstanceType<typeof ModalStackComponent>|Ref<InstanceType<typeof ModalStackComponent>>;
@@ -47,7 +49,20 @@ const ModalStackComponent = defineComponent({
         },
         navigationController() {
             return this.$refs["navigationController"] as InstanceType<typeof NavigationController>;
+        },
+        // Can also be wrapped in modal stack component
+        modalStackComponent() {
+            return this;
         }
+    },
+    created(this: any) {
+        // we cannot use setup in mixins, but we want to avoid having to duplicate the 'use' hooks logic.
+        // so this is a workaround
+        const definitions: any = {
+            parentPresent: usePresent()
+        };
+
+        injectHooks(this, definitions);
     },
     //extends: NavigationMixin,
     methods: {

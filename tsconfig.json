@@ -8,6 +8,7 @@
             "DOM",
             "DOM.Iterable"
         ],
+        "types": ["node"],
         "skipLibCheck": true,
         /* Bundler mode */
         "moduleResolution": "bundler",
@@ -39,13 +40,5 @@
         "**/*.ts",
         "**/*.tsx",
         "**/*.vue"
-    ],
-    "exclude": [
-        "vite.config.ts",
-    ],
-    "references": [
-        {
-            "path": "./tsconfig.node.json"
-        }
     ]
 }

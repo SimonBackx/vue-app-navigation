@@ -15,25 +15,26 @@
                 :key="mainComponent.key"
                 ref="child"
                 :root="mainComponent"
-                @push="push"
-                @show="push"
-                @pop="pop"
             />
         </transition>
     </div>
 </template>
 
 <script lang="ts">
-import { computed, type PropType } from "vue";
+import { computed, defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
-import { usePop } from "./NavigationMixin";
 import { type PopOptions } from "./PopOptions";
 import { type PushOptions } from "./PushOptions";
 
-export default {
+export function useNavigationController(): Ref<InstanceType<typeof NavigationController>> {
+    const c = inject('reactive_navigationController') as InstanceType<typeof NavigationController>|Ref<InstanceType<typeof NavigationController>>;
+    return shallowRef(c);
+}
+
+const NavigationController = defineComponent({
     components: {
         FramedComponent,
     },
@@ -50,6 +51,7 @@ export default {
             }
         }
         return {
+            reactive_navigationController: this,
             reactive_navigation_show: this.push,
             reactive_navigation_pop: computed(() => this.components.length > 1 ? this.pop : this.reactive_navigation_pop),
             ...extra,
@@ -75,11 +77,6 @@ export default {
         }
     },
     emits: ["didPush", "didPop", "showDetail", "present"],
-    setup() {
-        return {
-            originalPop: usePop()
-        }
-    },
     data() {
         const savedInternalScrollPositions: number[] = [];
         const savedScrollPositions: number[] = [];
@@ -628,7 +625,9 @@ export default {
             this.unfreezeSize();
         }
     }
-}
+})
+
+export default NavigationController;
 
 </script>
 

@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-multiple-template-root -->
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
     <ModalStackComponent :root="root" />
@@ -11,6 +12,7 @@ import ModalStackComponent from "../src/ModalStackComponent.vue";
 import NavigationController from "../src/NavigationController.vue";
 import SplitViewController from "../src/SplitViewController.vue";
 import BasicView from "./BasicView.vue";
+import ComponentView from "./ComponentView.vue";
 
 export default defineComponent({
     components: {
@@ -23,7 +25,7 @@ export default defineComponent({
                     root: new ComponentWithProperties(BasicView, {})
                 }),
                 rootDetail: new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(BasicView, {count: 100})
+                    root: new ComponentWithProperties(ComponentView, {})
                 })
             })
         }

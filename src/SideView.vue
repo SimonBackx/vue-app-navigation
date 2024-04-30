@@ -3,7 +3,7 @@
     <transition :appear="shouldAppear" name="fade">
         <div class="side-view" :class="{'push-down': pushDown == 1, 'push-down-full': pushDown > 1 }" @mousedown="dismiss()" @touchdown="dismiss()">
             <div @mousedown.stop="" @touchdown.stop="">
-                <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
+                <ComponentWithPropertiesInstance :key="root.key" :component="root" />
             </div>
         </div>
     </transition>

@@ -4,7 +4,7 @@
         <div :class="buildClass" @click="onClick">
             <div ref="mainContent">
                 <div class="scrollable-container">
-                    <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
+                    <ComponentWithPropertiesInstance :key="root.key" :component="root" />
                 </div>
             </div>
         </div>
@@ -18,8 +18,8 @@ import { type ComponentWithProperties,useCurrentComponent } from './ComponentWit
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
 import { HistoryManager } from './HistoryManager';
 import { useModalStackComponent } from './ModalStackComponent.vue';
-import { usePop } from './NavigationMixin';
 import type { PopOptions } from './PopOptions';
+import { usePop } from './utils/navigationHooks';
 
 // Self reference
 const instance = getCurrentInstance()

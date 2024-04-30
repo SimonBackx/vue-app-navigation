@@ -3,6 +3,19 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "version": "2.0.0-alpha.1",
+    "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./classes": {
+          "import": "./dist/classes.js",
+          "types": "./dist/src/classes.d.ts"
+        },
+        "./dist/main.css": {
+            "import": "./dist/main.css"
+        }
+    },
     "sideEffects": [
         "*.vue",
         "*.css"
@@ -18,12 +31,14 @@
     ],
     "type": "module",
     "devDependencies": {
+        "@types/node": "^20.12.7",
         "@typescript-eslint/eslint-plugin": "^7.7.1",
         "@vue/runtime-core": "^3.4.25",
         "eslint": "^8",
         "eslint-plugin-simple-import-sort": "^12.1.0",
         "eslint-plugin-vue": "^9.25.0",
         "sass": "^1.32.4",
+        "tslib": "^2.6.2",
         "typescript": "^5.4.5",
         "typescript-eslint": "^7.7.1",
         "vite": "^5.2.10",

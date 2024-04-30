@@ -2,7 +2,7 @@
     <transition :appear="shouldAppear" name="fade" :duration="300">
         <div class="sheet" @click="onClick">
             <div ref="mainContent">
-                <ComponentWithPropertiesInstance :key="root.key" :component="root" @pop="dismiss" />
+                <ComponentWithPropertiesInstance :key="root.key" :component="root" />
             </div>
         </div>
     </transition>
