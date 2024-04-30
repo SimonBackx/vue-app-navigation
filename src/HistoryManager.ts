@@ -11,7 +11,7 @@ type HistoryState = {
     adjustHistory: boolean;
 
     /// Action to execute when the user navigates back to the previous state using the browser's back button.
-    undoAction?: (animate: boolean) => void;
+    undoAction: ((animate: boolean) => void|Promise<void>)|null;
 }
 
 class HistoryManagerStatic {
@@ -41,10 +41,10 @@ class HistoryManagerStatic {
         this.isQueueRunning = true;
         const action = this.historyQueue.shift();
         if (action) {
-            console.log('Running history queue action');
+            // console.log('Running history queue action');
             action().finally(() => this.runQueue()).catch(console.error);
         } else {
-            console.log('History queue done');
+            // console.log('History queue done');
             this.isQueueRunning = false;
         }
     }
@@ -55,12 +55,17 @@ class HistoryManagerStatic {
                 this.manualStateAction = true;
                 console.log('history.go', delta)
                 history.go(delta); // should be negative
-                let timer: number | undefined = undefined
+                let timer: NodeJS.Timeout | undefined = undefined
+                let called = false;
+                
                 const listener = () => {
+                    if (called) return;
+                    called = true;
                     clearTimeout(timer);
-                    resolve();
                     window.removeEventListener("popstate", listener);
+                    resolve();
                 };
+
                 window.addEventListener("popstate", listener);
 
                 // Timeout
@@ -93,7 +98,11 @@ class HistoryManagerStatic {
         this.states[this.states.length - 1].url = url;
     }
 
-    pushState(url: string | undefined, undoAction: (animate: boolean) => void, adjustHistory: boolean) {
+    getCurrentState() {
+        return this.states[this.counter];
+    }
+
+    pushState(url: string | undefined, undoAction: ((animate: boolean) => void|Promise<void>)|null, adjustHistory: boolean) {
         if (!this.active) {
             return;
         }
@@ -125,6 +134,21 @@ class HistoryManagerStatic {
 
         if (ComponentWithProperties.debug) {
             console.log("Push new state " , this.states[this.states.length - 1]);
+        }
+    }
+
+    /**
+     * Call when an action is performed that breaks back/forward navigation
+     */
+    invalidateHistory() {
+        if (ComponentWithProperties.debug) {
+            console.log('HistoryManger.invalidateHistory')
+        }
+
+        for (const state of this.states) {
+            state.adjustHistory = false;
+            state.undoAction = null;
+            // Url will still be correct
         }
     }
 
@@ -168,8 +192,10 @@ class HistoryManagerStatic {
     }
 
     activate() {
-        // Create push pop listener that will execute undo actions
-        window.addEventListener("popstate", (event) => {
+        // We'll handle the scroll stuff
+        history.scrollRestoration = "manual";
+
+        async function onPopState(this: HistoryManagerStatic, event) {
             if (ComponentWithProperties.debug) {
                 console.log("HistoryManager popstate");
             }
@@ -211,12 +237,23 @@ class HistoryManagerStatic {
                             if (ComponentWithProperties.debug) {
                                 console.log("Executing undoAction...");
                             }
-                            state.undoAction(animate);
+                            await state.undoAction(animate);
+                        } else {
+                            if (state.adjustHistory) {
+                                // If one undoAction is missing, the state is unreliable
+                                // It would be better not to rely on the browser back behaviour
+                                break;
+                            }
                         }
                     }
                 }
             }
             this.isAdjustingState = false;
+        }
+        
+        // Create push pop listener that will execute undo actions
+        window.addEventListener("popstate", (event) => {
+            onPopState.call(this, event).catch(console.error)
         });
 
         this.active = true;

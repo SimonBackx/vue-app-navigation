@@ -80,8 +80,11 @@ const TestMixin = defineComponent({
     }
 })
 export default class ComponentView extends Mixins(TestMixin, NavigationMixin) {
-    @Prop
-        count = 111
+    @Prop({default: 111})
+        count!: number;
+
+    mySetData = 'hello world';
+    something = 'else';
 
     mounted() {
         console.log("mounted ComponentView " +this.count);
@@ -91,26 +94,33 @@ export default class ComponentView extends Mixins(TestMixin, NavigationMixin) {
         this.hasTest
         this.doSomething("test")
         this.canPop
-        this.show(
-            new ComponentWithProperties(ComponentView, {
-                count: this.count + 1
-            })
-        ).catch(console.error)
+        this.show({
+            url: "/test/" + (this.count+1),
+            components: [
+                new ComponentWithProperties(ComponentView, {
+                    count: this.count + 1
+                })
+            ]
+        }).catch(console.error)
     }
 
     pushDetail() {
-        this.showDetail(
-            new ComponentWithProperties(NavigationController, {
-                root: new ComponentWithProperties(ComponentView, {
-                    count: this.count + 1
+        this.showDetail({
+            url: "/test/" + (this.count+1),
+            components: [
+                new ComponentWithProperties(NavigationController, {
+                    root: new ComponentWithProperties(ComponentView, {
+                        count: this.count + 1
+                    })
                 })
-            })
-        ).catch(console.error)
+            ]
+        }).catch(console.error)
     }
 
     popop() {
         console.log("Pushing to popup");
         this.present({
+            url: "/test/" + (this.count+1),
             components: [
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(ComponentView, {

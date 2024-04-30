@@ -14,6 +14,7 @@ import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
+import { HistoryManager } from "./HistoryManager";
 import NavigationController from "./NavigationController.vue";
 import { type PushOptions } from "./PushOptions";
 
@@ -46,6 +47,7 @@ export function useSplitViewController(): Ref<InstanceType<typeof SplitViewContr
 }
 
 const SplitViewController = defineComponent({
+    name: "SplitViewController",
     components: {
         NavigationController,
         FramedComponent,
@@ -115,6 +117,13 @@ const SplitViewController = defineComponent({
         window.removeEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
     },
     methods: {
+        returnToHistoryIndex() {
+            // The splitview controller became the topmost component again, pass it through to the topmost
+            if (this.detail) {
+                return this.detail.returnToHistoryIndex();
+            }
+            return this.navigationController.returnToHistoryIndex();
+        },
         onResize() {
             if (this.shouldCollapse()) {
                 if (this.detail) {
@@ -176,8 +185,12 @@ const SplitViewController = defineComponent({
                     }
                 }
 
+
                 this.getScrollElement().scrollTop = 0;
                 this.detail = component;
+                
+                HistoryManager.invalidateHistory()
+                this.detail.assignHistoryIndex()
             }
             return true;
         },
@@ -201,6 +214,7 @@ const SplitViewController = defineComponent({
             const detail = this.detail;
             this.detail = null;
             this.navigationController.push({ components: [detail], animated: false });
+            HistoryManager.invalidateHistory()
         },
         canExpand() {
             if (!this.navigationController) {
@@ -236,7 +250,9 @@ const SplitViewController = defineComponent({
                 console.log('pushing root detail', this.rootDetail)
                 this.detail = this.correctedRootDetail.clone();
                 this.detailKey = this.detail.key;
-
+                
+                HistoryManager.invalidateHistory()
+                this.detail.assignHistoryIndex()
                 return;
             }
             const popped = await this.navigationController.pop({
@@ -251,6 +267,9 @@ const SplitViewController = defineComponent({
             await this.$nextTick();
             this.detailKey = popped[0].key;
             this.detail = popped[0];
+            
+            HistoryManager.invalidateHistory()
+            this.detail.assignHistoryIndex()
         }
     }
 })

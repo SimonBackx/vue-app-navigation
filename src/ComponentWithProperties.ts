@@ -52,7 +52,7 @@ export class ComponentWithProperties {
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
     static keyCounter = 0;
-    static debug = false;
+    static debug = true;
 
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle: ModalDisplayStyle = "cover"
@@ -64,7 +64,7 @@ export class ComponentWithProperties {
     public historyIndex: number | null = null;
     public isContainerView = false;
 
-    private static ignoreActivate: ComponentWithProperties | null = null
+    // private static ignoreActivate: ComponentWithProperties | null = null
 
     constructor(component: any, properties: Record<string, any> = {}) {
         this.component = component;
@@ -95,17 +95,17 @@ export class ComponentWithProperties {
             }
         }
 
-        if (this.isContainerView) {
-            // Always make sure it has a saved history index on first mount
-            if (this.historyIndex === null) {
-                this.historyIndex = HistoryManager.counter;
-            }
-            return;
-        }
-        if (this.modalDisplayStyle == "overlay") {
-            return;
-        }
-        this.assignHistoryIndex()
+        // if (this.isContainerView) {
+        //     // Always make sure it has a saved history index on first mount
+        //     if (this.historyIndex === null) {
+        //         this.historyIndex = HistoryManager.counter;
+        //     }
+        //     return;
+        // }
+        // if (this.modalDisplayStyle == "overlay") {
+        //     return;
+        // }
+        // this.assignHistoryIndex()
     }
 
     getHistoryIndex() {
@@ -120,63 +120,106 @@ export class ComponentWithProperties {
         // We now risk that in the next activation cycle (that is only called sometimes, not on all components), the UI will think that it is returning
         // to a previous history state
         // So we ignore the activation of only this instance until some other component got activated first
-        ComponentWithProperties.ignoreActivate = this;
+        // ComponentWithProperties.ignoreActivate = this;
     }
 
-    onMountedChildComponent(child: ComponentWithProperties) {
-        this.isContainerView = true
-        if (ComponentWithProperties.debug) console.log("Container mounted child component: " + this.component.name + " got "+child.component.name);
-    }
-
-    onActivatedChildComponent(child: ComponentWithProperties) {
-        this.isContainerView = true
-        if (ComponentWithProperties.debug) console.log("Container got activated child component: " + this.component.name + " got "+child.component.name);
-    }
+    // onMountedChildComponent(child: ComponentWithProperties) {
+    //     this.isContainerView = true
+    //     if (ComponentWithProperties.debug) console.log("Container mounted child component: " + this.component.name + " got "+child.component.name);
+    // }
+    // 
+    // onActivatedChildComponent(child: ComponentWithProperties) {
+    //     this.isContainerView = true
+    //     if (ComponentWithProperties.debug) console.log("Container got activated child component: " + this.component.name + " got "+child.component.name);
+    // }
 
     /**
      * Call this method to assign a history index to this component (you should only call this when you want to assign a history index to this component that will not get mounted already)
      */
+    // assignHistoryIndex() {
+    //     
+    //     if (!HistoryManager.active) {
+    //         console.warn('HistoryManager is disabled.')
+    //         return
+    //     }
+    // 
+    //     if (this.historyIndex == null) {
+    //         if (ComponentWithProperties.debug) console.log("Assigned history index: " + this.component.name + " = " + HistoryManager.counter);
+    //         this.historyIndex = HistoryManager.counter;
+    //     } else {
+    //         // This component was never mounted but already got a history index assigned
+    //         // -> probably pushed on a navigation controller with multiple components at once
+    //         this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
+    //     }
+    // }
+
+    hasHistoryIndex() {
+        return this.historyIndex !== null;
+    }
+
+    /**
+     * This will get called when the component has been pushed somewhere that should count as a new history state
+     */
     assignHistoryIndex() {
-        
         if (!HistoryManager.active) {
-            console.warn('HistoryManager is disabled.')
             return
         }
 
-        if (this.historyIndex == null) {
-            if (ComponentWithProperties.debug) console.log("Assigned history index: " + this.component.name + " = " + HistoryManager.counter);
-            this.historyIndex = HistoryManager.counter;
-        } else {
-            // This component was never mounted but already got a history index assigned
-            // -> probably pushed on a navigation controller with multiple components at once
-            this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
+        const state = HistoryManager.getCurrentState()
+        this.historyIndex = state.index
+    }
+
+    /**
+     * This will get called when the user returned to this component
+     */
+    returnToHistoryIndex(): boolean {
+        if (!HistoryManager.active) {
+            return false;
         }
+
+        // It is possible that we don't contain the latest history index, e.g. if we are a navigation controller
+        const instance = this.componentInstance() as any;
+        if (instance?.returnToHistoryIndex) {
+            const worked = instance?.returnToHistoryIndex();
+            console.log('returning to instance that has an instance with custom returnToHistoryIndex method', this.component.name, worked)
+            if (worked === true) {
+                return true;
+            }
+        }
+
+        if (this.historyIndex === null) {
+            console.warn('Returning to a component that has no history index assigned. Has this component been pushed to a navigation controller properly before returning to it?', this.component.name);
+            return false;
+        }
+
+        HistoryManager.returnToHistoryIndex(this.historyIndex);
+        return true;
     }
 
     activated() {
         if (ComponentWithProperties.debug) console.log("Component activated: " + this.component.name);
 
-        if (ComponentWithProperties.ignoreActivate === this) {
-            if (ComponentWithProperties.debug) console.log("Ignore component activation: " + this.component.name);
-            ComponentWithProperties.ignoreActivate = null
-            return
-        }
-        ComponentWithProperties.ignoreActivate = null
-
-        if (this.isContainerView) {
-            return;
-        }
-        if (this.modalDisplayStyle == "overlay") {
-            return;
-        }
-
-        if (!HistoryManager.active) {
-            return
-        }
-        if (this.historyIndex !== null) {
-            // Sometimes, a component will get activated just after mounting it. We ignore that activated event once
-            this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
-        }
+        // if (ComponentWithProperties.ignoreActivate === this) {
+        //     if (ComponentWithProperties.debug) console.log("Ignore component activation: " + this.component.name);
+        //     ComponentWithProperties.ignoreActivate = null
+        //     return
+        // }
+        // ComponentWithProperties.ignoreActivate = null
+        // 
+        // if (this.isContainerView) {
+        //     return;
+        // }
+        // if (this.modalDisplayStyle == "overlay") {
+        //     return;
+        // }
+        // 
+        // if (!HistoryManager.active) {
+        //     return
+        // }
+        // if (this.historyIndex !== null) {
+        //     // Sometimes, a component will get activated just after mounting it. We ignore that activated event once
+        //     this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
+        // }
     }
 
     componentInstance(): ComponentPublicInstance | null {

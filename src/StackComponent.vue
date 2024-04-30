@@ -17,10 +17,11 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
 
 const StackComponent =  defineComponent({
+    name: "StackComponent",
     components: {
         ComponentWithPropertiesInstance,
     },
-    emits: ["present"],
+    emits: ["present", 'returnToHistoryIndex'],
     data() {
         return {
             components: [] as ComponentWithProperties[],
@@ -35,16 +36,18 @@ const StackComponent =  defineComponent({
                 reactive_navigation_pop: () => {
                     this.removeAt(index, key);
                 },
+                reactive_navigation_can_pop: true,
                 reactive_navigation_dismiss: () => {
                     console.warn('Avoid calling dismiss in components on the StackComponent, since options are not supported here')
                     this.removeAt(index, key);
-                }
+                },
+                reactive_navigation_can_dismiss: false
             };
         },
         show(component: ComponentWithProperties) {
             this.components.push(component);
         },
-        removeAt(index: number, key: number) {
+        removeAt(index: number, key: number) {            
             if (!this.components[index]) {
                 // Manually search for the key (race conditions with slow events in vue)
                 for (const [i, comp] of this.components.entries()) {
@@ -56,7 +59,26 @@ const StackComponent =  defineComponent({
                 }
             }
             if (this.components[index] !== undefined && this.components[index].key === key) {
+                const hadHistory = this.components[index].hasHistoryIndex()
                 this.components.splice(index, 1);
+
+                if (hadHistory) {
+                    // Find the last component that has a history index
+                    let found = false;
+                    for (let i = this.components.length - 1; i >= 0; i--) {
+                        if (this.components[i].hasHistoryIndex()) {
+                            // We returned to this component
+                            this.components[i].returnToHistoryIndex()
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        // The normalModalStackComponent is visible again
+                        console.log('No history index found in stack component')
+                        this.$emit("returnToHistoryIndex");
+                    }
+                }
             } else {
                 console.warn("Expected component with key " + key + " at index" + index);
             }

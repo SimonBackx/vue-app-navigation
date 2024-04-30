@@ -53,6 +53,9 @@ provide('reactive_navigation_pop', async (options?: PopOptions) => {
     return await dismiss(options)
 });
 
+provide('reactive_navigation_can_pop', false);
+provide('reactive_navigation_can_dismiss', true);
+
 provide('reactive_popup', instance?.proxy);
 
 const pushDown = computed(() => {
@@ -111,13 +114,13 @@ const dismiss = async (options?: PopOptions) => {
     }
 
     // Check which modal is underneath?
-    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-    if (popups.length === 0 || popups[popups.length - 1] === component) {
-        const index = props.root.getHistoryIndex()
-        if (index !== null && index !== undefined) {
-            HistoryManager.returnToHistoryIndex(index - 1);
-        }
-    }
+    // const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+    // if (popups.length === 0 || popups[popups.length - 1] === component) {
+    //     const index = props.root.getHistoryIndex()
+    //     if (index !== null && index !== undefined) {
+    //         HistoryManager.returnToHistoryIndex(index - 1);
+    //     }
+    // }
     pop(options)
 }
 

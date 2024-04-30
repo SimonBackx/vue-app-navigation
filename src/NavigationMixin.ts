@@ -1,7 +1,7 @@
 import { type DefineComponent, inject, type Ref } from "vue";
 
 import { useModalStackComponent } from "./ModalStackComponent.vue";
-import { useNavigationController } from "./NavigationController.vue";
+import NavigationController, { useNavigationController } from "./NavigationController.vue";
 import type Popup from "./Popup.vue";
 import { useSplitViewController } from "./SplitViewController.vue";
 import { injectHooks } from "./utils/injectHooks";
@@ -42,16 +42,22 @@ export const NavigationMixin = {
         };
 
         injectHooks(this, definitions)
+    },
+    computed: {
+        modalNavigationController(this: any) {
+            return this.modalStackComponent.navigationController
+        }
     }
     // eslint-disable-next-line @typescript-eslint/ban-types
-} as DefineComponent<{}, {}, {
+} as any as DefineComponent<{}, {}, {
     canPop: Unref<ReturnType<typeof useCanPop>>,
     canDismiss: Unref<ReturnType<typeof useCanDismiss>>,
     isFocused: Unref<ReturnType<typeof useFocused>>,
     popup: Unref<ReturnType<typeof usePopup>>,
     modalStackComponent: Unref<ReturnType<typeof useModalStackComponent>>,
     navigationController: Unref<ReturnType<typeof useNavigationController>>,
-    splitViewController: Unref<ReturnType<typeof useSplitViewController>>
+    splitViewController: Unref<ReturnType<typeof useSplitViewController>>,
+    modalNavigationController: () => InstanceType<typeof NavigationController>,
 }, {}, {
     show: ReturnType<typeof useShow>,
     showDetail: ReturnType<typeof useShowDetail>,

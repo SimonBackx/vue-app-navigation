@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
+import { computed, defineComponent, inject, type PropType, type Ref,shallowRef, unref } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
@@ -35,6 +35,7 @@ export function useNavigationController(): Ref<InstanceType<typeof NavigationCon
 }
 
 const NavigationController = defineComponent({
+    name: "NavigationController",
     components: {
         FramedComponent,
     },
@@ -47,13 +48,15 @@ const NavigationController = defineComponent({
         let extra = {}
         if (this.animationType === 'modal') {
             extra = {
-                reactive_navigation_dismiss: computed(() => this.components.length > 1 ? this.pop : this.reactive_navigation_pop),
+                reactive_navigation_dismiss: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
+                reactive_navigation_can_dismiss: computed(() => this.components.length > 1),
             }
         }
         return {
             reactive_navigationController: this,
             reactive_navigation_show: this.push,
-            reactive_navigation_pop: computed(() => this.components.length > 1 ? this.pop : this.reactive_navigation_pop),
+            reactive_navigation_pop: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
+            reactive_navigation_can_pop: computed(() => this.components.length > 1),
             ...extra,
             ...(this.customProvide ?? {})
         }
@@ -99,10 +102,17 @@ const NavigationController = defineComponent({
             this.components = this.initialComponents.slice(0);
 
             // Update property (even if not allowed, we know, but we need to remove the references)
-            this.initialComponents.splice(0, this.initialComponents.length);
+            // this.initialComponents.splice(0, this.initialComponents.length);
         } else {
             this.mainComponent = this.root;
             this.components = [this.root];
+        }
+
+        for (const [index, component] of this.components.entries()) {
+            if (index < this.components.length - 1) {
+                HistoryManager.pushState(undefined, null, false)
+            }
+            component.assignHistoryIndex()
         }
     },
     beforeUnmount() {
@@ -149,6 +159,13 @@ const NavigationController = defineComponent({
         },
         shouldAnimate() {
             return (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        },
+        returnToHistoryIndex() {
+            const lastComponent = this.components[this.components.length - 1];
+            if (lastComponent && lastComponent.hasHistoryIndex()) {
+                return lastComponent.returnToHistoryIndex();
+            }
+            return false;
         },
         async push(options: PushOptions) {
             if (options.components.length == 0) {
@@ -229,6 +246,9 @@ const NavigationController = defineComponent({
                         comp.keepAlive = true;
                     }
                 }
+
+                // Back/forward buttons won't work anymore in a reliable/predicable way
+                HistoryManager.invalidateHistory()
             } else {
                 this.components.push(...components);
             }
@@ -238,24 +258,35 @@ const NavigationController = defineComponent({
                 this.mainComponent.keepAlive = !replace;
             }
 
-            this.mainComponent = component;
-            this.$emit("didPush");
+            const adjustHistory = options?.adjustHistory ?? true
 
-            if (replace == 0 && this) {
-                //
-                for (let index = 0; index < components.length; index++) {
-                    HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
+            if (adjustHistory) {
+                // We can provide a back action
+
+                for (const component of components) {
+                    HistoryManager.pushState(options?.url, async (canAnimate: boolean) => {
+                        if (!this.mainComponent) {
+                            console.error('Tried to pop NavigationController, but it was already unmounted')
+                            return
+                        }
+
                         // todo: fix reference to this and memory handling here!!
-                        this.pop({ animated: animated && canAnimate});
-                    }, options?.adjustHistory ?? true);
+                        await this.pop({ animated: animated && canAnimate})
+                    }, adjustHistory);
 
-                    if (index < components.length - 1) {
-                        // This component will not get mounted, but we need to simulate this to assign
-                        // a history index
-                        components[index].assignHistoryIndex()
-                    }
+                    component.assignHistoryIndex()
+                }
+            } else {
+                // Todo: implement back behaviour
+                for (const component of components) {
+                    HistoryManager.pushState(options?.url, null, adjustHistory)
+                    // Assign history index
+                    component.assignHistoryIndex()
                 }
             }
+
+            this.mainComponent = component;
+            this.$emit("didPush");
         },
         async shouldNavigateAway(): Promise<boolean> {
             for (let index = this.components.length - 1; index >= 0; index--) {
@@ -293,18 +324,16 @@ const NavigationController = defineComponent({
             const force = options.force ?? false;
 
             if (this.components.length <= count) {
-                const parent = this.getPoppableParent()
+                const parentPop = unref(this.reactive_navigation_pop) as any;
 
                 // Prevent multiple count pop across modal levels
                 options.count = 1
 
-                if (!parent) {
+                if (!parentPop) {
                     console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
-                    this.$.emit("pop", options)
                     return;
                 }
-                parent.emit("pop", options)
-                return;
+                return await parentPop(options)
             }
 
             if (count === 0) {
@@ -346,6 +375,9 @@ const NavigationController = defineComponent({
             this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
 
             this.mainComponent = this.components[this.components.length - 1];
+
+            this.mainComponent.returnToHistoryIndex();
+
             this.$emit("didPop");
             return popped;
         },

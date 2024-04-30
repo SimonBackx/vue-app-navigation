@@ -1,7 +1,7 @@
 <template>
     <div>
-        <NavigationController ref="navigationController" animation-type="modal" :root="root" :initial-components="initialComponents" @present="present" />
-        <StackComponent ref="stackComponent" @present="present" />
+        <NavigationController ref="navigationController" animation-type="modal" :root="root" :initial-components="initialComponents" />
+        <StackComponent ref="stackComponent" @return-to-history-index="returnToHistoryIndex" />
     </div>
 </template>
 
@@ -15,7 +15,7 @@ import Popup from "./Popup.vue";
 import type { PushOptions } from "./PushOptions";
 import StackComponent from "./StackComponent.vue";
 import { injectHooks } from "./utils/injectHooks";
-import { usePresent } from "./utils/navigationHooks";
+import { useDismiss, usePresent, useShow } from "./utils/navigationHooks";
 
 export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComponent>> {
     const c = inject('reactive_modalStackComponent') as InstanceType<typeof ModalStackComponent>|Ref<InstanceType<typeof ModalStackComponent>>;
@@ -23,6 +23,7 @@ export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComp
 }
 
 const ModalStackComponent = defineComponent({
+    name: "ModalStackComponent",
     components: {
         'NavigationController': NavigationController,
         'StackComponent': StackComponent,
@@ -59,7 +60,10 @@ const ModalStackComponent = defineComponent({
         // we cannot use setup in mixins, but we want to avoid having to duplicate the 'use' hooks logic.
         // so this is a workaround
         const definitions: any = {
-            parentPresent: usePresent()
+            parentPresent: usePresent(),
+            parentDismiss: useDismiss(),
+            parentPop: useDismiss(),
+            parentShow: useShow(),
         };
 
         injectHooks(this, definitions);
@@ -82,12 +86,11 @@ const ModalStackComponent = defineComponent({
                 const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
 
                 HistoryManager.pushState(options?.url, (canAnimate: boolean) => {
-                    console.log(c.componentInstance());
                     (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate});
                 }, options?.adjustHistory ?? true);
-                    
+                c.assignHistoryIndex()
+                
                 this.stackComponent.show(c);
-                        
                 return;
             }
 
@@ -97,6 +100,11 @@ const ModalStackComponent = defineComponent({
             }
 
             this.navigationController.push(options);
+        },
+        returnToHistoryIndex() {
+            // The stack component no longer contains a component with a history index
+            // That means we'll need to return focus to the topmost modal
+            return this.navigationController.returnToHistoryIndex();
         },
         replace(component: ComponentWithProperties, animated = true) {
             const nav = this.navigationController;

@@ -64,13 +64,13 @@ export default defineComponent({
             }
 
             // Check which modal is undernath?
-            const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-            if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
-                const index = this.root.getHistoryIndex()
-                if (index !== null && index !== undefined) {
-                    HistoryManager.returnToHistoryIndex(index - 1);
-                }
-            }
+            // const popups = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+            // if (popups.length === 0 || popups[popups.length - 1].componentInstance() === this) {
+            //     const index = this.root.getHistoryIndex()
+            //     if (index !== null && index !== undefined) {
+            //         HistoryManager.returnToHistoryIndex(index - 1);
+            //     }
+            // }
             this.pop(options)
         },
         onKey(event: KeyboardEvent) {

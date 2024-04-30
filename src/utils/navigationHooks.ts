@@ -18,7 +18,7 @@ export function usePop() {
 }
 
 export function useShowDetail() {
-    const rawShowDetail = inject('reactive_navigation_show_detail') as Ref<(options: PushOptions | ComponentWithProperties) => Promise<void>>
+    const rawShowDetail = inject('reactive_navigation_show_detail', null) as Ref<(options: PushOptions | ComponentWithProperties) => Promise<void>>|null
 
     return (options: PushOptions | ComponentWithProperties) => {
         const showDetail = unref(rawShowDetail) // not always reactive
@@ -36,7 +36,7 @@ export function useShowDetail() {
 }
 
 export function useShow() {
-    const rawShow = inject('reactive_navigation_show') as Ref<(options: PushOptions | ComponentWithProperties) => Promise<void>>
+    const rawShow = inject('reactive_navigation_show', null) as Ref<(options: PushOptions | ComponentWithProperties) => Promise<void>>|null
 
     return (options: PushOptions | ComponentWithProperties) => {
         const show = unref(rawShow) // not always reactive
@@ -72,7 +72,7 @@ export function usePresent() {
 }
 
 export function useDismiss() {
-    const rawDismiss = inject('reactive_navigation_dismiss') as Ref<(options?: PopOptions) => Promise<void>>
+    const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<(options?: PopOptions) => Promise<void>>|null
 
     return (options?: PopOptions) => {
         const dismiss = unref(rawDismiss) // not always reactive
@@ -87,14 +87,14 @@ export function useDismiss() {
 }
 
 export function useCanPop(): Ref<boolean> {
-    const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => void) | undefined> | null
+    const rawPop = inject('reactive_navigation_can_pop', false) as Ref<boolean | undefined> | false
     return computed(() => {
         return !!unref(rawPop)
     })
 }
 
 export function useCanDismiss(): Ref<boolean> {
-    const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<((options?: PopOptions) => Promise<void>) | undefined> | null
+    const rawDismiss = inject('reactive_navigation_can_dismiss', false) as Ref<boolean | undefined> | false
     return computed(() => !!unref(rawDismiss))
 }
 

@@ -77,13 +77,13 @@ const SideView = defineComponent({
             }
 
             // Check which modal is undernath?
-            const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-            if (sideViews.length === 0 || sideViews[sideViews.length - 1].componentInstance() === this) {
-                const index = this.root.getHistoryIndex()
-                if (index !== null && index !== undefined) {
-                    HistoryManager.returnToHistoryIndex(index - 1);
-                }
-            }
+            // const sideViews = this.modalStackComponent?.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
+            // if (sideViews.length === 0 || sideViews[sideViews.length - 1].componentInstance() === this) {
+            //     const index = this.root.getHistoryIndex()
+            //     if (index !== null && index !== undefined) {
+            //         HistoryManager.returnToHistoryIndex(index - 1);
+            //     }
+            // }
             this.pop(options)
         },
         resize() {

@@ -60,47 +60,31 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
 
     // Disable custom constructor
     options.data = function() {
-
         // This allows us to use 'this' in properties
-        // to make this work, the class should extend a super class that calls 'this._init()'
-        // there is no other way since we cannot replace the constructor of the class
+        // to make this work, we use a proxy in the VueComponent class
+        // ref https://stackoverflow.com/a/40714458/5306026
         const vm = this;
-        let didCall = false;
-        OriginalClass.prototype._init = function(this: any) {
-            didCall = true;
-            // Copy all 'this' properties from vue to the instance (to give access to special properties like $el)
-            const keys = Object.getOwnPropertyNames(vm)
 
-            keys.forEach(key => {
-                Object.defineProperty(this, key, {
-                    get: () => vm[key],
-                    set: value => { vm[key] = value },
-                    configurable: true
-                })
-            })
-        }
-
-        const instance = new OriginalClass();
-        if (!didCall) {
+        if (! OriginalClass.prototype.__getter) {
             throw new Error('Component '+options.name+' should either extend VueComponent or extend Mixins.')
         }
 
+        OriginalClass.prototype.__getter = function(object: any, key: string, proxy: any) {
+            // eslint-disable-next-line no-prototype-builtins
+            if (!object.hasOwnProperty(key)) {
+                console.error('Detected usage of the '+key+' property in the constructor properties of '+options.name+'. This should be avoided. Please move this to the created hook')
+                return vm[key];
+            }
+            return object[key];
+        }
+
+        const instance = new OriginalClass();
         const defaultData: any = {};
 
         for (const key of Object.keys(instance)) {
             if (instance[key] !== undefined) {
                 if (options.props && key in options.props) {
-                    if (options.props[key].default !== undefined) {
-                        console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})')
-                        continue;
-                    }
-                    // Set as default instead of data
-                    // options.props[key] = {
-                    //     ...options.props[key],
-                    //     default: instance[key],
-                    //     type: options.props[key].type || inferTypeFromDefault(instance[key])
-                    // }
-                    // console.log('setting default', key, instance[key], options, options.props[key])
+                    console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})')
                 } else {
                     defaultData[key] = instance[key]
                 }
