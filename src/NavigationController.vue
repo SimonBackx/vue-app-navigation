@@ -63,8 +63,8 @@ const NavigationController = defineComponent({
     },
     props: {
         root: {
-            required: true,
-            type: ComponentWithProperties
+            default: null,
+            type: Object as PropType<ComponentWithProperties | null>
         },
         initialComponents: { 
             default: null,
@@ -104,6 +104,9 @@ const NavigationController = defineComponent({
             // Update property (even if not allowed, we know, but we need to remove the references)
             // this.initialComponents.splice(0, this.initialComponents.length);
         } else {
+            if (!this.root) {
+                throw new Error("No root component provided for navigation controller");
+            }
             this.mainComponent = this.root;
             this.components = [this.root];
         }

@@ -1,4 +1,4 @@
-import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,type VNode } from "vue";
+import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,reactive,type VNode } from "vue";
 
 import { HistoryManager } from "./HistoryManager";
 
@@ -73,6 +73,16 @@ export class ComponentWithProperties {
 
         // Prevent becoming reactive in any way
         markRaw(this);
+
+        this.properties = reactive(this.properties);
+
+        // Properties should
+        // for (const key in properties) {
+        //     const element = properties[key];
+        //     if (typeof element === "object") {
+        //         this.properties = reactive(element);
+        //     }
+        // }
     }
 
     clone() {

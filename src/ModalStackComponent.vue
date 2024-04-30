@@ -36,8 +36,8 @@ const ModalStackComponent = defineComponent({
     },
     props: {
         root: {
-            required: true,
-            type: Object as PropType<ComponentWithProperties>
+            default: null,
+            type: Object as PropType<ComponentWithProperties|null>
         },
         initialComponents: { 
             default: null,

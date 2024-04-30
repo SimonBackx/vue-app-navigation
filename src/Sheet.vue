@@ -13,7 +13,6 @@ import { defineComponent, type PropType } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from "./ComponentWithPropertiesInstance";
-import { HistoryManager } from "./HistoryManager";
 import { ModalMixin } from './ModalMixin';
 import type { PopOptions } from './PopOptions';
 

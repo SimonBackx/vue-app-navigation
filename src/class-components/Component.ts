@@ -39,13 +39,27 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
 
     if (decoratorOptions && decoratorOptions.mixins) {
         mixins.push(...decoratorOptions.mixins);
+        delete decoratorOptions.mixins;
     }
 
-    if (decoratorOptions) {
-        mixins.push(decoratorOptions);
+    if (decoratorOptions && decoratorOptions.data) {
+        mixins.push({
+            data: decoratorOptions.data
+        
+        });
+        delete decoratorOptions.data;
     }
 
+    if (decoratorOptions && decoratorOptions.props) {
+        mixins.push({
+            props: decoratorOptions.props
+        });
+        delete decoratorOptions.props;
+    }
+
+    // Some properties don't support mixins, so best to put as much as possible on the main object
     const options: any = {
+        ...(decoratorOptions ?? {}),
         name: decoratorOptions?.name || (OriginalClass as any)._componentTag || (OriginalClass as any).name,
         mixins
     };
