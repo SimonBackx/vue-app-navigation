@@ -84,12 +84,12 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
         }
 
         OriginalClass.prototype.__getter = function(object: any, key: string, proxy: any) {
-            // eslint-disable-next-line no-prototype-builtins
-            if (!object.hasOwnProperty(key)) {
-                console.error('Detected usage of the '+key+' property in the constructor properties of '+options.name+'. This should be avoided. Please move this to the created hook')
+            // hasOwnProperty is not working on getters
+            const v = Reflect.get(object, key, proxy) // this makes sure 'this' inside the getters are set to the proxy
+            if (v === undefined) {
                 return vm[key];
             }
-            return object[key];
+            return v;
         }
 
         const instance = new OriginalClass();

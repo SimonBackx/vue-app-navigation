@@ -38,7 +38,6 @@ export class ComponentWithProperties {
     public properties: Record<string, any>;
     public key: number;
     public type: string | null = null;
-    public hide = false;
 
     /// Saved vnode of this instance
     public vnode: VNode | null = null;
@@ -47,7 +46,6 @@ export class ComponentWithProperties {
     // Keep the vnode alive when it is removed from the VDOM
     public keepAlive = false;
     public isKeptAlive = false;
-    public isMounted = false;
 
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
@@ -62,7 +60,6 @@ export class ComponentWithProperties {
 
     // Hisotry index
     public historyIndex: number | null = null;
-    public isContainerView = false;
 
     // private static ignoreActivate: ComponentWithProperties | null = null
 
@@ -90,8 +87,6 @@ export class ComponentWithProperties {
     }
 
     beforeMount() {
-        if (ComponentWithProperties.debug) console.log("Before mount: " + this.component.name);
-
         if (this.vnode) {
             if (this.isKeptAlive) {
                 this.isKeptAlive = false;
@@ -104,64 +99,11 @@ export class ComponentWithProperties {
                 this.destroy(this.vnode);
             }
         }
-
-        // if (this.isContainerView) {
-        //     // Always make sure it has a saved history index on first mount
-        //     if (this.historyIndex === null) {
-        //         this.historyIndex = HistoryManager.counter;
-        //     }
-        //     return;
-        // }
-        // if (this.modalDisplayStyle == "overlay") {
-        //     return;
-        // }
-        // this.assignHistoryIndex()
     }
 
     getHistoryIndex() {
         if (this.component) return this.historyIndex;
     }
-
-    mounted() {
-        if (ComponentWithProperties.debug) console.log("Component mounted: " + this.component.name);
-        this.isMounted = true;
-
-        // We pushed some elements and the history index increased during the mounted lifecycle
-        // We now risk that in the next activation cycle (that is only called sometimes, not on all components), the UI will think that it is returning
-        // to a previous history state
-        // So we ignore the activation of only this instance until some other component got activated first
-        // ComponentWithProperties.ignoreActivate = this;
-    }
-
-    // onMountedChildComponent(child: ComponentWithProperties) {
-    //     this.isContainerView = true
-    //     if (ComponentWithProperties.debug) console.log("Container mounted child component: " + this.component.name + " got "+child.component.name);
-    // }
-    // 
-    // onActivatedChildComponent(child: ComponentWithProperties) {
-    //     this.isContainerView = true
-    //     if (ComponentWithProperties.debug) console.log("Container got activated child component: " + this.component.name + " got "+child.component.name);
-    // }
-
-    /**
-     * Call this method to assign a history index to this component (you should only call this when you want to assign a history index to this component that will not get mounted already)
-     */
-    // assignHistoryIndex() {
-    //     
-    //     if (!HistoryManager.active) {
-    //         console.warn('HistoryManager is disabled.')
-    //         return
-    //     }
-    // 
-    //     if (this.historyIndex == null) {
-    //         if (ComponentWithProperties.debug) console.log("Assigned history index: " + this.component.name + " = " + HistoryManager.counter);
-    //         this.historyIndex = HistoryManager.counter;
-    //     } else {
-    //         // This component was never mounted but already got a history index assigned
-    //         // -> probably pushed on a navigation controller with multiple components at once
-    //         this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
-    //     }
-    // }
 
     hasHistoryIndex() {
         return this.historyIndex !== null;
@@ -206,32 +148,6 @@ export class ComponentWithProperties {
         return true;
     }
 
-    activated() {
-        if (ComponentWithProperties.debug) console.log("Component activated: " + this.component.name);
-
-        // if (ComponentWithProperties.ignoreActivate === this) {
-        //     if (ComponentWithProperties.debug) console.log("Ignore component activation: " + this.component.name);
-        //     ComponentWithProperties.ignoreActivate = null
-        //     return
-        // }
-        // ComponentWithProperties.ignoreActivate = null
-        // 
-        // if (this.isContainerView) {
-        //     return;
-        // }
-        // if (this.modalDisplayStyle == "overlay") {
-        //     return;
-        // }
-        // 
-        // if (!HistoryManager.active) {
-        //     return
-        // }
-        // if (this.historyIndex !== null) {
-        //     // Sometimes, a component will get activated just after mounting it. We ignore that activated event once
-        //     this.historyIndex = HistoryManager.returnToHistoryIndex(this.historyIndex);
-        // }
-    }
-
     componentInstance(): ComponentPublicInstance | null {
         if (!this.vnode?.component) {
             return null;
@@ -259,8 +175,6 @@ export class ComponentWithProperties {
     }
 
     destroy(vnode: VNode) {
-        this.isMounted = false;
-
         if (this.vnode) {
             if (vnode !== this.vnode) {
                 console.warn('Received destroy event from old/different vnode', this.vnode, vnode);

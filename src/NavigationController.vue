@@ -42,7 +42,13 @@ const NavigationController = defineComponent({
     inject: {
         reactive_navigation_pop: {
             default: null
-        }
+        },
+        reactive_navigation_can_pop: {
+            default: false
+        },
+        reactive_navigation_can_dismiss: {
+            default: false
+        },
     },
     provide() {
         let extra = {}
@@ -50,13 +56,17 @@ const NavigationController = defineComponent({
             extra = {
                 reactive_navigation_dismiss: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
                 reactive_navigation_can_dismiss: computed(() => this.components.length > 1),
+                reactive_navigation_can_pop: false,
+            }
+        } else {
+            extra = {
+                reactive_navigation_can_pop: computed(() => this.components.length > 1 || unref(this.reactive_navigation_can_pop)),
             }
         }
         return {
             reactive_navigationController: this,
             reactive_navigation_show: this.push,
             reactive_navigation_pop: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
-            reactive_navigation_can_pop: computed(() => this.components.length > 1),
             ...extra,
             ...(this.customProvide ?? {})
         }

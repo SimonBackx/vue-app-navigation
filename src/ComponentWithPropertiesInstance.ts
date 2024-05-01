@@ -246,10 +246,6 @@ export default {
             current = null
         });
 
-        onActivated(() => {
-            props.component.activated();
-        });
-
         onBeforeMount(() => {
             props.component.beforeMount();
         });
@@ -267,7 +263,7 @@ export default {
                 props.component.vnode = child;
                 props.component.unmount = unmount;
                 if (!(child as any)._reactiveInstance) {
-                (child as any)._reactiveInstance = reactiveInstance
+                    (child as any)._reactiveInstance = reactiveInstance
                 }
             }
         }

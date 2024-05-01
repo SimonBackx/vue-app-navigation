@@ -71,8 +71,6 @@ const ModalStackComponent = defineComponent({
     //extends: NavigationMixin,
     methods: {
         present(options: PushOptions) {
-            console.log('ModalStackComponent.present', options, this.$el, (this.$el as HTMLElement).offsetWidth);
-
             const component = options.components[options.components.length - 1]
 
             if (options.animated !== undefined) {

@@ -1,7 +1,7 @@
 <template>
     <div class="split-view-controller" :data-has-detail="detail ? 'true' : 'false'">
         <div ref="masterElement" class="master">
-            <NavigationController ref="navigationController" :root="root" :custom-provide="{isMaster: true, isDetail: false}" @show-detail="showDetail" />
+            <NavigationController ref="navigationController" :root="root" :custom-provide="{isMaster: true, isDetail: false}" />
         </div>
         <div v-if="detail" class="detail">
             <FramedComponent ref="detailFrame" :key="detail.key" :root="detail" :custom-provide="{isDetail: true, isMaster: false}" />
@@ -174,7 +174,7 @@ const SplitViewController = defineComponent({
                     return false;
                 }
 
-                this.navigationController.push(options);
+                await this.navigationController.push(options);
             } else {
                 // Replace existing detail component
                 // First check if we don't destroy anything
