@@ -1,7 +1,9 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
-    <ModalStackComponent :root="root" />
+    <I18nWrapper>
+        <ModalStackComponent :root="root" />
+    </I18nWrapper>
 </template>
 
 <script lang="ts">
@@ -13,16 +15,20 @@ import NavigationController from "../src/NavigationController.vue";
 import SplitViewController from "../src/SplitViewController.vue";
 import BasicView from "./BasicView.vue";
 import ComponentView from "./ComponentView.vue";
+import I18nWrapper from "./I18nWrapper.vue";
 
 export default defineComponent({
     components: {
-        ModalStackComponent
+        ModalStackComponent,
+        I18nWrapper
     },
     data() {
         return {
             root: new ComponentWithProperties(SplitViewController, {
                 root: new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(BasicView, {})
+                    root: new ComponentWithProperties(BasicView, {}, {provide: {
+                        isDetail: true
+                    }})
                 }),
                 rootDetail: new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(ComponentView, {})

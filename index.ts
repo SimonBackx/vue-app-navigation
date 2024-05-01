@@ -15,3 +15,4 @@ export { default as SplitViewController } from "./src/SplitViewController.vue";
 export { default as StackComponent } from "./src/StackComponent.vue";
 export * from "./src/utils/injectHooks";
 export * from "./src/utils/navigationHooks";
+export * from "./src/utils/UrlHelper";

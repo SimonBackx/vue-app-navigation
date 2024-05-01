@@ -59,6 +59,29 @@ import { Component, Mixins, Prop } from "../src/classes";
     inject: {
         isMaster: {default: false},
         isDetail: {default: false}
+    },
+
+    navigation: {
+        title() {
+            return 'Component View ' + this.count
+        },
+        routes: [
+            {
+                url: '/modal/@count',
+                params: {
+                    count: Number
+                },
+                component: 'self',
+                present: 'popup'
+            },
+            {
+                url: '/test/@count',
+                params: {
+                    count: Number
+                },
+                component: 'self'
+            }
+        ]
     }
 })
 export default class ComponentView extends Mixins(NavigationMixin) {
@@ -68,18 +91,12 @@ export default class ComponentView extends Mixins(NavigationMixin) {
     mySetData = 'hello world';
     something = 'else';
 
-    mounted() {
-        console.log("mounted ComponentView " +this.count);
-    }
-
     push() {
-        this.show({
-            url: "/test/" + (this.count+1),
-            components: [
-                new ComponentWithProperties(ComponentView, {
-                    count: this.count + 1
-                })
-            ]
+        this.navigateTo({
+            url: '/test/@count',
+            params: {
+                count: this.count + 1
+            }
         }).catch(console.error)
     }
 
@@ -98,7 +115,7 @@ export default class ComponentView extends Mixins(NavigationMixin) {
 
     popop() {
         console.log("Pushing to popup");
-        this.present({
+        /*this.present({
             url: "/test/" + (this.count+1),
             components: [
                 new ComponentWithProperties(NavigationController, {
@@ -108,6 +125,13 @@ export default class ComponentView extends Mixins(NavigationMixin) {
                 })
             ],
             modalDisplayStyle: "popup"
+        }).catch(console.error)*/
+
+        this.navigateTo({
+            url: '/modal/@count',
+            params: {
+                count: this.count + 1
+            }
         }).catch(console.error)
     }
 

@@ -15,6 +15,12 @@
             <p v-if="isMaster">
                 Master
             </p>
+            <p v-if="reactiv_isMaster">
+                Reactive Master
+            </p>
+            <p v-if="unwrappedReactiveMaster">
+                Unwrapped Reactive Master
+            </p>
             <p v-if="isDetail">
                 Detail
             </p>
@@ -61,7 +67,8 @@ const BasicView = defineComponent({
     mixins: [NavigationMixin],
     inject: {
         _isMaster: {from: 'isMaster', default: false},
-        _isDetail: {from: 'isDetail', default: false}
+        _isDetail: {from: 'isDetail', default: false},
+        reactiv_isMaster: {from: 'reactiv_isMaster', default: false}
     },
     props: {
         count: {
@@ -75,6 +82,9 @@ const BasicView = defineComponent({
         },
         isDetail() {
             return unref(this._isDetail);
+        },
+        unwrappedReactiveMaster() {
+            return unref(this.reactiv_isMaster);
         }
     },
     activated() {

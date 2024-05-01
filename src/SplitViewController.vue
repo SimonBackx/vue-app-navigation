@@ -4,7 +4,7 @@
             <NavigationController ref="navigationController" :root="root" :custom-provide="{isMaster: true, isDetail: false}" />
         </div>
         <div v-if="detail" class="detail">
-            <FramedComponent ref="detailFrame" :key="detail.key" :root="detail" :custom-provide="{isDetail: true, isMaster: false}" />
+            <FramedComponent :key="detail.key" :root="detail" :custom-provide="{isDetail: true, isMaster: false}" />
         </div>
     </div>
 </template>
@@ -17,6 +17,8 @@ import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
 import NavigationController from "./NavigationController.vue";
 import { type PushOptions } from "./PushOptions";
+import { injectHooks } from "./utils/injectHooks";
+import { useUrl } from "./utils/navigationHooks";
 
 // Credits https://codeburst.io/throttling-and-debouncing-in-javascript-b01cad5c8edf
 const throttle = (func: any, limit: any) => {
@@ -100,6 +102,15 @@ const SplitViewController = defineComponent({
                 return this.rootDetail;
             }
         }
+    },
+    created(this: any) {
+        // we cannot use setup in mixins, but we want to avoid having to duplicate the 'use' hooks logic.
+        // so this is a workaround
+        const definitions: any = {
+            $url: useUrl()
+        };
+
+        injectHooks(this, definitions);
     },
     mounted() {
         if (this.detailWidth) {
@@ -190,6 +201,8 @@ const SplitViewController = defineComponent({
                 if (this.detail) {
                     HistoryManager.invalidateHistory()
                 }
+
+                HistoryManager.pushState(undefined, null, options?.adjustHistory ?? true);
                 this.detail = component;
                 this.detail.assignHistoryIndex()
             }
@@ -248,9 +261,10 @@ const SplitViewController = defineComponent({
                     return;
                 }
 
-                console.log('pushing root detail', this.rootDetail)
                 this.detail = this.correctedRootDetail.clone();
                 this.detailKey = this.detail.key;
+
+                HistoryManager.invalidateHistory()
                 this.detail.assignHistoryIndex()
                 return;
             }
@@ -264,6 +278,7 @@ const SplitViewController = defineComponent({
 
             // We need to wait until it is removed from the vnode
             await this.$nextTick();
+            HistoryManager.pushState(undefined, null, false);
             this.detailKey = popped[0].key;
             this.detail = popped[0];
             

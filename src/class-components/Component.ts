@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { ComponentOptions } from "vue";
 
+import type { UrlMatchResult, UrlParamsConstructors } from "../utils/UrlHelper";
+
 export const $internalHooks = [
     'data',
     'beforeCreate',
@@ -149,7 +151,36 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
     return options as any;
 }
 
-export function Component<V>(options: ComponentOptions<V> & ThisType<V>): <VC extends VueClass<V>>(target: VC) => VC
+export type Route<Params, T> = {
+    name?: string
+    url: string,
+    params?: UrlParamsConstructors<Params>,
+    query?: UrlParamsConstructors<unknown>,
+    component: unknown | 'self',
+    present?: 'popup' | 'sheet' | true,
+    show?: true|'detail',
+    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>,
+
+    /**
+     * Used for building back the URL if only properties are provided
+     */
+    propsToParams?: (props: Record<string, unknown>) => {params: Params, query?: URLSearchParams},
+}
+
+export type RouteNavigationOptions<Params> = {params?: Params, properties?: Record<string, unknown>, query?: URLSearchParams, animated?: boolean, adjustHistory?: boolean}
+
+export type RouteIdentification<Params> = {name: string} | {url: string} | {route: Route<Params, any>}
+
+export type NavigationOptions<T> = {
+    title: string | ((this: T) => string),
+    routes?: Route<{}, T>[]
+}
+
+type ExtendedOptions<T> = ComponentOptions<T> & ThisType<T> & {
+    navigation: NavigationOptions<T>
+};
+
+export function Component<V>(options: ExtendedOptions<V>): <VC extends VueClass<V>>(target: VC) => VC
 export function Component<VC extends VueClass>(target: VC): VC;
 export function Component(options: any) {
     if (typeof options === 'function') {

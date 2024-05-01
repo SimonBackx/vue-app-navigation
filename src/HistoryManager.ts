@@ -3,6 +3,7 @@ import { ComponentWithProperties } from "./ComponentWithProperties";
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
     url?: string;
+    title?: string;
 
     /// Counter at which the state was added.
     index: number;
@@ -29,10 +30,10 @@ class HistoryManagerStatic {
     manualStateAction = false;
 
     // Manipulating the history is async and can cause issues when fast calls happen without awaiting the previous one
-    historyQueue: (() => Promise<void>)[] = [];
+    historyQueue: (() => Promise<void>|void)[] = [];
     isQueueRunning = false;
 
-    private addToQueue(action: () => Promise<void>) {
+    private addToQueue(action: () => Promise<void>|void) {
         this.historyQueue.push(action);
         if (!this.isQueueRunning) {
             this.runQueue();
@@ -44,7 +45,12 @@ class HistoryManagerStatic {
         const action = this.historyQueue.shift();
         if (action) {
             // console.log('Running history queue action');
-            action().finally(() => this.runQueue()).catch(console.error);
+            const p = action();
+            if (p) {
+                p.finally(() => this.runQueue()).catch(console.error);
+            } else {
+                this.runQueue();
+            }
         } else {
             // console.log('History queue done');
             this.isQueueRunning = false;
@@ -84,7 +90,7 @@ class HistoryManagerStatic {
     }
 
     /// Set the current URL without modifying states
-    setUrl(url: string) {
+    setUrl(url: string, title?: string, index?: number) {
         if (!this.active) {
             return;
         }
@@ -93,15 +99,35 @@ class HistoryManagerStatic {
             console.log("Set url: " + url+", current counter: "+this.counter);
         }
 
-        const count = this.states[this.states.length - 1].index;
+        if (index === undefined || index === this.counter) {
+            const count = this.states[this.states.length - 1].index;
 
-        this.addToQueue(async () => {
-            if (ComponentWithProperties.debug) {
-                console.log('history.replaceState', count, url)
+            this.addToQueue(() => {
+                if (ComponentWithProperties.debug) {
+                    console.log('history.replaceState', count, url)
+                }
+                history.replaceState({ counter: count }, "", url);
+                if (title) {
+                    window.document.title = title;
+                }
+            });
+            this.states[this.states.length - 1].url = url;
+            this.states[this.states.length - 1].title = title;
+        } else {
+            const state = this.states[index];
+            if (state.index !== index) {
+                console.error('Search state with index ', index, 'but received state with index', state.index)
+                return;
             }
-            history.replaceState({ counter: count }, "", url);
-        });
-        this.states[this.states.length - 1].url = url;
+
+            if (state.url !== url) {
+                if (ComponentWithProperties.debug) {
+                    console.info("Changed url for old state: " + state.index + " to " + url);
+                }
+            }
+            state.url = url;
+            state.title = title;
+        }
     }
 
     getCurrentState() {
@@ -124,18 +150,20 @@ class HistoryManagerStatic {
         const c = this.counter;
 
         if (adjustHistory) {
-            this.addToQueue(async () => {
+            this.addToQueue(() => {
                 if (ComponentWithProperties.debug) {
                     console.log('history.pushState', c, url)
                 }
                 history.pushState({ counter: c }, "", url);
             });
         } else {
-            this.addToQueue(async () => {
+            this.addToQueue(() => {
                 if (ComponentWithProperties.debug) {
-                    console.log('history.replaceState', c, url)
+                    console.log('history.replaceState', c)
                 }
-                history.replaceState({ counter: c }, "", url);
+
+                // We don't set the url here because it resets the url if we push a lot of states
+                history.replaceState({ counter: c }, "", undefined);
             });
         }
 
@@ -155,7 +183,7 @@ class HistoryManagerStatic {
         for (const state of this.states) {
             state.adjustHistory = false;
             state.undoAction = null;
-            state.invalid = true;
+            state.invalid = state.index !== this.counter;
         }
     }
 
@@ -190,15 +218,15 @@ class HistoryManagerStatic {
                 }
                 this.go(-adjustHistoryCount);
             }
+        }
 
-            if (!this.states[this.counter].adjustHistory && this.states[this.counter].url) {
-                if (ComponentWithProperties.debug) {
-                    console.log("Setting manual url without history api: " + this.states[this.counter].url);
-                }
-
-                // Set new url manually again
-                this.setUrl(this.states[this.counter].url!);
+        if (this.states[this.counter].url) {
+            if (ComponentWithProperties.debug) {
+                console.log("Setting manual url without history api: " + this.states[this.counter].url);
             }
+
+            // Set new url manually again
+            this.setUrl(this.states[this.counter].url!, this.states[this.counter].title);
         }
 
         return this.counter;
@@ -286,6 +314,7 @@ class HistoryManagerStatic {
                     index: i,
                     adjustHistory: false,
                     url: undefined,
+                    title: undefined,
                     invalid: true,
                     undoAction: null
                 })
@@ -300,6 +329,7 @@ class HistoryManagerStatic {
             index: this.counter,
             adjustHistory: false,
             url: undefined,
+            title: undefined,
             invalid: false,
             undoAction: null
         })

@@ -1,5 +1,5 @@
 import { invokeArrayFns, ShapeFlags } from "@vue/shared";
-import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject,onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
@@ -101,6 +101,7 @@ function makeProvidesParentReactive(instance: ComponentInternalInstance) {
 }
 
 export default {
+    name: "ComponentWithPropertiesInstance",
     props: {
         component: {
             type: ComponentWithProperties,
@@ -127,6 +128,25 @@ export default {
         }
 
         provide('navigation_currentComponent', props.component)
+
+        const parentHistory = inject<number|null>('navigation_historyIndex', null)
+        if (parentHistory !== null) {
+            props.component.inheritHistoryIndex(parentHistory)
+        }
+        const parent = inject<ComponentWithProperties|null>('navigation_parent', null)
+        if (parent !== null) {
+            props.component.inheritFromParent(parent)
+        }
+
+        provide('navigation_historyIndex', props.component.historyIndex)
+
+        // Make sure decendents can inherit the provides
+        provide('navigation_parent', props.component)
+
+        const combinedProvide = props.component.combinedProvide
+        for (const key in combinedProvide) {
+            provide(key, combinedProvide[key])
+        }
 
         const {
             renderer: {

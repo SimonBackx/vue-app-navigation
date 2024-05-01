@@ -48,7 +48,7 @@ const NavigationController = defineComponent({
         },
         reactive_navigation_can_dismiss: {
             default: false
-        },
+        }
     },
     provide() {
         let extra = {}
@@ -163,7 +163,7 @@ const NavigationController = defineComponent({
             el.style.height = "";
         },
         getInternalScrollElement(element: Element | null = null) {
-            const mightBe = (element ?? this.$el as HTMLElement).querySelector("main")
+            const mightBe = (element ?? this.$el as HTMLElement)?.querySelector("main")
             return mightBe ? mightBe : null;
         },
         getScrollElement(element: HTMLElement | null = null): HTMLElement {
@@ -171,7 +171,7 @@ const NavigationController = defineComponent({
             return document.documentElement;
         },
         shouldAnimate() {
-            return (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            return this.$el && (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         },
         returnToHistoryIndex() {
             const lastComponent = this.components[this.components.length - 1];
@@ -227,11 +227,10 @@ const NavigationController = defineComponent({
             const internalScrollElement = this.getInternalScrollElement()
 
             // The scroll element can also be located inside the component, and should be marked as the main element
-            const scrollElement = this.getScrollElement();
             const w = window as any;
 
-            let clientHeight = scrollElement.clientHeight;
-            if (scrollElement === document.documentElement && w.visualViewport) {
+            let clientHeight = document.documentElement.clientHeight;
+            if (w.visualViewport) {
                 clientHeight = w.visualViewport.height;
             }
 
@@ -277,7 +276,7 @@ const NavigationController = defineComponent({
                 // We can provide a back action
 
                 for (const component of components) {
-                    HistoryManager.pushState(options?.url, async (canAnimate: boolean) => {
+                    HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
                         if (!this.mainComponent) {
                             console.error('Tried to pop NavigationController, but it was already unmounted')
                             return
@@ -292,7 +291,7 @@ const NavigationController = defineComponent({
             } else {
                 // Todo: implement back behaviour
                 for (const component of components) {
-                    HistoryManager.pushState(options?.url, null, adjustHistory)
+                    HistoryManager.pushState(undefined, null, adjustHistory)
                     // Assign history index
                     component.assignHistoryIndex()
                 }
@@ -300,6 +299,9 @@ const NavigationController = defineComponent({
 
             this.mainComponent = component;
             this.$emit("didPush");
+
+            // Await mount
+            await this.$nextTick()
         },
         async shouldNavigateAway(): Promise<boolean> {
             for (let index = this.components.length - 1; index >= 0; index--) {

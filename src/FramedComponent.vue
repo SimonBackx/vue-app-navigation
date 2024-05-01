@@ -12,6 +12,7 @@ import { ComponentWithProperties } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
 
 export default {
+    name: "FramedComponent",
     components: {
         ComponentWithPropertiesInstance
     },

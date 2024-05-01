@@ -4,8 +4,8 @@ import { HistoryManager } from "./HistoryManager";
 
 export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
 
-export function useCurrentComponent(): ComponentWithProperties {
-    return inject('navigation_currentComponent') as ComponentWithProperties
+export function useCurrentComponent(): ComponentWithProperties | null {
+    return inject('navigation_currentComponent', null) as ComponentWithProperties | null;
 }
 
 // Sadly getExposeProxy is not exposed from Vue so we have to mimic it
@@ -36,6 +36,11 @@ export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
     public component: any;
     public properties: Record<string, any>;
+
+    public provide: Record<string, any>;
+    public inheritedDisplayerProvide: Record<string, any> = {};
+    public inheritedParentProvide: Record<string, any> = {};
+
     public key: number;
     public type: string | null = null;
 
@@ -50,7 +55,7 @@ export class ComponentWithProperties {
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
     static keyCounter = 0;
-    static debug = true;
+    static debug = false;
 
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle: ModalDisplayStyle = "cover"
@@ -64,19 +69,44 @@ export class ComponentWithProperties {
 
     // private static ignoreActivate: ComponentWithProperties | null = null
 
-    constructor(component: any, properties: Record<string, any> = {}) {
+    constructor(component: any, properties: Record<string, any> = {}, options?: {provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
         this.component = component;
-        this.properties = properties;
         this.key = ComponentWithProperties.keyCounter++;
+        this.properties = reactive(properties);
+        this.provide = options?.provide || {};
+        this.inheritedDisplayerProvide = options?.inheritedDisplayerProvide || {};
+        this.inheritedParentProvide = options?.inheritedParentProvide || {};
 
         // Prevent becoming reactive in any way
         markRaw(this);
+    }
 
-        this.properties = reactive(this.properties);
+    get combinedProvide() {
+        return {
+            ...this.inheritedParentProvide,
+            ...this.inheritedDisplayerProvide, // has priority
+            ...this.provide
+        }
+    }
+
+    inheritFromDisplayer(component: ComponentWithProperties) {
+        //console.log('Inheriting properties from displayer', this.component.name,' from ', component.component.name, component.combinedProvide)
+        
+        this.inheritedDisplayerProvide = {
+            ...component.combinedProvide,
+        }
+    }
+
+    inheritFromParent(component: ComponentWithProperties) {
+        //console.log('Inheriting properties from parent', this.component.name,' from ', component.component.name, component.combinedProvide)
+        
+        this.inheritedParentProvide = {
+            ...component.combinedProvide
+        }
     }
 
     clone() {
-        return new ComponentWithProperties(this.component, this.properties);
+        return new ComponentWithProperties(this.component, this.properties, {provide: this.provide, inheritedParentProvide: this.inheritedParentProvide, inheritedDisplayerProvide: this.inheritedDisplayerProvide});
     }
 
     beforeMount() {
@@ -116,6 +146,25 @@ export class ComponentWithProperties {
 
         const state = HistoryManager.getCurrentState()
         this.historyIndex = state.index
+    }
+
+    inheritHistoryIndex(index: number) {
+        // This sets the default history index
+        if (this.historyIndex === null) {
+            this.historyIndex = index
+        }
+    }
+
+    setUrl(url: string, title?: string) {
+        if (this.historyIndex === null) {
+            console.error('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
+            return
+        }
+
+        if (!HistoryManager.active) {
+            return
+        }
+        HistoryManager.setUrl(url, title, this.historyIndex)
     }
 
     /**
