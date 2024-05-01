@@ -266,7 +266,9 @@ export default {
                 }
                 props.component.vnode = child;
                 props.component.unmount = unmount;
+                if (!(child as any)._reactiveInstance) {
                 (child as any)._reactiveInstance = reactiveInstance
+                }
             }
         }
         onMounted(cacheSubtree)
