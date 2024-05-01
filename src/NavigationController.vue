@@ -1,7 +1,7 @@
 <template>
-    <div class="navigation-controller">
+    <div v-if="mainComponent" class="navigation-controller">
         <transition
-            v-if="mainComponent"
+
             :css="false"
             @before-enter="beforeEnter"
             @before-leave="beforeLeave"
@@ -400,12 +400,14 @@ const NavigationController = defineComponent({
             }
 
             // We need to set the class already to hide the incoming element
-            insertedElement.className = this.transitionName + "-enter-active " + this.transitionName + "-enter";
+            insertedElement.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-from";
         },
-        beforeLeave(_element: Element) {
+        beforeLeave(leavingElement: Element) {
             if (this.transitionName == "none") {
                 return;
             }
+            // We need to set the class already to hide the incoming element
+            leavingElement.className = this.transitionName + "-leave-active ";
         },
         beforeBeforeEnterAnimation() {
             if (this.mainComponent) {
@@ -620,7 +622,7 @@ const NavigationController = defineComponent({
                 // First we need to make our element fixed / absolute positioned, and pinned to all the edges
                 // In the same frame, we need to update the scroll position.
                 // If we switch the ordering, this won't work!
-                element.className = this.transitionName + "-leave-active " + this.transitionName + "-leave";
+                element.className = this.transitionName + "-leave-active " + this.transitionName + "-leave-from";
 
                 element.style.top = "0px";
                 element.style.height = height;
@@ -684,7 +686,7 @@ export default NavigationController;
 
     > .modal {
         &-push {
-            &-enter,
+            &-enter-from,
             &-enter-active {
                 position: relative;
                 z-index: 100;
@@ -697,12 +699,12 @@ export default NavigationController;
 
                     will-change: transform;
 
-                    transition: transform 0.30s cubic-bezier(0.0, 0.0, 0.2, 1);
+                    transition: transform 300ms cubic-bezier(0.0, 0.0, 0.2, 1);
                     transform: translateY(100vh);
                 }
             }
 
-            &-leave,
+            &-leave-from,
             &-leave-active {
                 position: absolute;
                 pointer-events: none;
@@ -717,7 +719,7 @@ export default NavigationController;
                 contain: strict;
 
                 // Darkness in sync with enter animation
-                transition: filter 0.30s;
+                transition: filter 300ms;
 
                 & > div {
                     //overflow: hidden !important;
@@ -740,11 +742,11 @@ export default NavigationController;
         &-pop {
             &-leave-active {
                 & > div {
-                    transition: transform 0.25s cubic-bezier(0.4, 0.0, 1, 1);
+                    transition: transform 250ms cubic-bezier(0.4, 0.0, 1, 1);
                 }
             }
 
-            &-leave,
+            &-leave-from,
             &-leave-active {
                 position: absolute;
                 z-index: 10000;
@@ -767,7 +769,7 @@ export default NavigationController;
                 }
             }
 
-            &-enter,
+            &-enter-from,
             &-enter-active {
                 position: relative;
             }
@@ -785,7 +787,7 @@ export default NavigationController;
             user-select: none;
 
             & > div {
-                transition: transform 0.30s;
+                transition: transform 300ms;
             }
         }
 
@@ -793,14 +795,14 @@ export default NavigationController;
             user-select: none;
 
             // Darkness in sync with enter animation
-            transition: filter 0.30s;
+            transition: filter 300ms;
 
             & > div {
-                transition: transform 0.30s;
+                transition: transform 300ms;
             }
         }
 
-        &-enter,
+        &-enter-from,
         &-enter-active {
             position: relative;
             z-index: 1000;
@@ -810,7 +812,7 @@ export default NavigationController;
             }
         }
 
-        &-leave,
+        &-leave-from,
         &-leave-active {
             position: absolute;
             pointer-events: none;
@@ -840,11 +842,11 @@ export default NavigationController;
             filter: brightness(80%);
         }
 
-        /*&-enter, &-leave-to {
+        /*&-enter-from, &-leave-to {
             opacity: 0;
         }*/
 
-        &-enter {
+        &-enter-from {
             & > div {
                 transform: translateX(100%);
 
@@ -868,10 +870,10 @@ export default NavigationController;
             user-select: none;
 
             // Opacity in sync with leave
-            transition: filter 0.25s;
+            transition: filter 250ms;
 
             & > div {
-                transition: transform 0.25s;
+                transition: transform 250ms;
             }
         }
 
@@ -879,11 +881,11 @@ export default NavigationController;
             user-select: none;
 
             & > div {
-                transition: transform 0.25s;
+                transition: transform 250ms;
             }
         }
 
-        &-enter,
+        &-enter-from,
         &-enter-active {
             position: relative;
 
@@ -892,7 +894,7 @@ export default NavigationController;
             }
         }
 
-        &-leave,
+        &-leave-from,
         &-leave-active {
             position: absolute;
             pointer-events: none;
@@ -914,11 +916,11 @@ export default NavigationController;
             }
         }
 
-        &-enter/*, &-leave-to *//* .fade-leave-active below version 2.1.8 */ {
+        &-enter-from/*, &-leave-to *//* .fade-leave-active below version 2.1.8 */ {
             filter: brightness(80%);
         }
 
-        &-enter {
+        &-enter-from {
             & > div {
                 transform: translateX(-40%);
 

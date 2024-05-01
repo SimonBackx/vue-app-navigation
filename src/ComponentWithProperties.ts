@@ -1,4 +1,4 @@
-import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,reactive,type VNode } from "vue";
+import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,reactive,ref,type VNode } from "vue";
 
 import { HistoryManager } from "./HistoryManager";
 
@@ -57,6 +57,7 @@ export class ComponentWithProperties {
 
     // If the display animation should be animated
     public animated = true
+    public isDismissing = ref(false) // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
     public historyIndex: number | null = null;
@@ -103,6 +104,10 @@ export class ComponentWithProperties {
 
     getHistoryIndex() {
         if (this.component) return this.historyIndex;
+    }
+
+    deleteHistoryIndex() {
+        this.historyIndex = null;
     }
 
     hasHistoryIndex() {

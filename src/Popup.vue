@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div :class="buildClass" @click="onClick">
+        <div v-if="!hide" :class="buildClass" @click="onClick">
             <div ref="mainContent">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :key="root.key" :component="root" />
@@ -16,7 +16,6 @@ import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref,
 
 import { type ComponentWithProperties,useCurrentComponent } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
-import { HistoryManager } from './HistoryManager';
 import { useModalStackComponent } from './ModalStackComponent.vue';
 import type { PopOptions } from './PopOptions';
 import { usePop } from './utils/navigationHooks';
@@ -34,6 +33,7 @@ const props = withDefaults(
         className: 'popup'
     }
 )
+const hide = ref(false)
 
 // ComponentWithProperties is never reactive, so we don't need computed
 const shouldAppear = props.root.animated
@@ -59,7 +59,7 @@ provide('reactive_navigation_can_dismiss', true);
 provide('reactive_popup', instance?.proxy);
 
 const pushDown = computed(() => {
-    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (props.className ?? 'popup')) ?? []
+    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (props.className ?? 'popup') && !c.isDismissing.value) ?? []
     if (popups.length > 0 && popups[popups.length - 1] !== component) {
         if (popups.length > 1 && popups[popups.length - 2] === component) {
             return 1
@@ -76,8 +76,8 @@ const buildClass = computed(() => {
 })
 
 const isFocused = computed(() => {
-    const popups = modalStackComponent.value.stackComponent?.components ?? []
-    if (popups.length > 0 && popups[popups.length - 1] !== component) {
+    const popups = modalStackComponent.value.stackComponent?.getFocusedComponent()
+    if (popups !== component) {
         return false
     }
     return true
@@ -106,6 +106,10 @@ const shouldNavigateAway = () => {
 }
 
 const dismiss = async (options?: PopOptions) => {
+    if (hide.value) {
+        return;
+    }
+
     if (!options?.force) {
         const r = await shouldNavigateAway();
         if (!r) {
@@ -113,15 +117,13 @@ const dismiss = async (options?: PopOptions) => {
         }
     }
 
-    // Check which modal is underneath?
-    // const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.modalDisplayStyle !== "overlay") ?? []
-    // if (popups.length === 0 || popups[popups.length - 1] === component) {
-    //     const index = props.root.getHistoryIndex()
-    //     if (index !== null && index !== undefined) {
-    //         HistoryManager.returnToHistoryIndex(index - 1);
-    //     }
-    // }
-    pop(options)
+    // Let everyone know they should ignore us for now
+    component.isDismissing.value = true;
+
+    hide.value = true;
+    setTimeout(() => {
+        pop(options)
+    }, 300)
 }
 
 const onClick = (event: MouseEvent) => {

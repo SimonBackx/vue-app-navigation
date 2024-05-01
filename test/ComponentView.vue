@@ -8,7 +8,8 @@
             <button v-if="canDismiss" type="button" @click="dismiss()">
                 Close
             </button>
-            <TestMixin />
+
+            mySetData: {{ mySetData }}
 
             <h1>
                 Component View {{ count }}
@@ -50,38 +51,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
 
-import { ComponentWithProperties,NavigationController,NavigationMixin } from "../index";
-import { Component,Mixins, Prop } from "../src/classes";
-
-const TestMixin = defineComponent({
-    props: {
-        sdgsdg: {
-            type: Boolean,
-            default: null
-        }
-    },
-    data() {
-        return {
-            hasTest: true
-        }
-    },
-    methods: {
-        doSomething(withData: string) {
-            return false
-        }
-    }
-})
+import { ComponentWithProperties, NavigationController, NavigationMixin } from "../index";
+import { Component, Mixins, Prop } from "../src/classes";
 
 @Component({
-    components: {
-        TestMixin
+    inject: {
+        isMaster: {default: false},
+        isDetail: {default: false}
     }
 })
-export default class ComponentView extends Mixins(TestMixin, NavigationMixin) {
+export default class ComponentView extends Mixins(NavigationMixin) {
     @Prop({default: 111})
-        count!: number;
+        count!: number
 
     mySetData = 'hello world';
     something = 'else';
@@ -91,9 +73,6 @@ export default class ComponentView extends Mixins(TestMixin, NavigationMixin) {
     }
 
     push() {
-        this.hasTest
-        this.doSomething("test")
-        this.canPop
         this.show({
             url: "/test/" + (this.count+1),
             components: [

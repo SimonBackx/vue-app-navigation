@@ -1,9 +1,6 @@
 <template>
-    <!-- Element that will get displayed fixed left, top, right bottom during transitions -->
     <div>
-        <!-- Element that will take over the document scroll position during transitions -->
         <div>
-            <!-- Actual content with padding -->
             <ComponentWithPropertiesInstance :component="root" />
         </div>
     </div>

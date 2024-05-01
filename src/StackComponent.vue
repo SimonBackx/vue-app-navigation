@@ -47,6 +47,15 @@ const StackComponent =  defineComponent({
         show(component: ComponentWithProperties) {
             this.components.push(component);
         },
+        getFocusedComponent() {
+            for (let i = this.components.length - 1; i >= 0; i--) {
+                if (this.components[i].hasHistoryIndex() && !this.components[i].isDismissing.value) {
+                    // We returned to this component
+                    return this.components[i];
+                }
+            }
+            return null;
+        },
         removeAt(index: number, key: number) {            
             if (!this.components[index]) {
                 // Manually search for the key (race conditions with slow events in vue)
@@ -63,20 +72,13 @@ const StackComponent =  defineComponent({
                 this.components.splice(index, 1);
 
                 if (hadHistory) {
-                    // Find the last component that has a history index
-                    let found = false;
-                    for (let i = this.components.length - 1; i >= 0; i--) {
-                        if (this.components[i].hasHistoryIndex()) {
-                            // We returned to this component
-                            this.components[i].returnToHistoryIndex()
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
+                    const newFocused = this.getFocusedComponent();                    
+                    if (!newFocused) {
                         // The normalModalStackComponent is visible again
                         console.log('No history index found in stack component')
                         this.$emit("returnToHistoryIndex");
+                    } else {
+                        newFocused.returnToHistoryIndex()
                     }
                 }
             } else {

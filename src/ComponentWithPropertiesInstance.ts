@@ -181,7 +181,7 @@ export default {
 
         sharedContext.deactivate = (vnode: VNode) => {
             const instance = vnode.component! as any
-            move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
+            //move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
             queuePostFlushCb(() => {
                 if (instance.da) {
                     invokeArrayFns(instance.da)
@@ -195,11 +195,14 @@ export default {
         }
 
         function unmount(vnode: VNode) {
+            console.log('unmounting')
             if (current) {
                 const { subTree } = instance
                 const _innerVnode = getInnerChild(subTree);
 
                 if (vnode.type === _innerVnode.type && vnode.key === _innerVnode.key) {
+                    console.log('called deactivated hook on inner vnode')
+
                     // current instance will be unmounted as part of keep-alive's unmount
                     // so we should not call unmount manually - only the deactivate hook will be called manually
                     resetShapeFlag(_innerVnode)

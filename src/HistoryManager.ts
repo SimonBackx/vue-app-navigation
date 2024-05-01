@@ -160,6 +160,12 @@ class HistoryManagerStatic {
         if (ComponentWithProperties.debug) {
             console.log("Did return to history index " + counter + ", coming from " + this.counter);
         }
+        if (counter > this.counter) {
+            console.warn('Performed non-compatible navigation. Probably because side-by-side views navigating')
+            this.invalidateHistory();
+            return;
+        }
+
         if (counter < this.counter) {
             this.counter = counter;
 

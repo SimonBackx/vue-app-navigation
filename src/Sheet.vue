@@ -195,7 +195,7 @@ export default defineComponent({
         }
     }
 
-    &.fade-enter, &.fade-leave-to {
+    &.fade-enter-from, &.fade-leave-to {
         &:after {
             opacity: 0;
         }

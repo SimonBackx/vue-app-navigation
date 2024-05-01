@@ -77,9 +77,9 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
         // This allows us to use 'this' in properties
         // to make this work, we use a proxy in the VueComponent class
         // ref https://stackoverflow.com/a/40714458/5306026
-        const vm = this;
+        let vm = this;
 
-        if (! OriginalClass.prototype.__getter) {
+        if (!OriginalClass.prototype.__getter) {
             throw new Error('Component '+options.name+' should either extend VueComponent or extend Mixins.')
         }
 
@@ -91,16 +91,19 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
             }
             return v;
         }
-
-        const instance = new OriginalClass();
         const defaultData: any = {};
 
-        for (const key of Object.keys(instance)) {
+        // This has side effects
+        const instance = new OriginalClass();
+
+        // Now revert the proxy so we don't read from the vm while determining the props
+        vm = {};
+        for (const key of Object.getOwnPropertyNames(instance)) {
             if (instance[key] !== undefined) {
                 if (options.props && key in options.props) {
-                    console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})')
+                    console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})', {component: options.name, key, value: instance[key]})
                 } else {
-                    defaultData[key] = instance[key]
+                    defaultData[key] = instance[key];
                 }
             }
         }
