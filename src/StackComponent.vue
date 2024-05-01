@@ -82,7 +82,7 @@ const StackComponent =  defineComponent({
                     }
                 }
             } else {
-                console.warn("Expected component with key " + key + " at index" + index);
+                console.warn("Expected component with key " + key + " at index " + index);
             }
         }
     }

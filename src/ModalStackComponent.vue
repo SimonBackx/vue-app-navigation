@@ -8,6 +8,7 @@
 <script lang="ts">
 import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
+import { usePop } from "../dist";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
@@ -62,7 +63,7 @@ const ModalStackComponent = defineComponent({
         const definitions: any = {
             parentPresent: usePresent(),
             parentDismiss: useDismiss(),
-            parentPop: useDismiss(),
+            parentPop: usePop(),
             parentShow: useShow(),
         };
 

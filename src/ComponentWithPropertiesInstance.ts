@@ -181,7 +181,9 @@ export default {
 
         sharedContext.deactivate = (vnode: VNode) => {
             const instance = vnode.component! as any
-            //move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
+
+            // This causes an issue with leave animations because the element is removed from the DOM
+            move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
             queuePostFlushCb(() => {
                 if (instance.da) {
                     invokeArrayFns(instance.da)
@@ -201,8 +203,6 @@ export default {
                 const _innerVnode = getInnerChild(subTree);
 
                 if (vnode.type === _innerVnode.type && vnode.key === _innerVnode.key) {
-                    console.log('called deactivated hook on inner vnode')
-
                     // current instance will be unmounted as part of keep-alive's unmount
                     // so we should not call unmount manually - only the deactivate hook will be called manually
                     resetShapeFlag(_innerVnode)
