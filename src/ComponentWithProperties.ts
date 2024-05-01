@@ -50,7 +50,7 @@ export class ComponentWithProperties {
     // Counter for debugging. Count of components that are kept alive but are not mounted.
     static keepAliveCounter = 0;
     static keyCounter = 0;
-    static debug = false;
+    static debug = true;
 
     /// Cover whole screen. Other style = popup
     public modalDisplayStyle: ModalDisplayStyle = "cover"
@@ -73,14 +73,6 @@ export class ComponentWithProperties {
         markRaw(this);
 
         this.properties = reactive(this.properties);
-
-        // Properties should
-        // for (const key in properties) {
-        //     const element = properties[key];
-        //     if (typeof element === "object") {
-        //         this.properties = reactive(element);
-        //     }
-        // }
     }
 
     clone() {

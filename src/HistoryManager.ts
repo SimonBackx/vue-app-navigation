@@ -10,6 +10,8 @@ type HistoryState = {
     /// Whether the history pushState was used to create this state (true) or if this is only a virtual state (false).
     adjustHistory: boolean;
 
+    invalid: boolean;
+
     /// Action to execute when the user navigates back to the previous state using the browser's back button.
     undoAction: ((animate: boolean) => void|Promise<void>)|null;
 }
@@ -63,7 +65,11 @@ class HistoryManagerStatic {
                     called = true;
                     clearTimeout(timer);
                     window.removeEventListener("popstate", listener);
-                    resolve();
+
+                    // Best to wait until we are sure the other listener was also called
+                    setTimeout(() => {
+                        resolve();
+                    }, 0);
                 };
 
                 window.addEventListener("popstate", listener);
@@ -113,6 +119,7 @@ class HistoryManagerStatic {
             index: this.counter,
             adjustHistory,
             undoAction,
+            invalid: false
         })
         const c = this.counter;
 
@@ -148,7 +155,7 @@ class HistoryManagerStatic {
         for (const state of this.states) {
             state.adjustHistory = false;
             state.undoAction = null;
-            // Url will still be correct
+            state.invalid = true;
         }
     }
 
@@ -229,13 +236,20 @@ class HistoryManagerStatic {
                     }
                 } else {
                     // Only animate if we only have one undo action and if animations are enabled
-                    const animate = this.counter - newCounter == 1 && this.animateHistoryPop;
+                    const animate = (this.counter - newCounter) == 1 && this.animateHistoryPop;
                     
                     // Set new counter position
                     this.counter = newCounter
                     
                     // Delete all future states
                     const deletedStates = this.states.splice(this.counter + 1);
+
+                    const newState = this.states[this.counter];
+                    if (newState.invalid) {
+                        console.warn('Reloading page bacause of invalid history', newState)
+                        window.location.reload();
+                        return;
+                    }
 
                     // Execute undo actions in right order
                     for (const state of deletedStates.reverse()) {
@@ -264,13 +278,30 @@ class HistoryManagerStatic {
 
         this.active = true;
 
+        if (history.state && history.state.counter !== undefined && typeof history.state.counter === "number") {
+            console.log('Loaded page with an already active state...', history.state.counter)
+            // Push invalid items to the states
+            for (let i = 0; i < history.state.counter; i++) {
+                this.states.push({
+                    index: i,
+                    adjustHistory: false,
+                    url: undefined,
+                    invalid: true,
+                    undoAction: null
+                })
+            }
+            this.counter = history.state.counter;
+        }
+
         // Set counter of initial history
         history.replaceState({ counter: this.counter }, "");
 
         this.states.push({
             index: this.counter,
             adjustHistory: false,
-            url: "/"
+            url: undefined,
+            invalid: false,
+            undoAction: null
         })
     }
 }

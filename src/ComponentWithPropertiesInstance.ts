@@ -197,7 +197,6 @@ export default {
         }
 
         function unmount(vnode: VNode) {
-            console.log('unmounting')
             if (current) {
                 const { subTree } = instance
                 const _innerVnode = getInnerChild(subTree);

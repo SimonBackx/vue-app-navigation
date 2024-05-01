@@ -187,9 +187,10 @@ const SplitViewController = defineComponent({
 
 
                 this.getScrollElement().scrollTop = 0;
+                if (this.detail) {
+                    HistoryManager.invalidateHistory()
+                }
                 this.detail = component;
-                
-                HistoryManager.invalidateHistory()
                 this.detail.assignHistoryIndex()
             }
             return true;
@@ -250,8 +251,6 @@ const SplitViewController = defineComponent({
                 console.log('pushing root detail', this.rootDetail)
                 this.detail = this.correctedRootDetail.clone();
                 this.detailKey = this.detail.key;
-                
-                HistoryManager.invalidateHistory()
                 this.detail.assignHistoryIndex()
                 return;
             }
