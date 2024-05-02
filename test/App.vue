@@ -1,9 +1,7 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
-    <I18nWrapper>
-        <ModalStackComponent :root="root" />
-    </I18nWrapper>
+    <ModalStackComponent :root="root" />
 </template>
 
 <script lang="ts">

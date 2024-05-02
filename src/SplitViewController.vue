@@ -1,16 +1,16 @@
 <template>
     <div class="split-view-controller" :data-has-detail="detail ? 'true' : 'false'">
         <div ref="masterElement" class="master">
-            <NavigationController ref="navigationController" :root="root" :custom-provide="{isMaster: true, isDetail: false}" />
+            <NavigationController ref="navigationController" :root="root" :custom-provide="masterProvide" />
         </div>
         <div v-if="detail" class="detail">
-            <FramedComponent :key="detail.key" :root="detail" :custom-provide="{isDetail: true, isMaster: false}" />
+            <FramedComponent :key="detail.key" :root="detail" />
         </div>
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
+import { computed,defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
@@ -86,6 +86,12 @@ const SplitViewController = defineComponent({
         };
     },
     computed: {
+        masterProvide() {
+            return {
+                // The master cannot make changes to the url or title if there is a detail
+                reactive_navigation_disable_url: computed(() => !!this.detail)
+            }
+        },
         lastIsDetail() {
             return this.detailKey != null && this.navigationController?.mainComponent?.key == this.detailKey;
         },
@@ -176,7 +182,7 @@ const SplitViewController = defineComponent({
             return true;
         },
         async showDetail(options: PushOptions): Promise<boolean> {
-            const component = options.components[options.components.length - 1]
+            const component = options.components[options.components.length - 1] as ComponentWithProperties
             this.detailKey = component.key;
 
             if (this.shouldCollapse()) {

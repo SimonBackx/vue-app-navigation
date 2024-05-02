@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import type { ComponentOptions } from "vue";
+import { type ComponentOptions,defineComponent } from "vue";
 
-import type { UrlMatchResult, UrlParamsConstructors } from "../utils/UrlHelper";
+import type { UrlParamsConstructors } from "../utils/UrlHelper";
 
 export const $internalHooks = [
     'data',
@@ -176,10 +176,8 @@ export type NavigationOptions<T> = {
     routes?: Route<{}, T>[]
 }
 
-type ExtendedOptions<T> = ComponentOptions<T> & ThisType<T> & {
-    navigation: NavigationOptions<T>
-};
-
+type ExtendedOptions<T> = ComponentOptions<{}, T> & ThisType<T>
+export type VueClass<V = any> = { new(...args: any[]): V }
 export function Component<V>(options: ExtendedOptions<V>): <VC extends VueClass<V>>(target: VC) => VC
 export function Component<VC extends VueClass>(target: VC): VC;
 export function Component(options: any) {
@@ -189,5 +187,4 @@ export function Component(options: any) {
     return (OriginalClass: any) => buildComponent(OriginalClass, options);
 }
 
-export type VueClass<V = any> = { new(...args: any[]): V }
 

@@ -14,8 +14,6 @@ extendUrl(computed(() => {
     return prefix.value.toString()
 }))
 
-setInterval(() => {
-    prefix.value = prefix.value + 1
-}, 1000)
+
 
 </script>

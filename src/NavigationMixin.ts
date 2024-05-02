@@ -22,8 +22,16 @@ export function usePopup(): Ref<InstanceType<typeof Popup> | null> | InstanceTyp
 
 type Unref<T> = T extends Ref<infer U> ? U : T;
 
+declare module 'vue' {
+    interface ComponentCustomOptions {
+        navigation?: NavigationOptions<any>
+    }
+}
+
 const navigationMethods = {
     async handleRoutes() {
+        this.setTitle();
+
         if (this.customRoutes) {
             await this.customRoutes()
         }
@@ -41,8 +49,17 @@ const navigationMethods = {
                     adjustHistory: false,
                     query: result.query
                 })
+                return; // The route should clear url helpers
             }
         }
+
+        
+        UrlHelper.shared.clear()
+    },
+
+    setTitle() {
+        const navigationOptions = this.$options?.navigation as NavigationOptions<any> | undefined
+        if (!navigationOptions) return
 
         // Process routes
         const title = navigationOptions.title
@@ -51,7 +68,6 @@ const navigationMethods = {
         } else {
             this.$url.setTitle(title ?? '')
         }
-        UrlHelper.shared.clear()
     },
 
     async navigateTo<Params>(options: RouteIdentification<Params> & RouteNavigationOptions<Params>) {            
@@ -182,6 +198,9 @@ export const NavigationMixin = {
     },
     mounted() {
         this.handleRoutes().catch(console.error)
+    },
+    activated() {
+        this.setTitle();
     },
     methods: {
         ...navigationMethods

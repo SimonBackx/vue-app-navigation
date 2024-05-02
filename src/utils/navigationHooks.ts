@@ -140,6 +140,7 @@ export function extendUrl(url: string|Ref<string>) {
 export function useUrl() {
     const currentComponent = useCurrentComponent()
     const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null
+    const disableUrl = inject('reactive_navigation_disable_url', null) as Ref<boolean | undefined> | null
 
     return {
         getUrl() {
@@ -151,16 +152,25 @@ export function useUrl() {
         },
 
         /**
-         * Only call this after you've processed all the .match() calls (and awaited async stuff)
+         * Ideally call this after you've processed all the .match() calls (and awaited async stuff)
          */
-        setTitle(title?: string) {
+        setTitle(title: string) {
             if (!currentComponent) {
                 console.error("No current component while setting title", title)
                 return;
             }
+            if (unref(disableUrl)) {
+                console.log('setTitle', title, 'by', currentComponent.component.name, 'but disabled')
+                return;
+            }
+
+            console.log('setTitle', title, this.getTransformedUrl(), 'by', currentComponent.component.name)
 
             // Local prefix?
-            currentComponent.setUrl('/' + this.getTransformedUrl(), title)
+            // currentComponent.setUrl('/' + this.getTransformedUrl(), title)
+            if (title) {
+                currentComponent.setTitle(title)
+            }
         },
 
         extendUrl(url: string): string {

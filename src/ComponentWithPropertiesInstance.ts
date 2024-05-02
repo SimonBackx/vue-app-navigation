@@ -2,6 +2,7 @@ import { invokeArrayFns, ShapeFlags } from "@vue/shared";
 import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject,onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
+import { UrlHelper } from "./utils/UrlHelper";
 
 export function invokeVNodeHook(
     hook: any,
@@ -147,6 +148,17 @@ export default {
         for (const key in combinedProvide) {
             provide(key, combinedProvide[key])
         }
+
+        const disableUrl = inject<boolean|null>('reactive_navigation_disable_url', null)
+        onActivated(() => {
+            // We cannot inherit here because url could be set on component itself
+            // if not set, we are probably the root view, so we can set the url to an empty url
+            const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? ''
+            const disableUrlUnwrapped = unref(disableUrl) ?? false;
+            if (!disableUrlUnwrapped) {
+                props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
+            }
+        });
 
         const {
             renderer: {

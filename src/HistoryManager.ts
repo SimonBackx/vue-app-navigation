@@ -32,6 +32,7 @@ class HistoryManagerStatic {
     // Manipulating the history is async and can cause issues when fast calls happen without awaiting the previous one
     historyQueue: (() => Promise<void>|void)[] = [];
     isQueueRunning = false;
+    changeUrlTimeout: NodeJS.Timeout | null = null;
 
     private addToQueue(action: () => Promise<void>|void) {
         this.historyQueue.push(action);
@@ -74,6 +75,7 @@ class HistoryManagerStatic {
 
                     // Best to wait until we are sure the other listener was also called
                     setTimeout(() => {
+                        this.manualStateAction = false;
                         resolve();
                     }, 0);
                 };
@@ -95,26 +97,48 @@ class HistoryManagerStatic {
             return;
         }
 
-        if (ComponentWithProperties.debug) {
-            console.log("Set url: " + url+", current counter: "+this.counter);
-        }
+        //if (ComponentWithProperties.debug) {
+        console.log("Set url: " + url+", for index "+index+" with current counter: "+this.counter, title);
+        //}
 
         if (index === undefined || index === this.counter) {
-            const count = this.states[this.states.length - 1].index;
+            const state = this.states[this.states.length - 1]
+            const count = state.index;
 
-            this.addToQueue(() => {
-                if (ComponentWithProperties.debug) {
-                    console.log('history.replaceState', count, url)
+            // We throttle to prevent changing the url so many times
+            if (this.changeUrlTimeout) {
+                clearTimeout(this.changeUrlTimeout);
+            }
+            this.changeUrlTimeout = setTimeout(() => {
+                if (this.counter !== count || (state.url !== url)) {
+                    return;
                 }
-                history.replaceState({ counter: count }, "", url);
-                if (title) {
-                    window.document.title = title;
-                }
-            });
-            this.states[this.states.length - 1].url = url;
-            this.states[this.states.length - 1].title = title;
+                this.addToQueue(() => {
+                    if (this.counter !== count || (state.url !== url)) {
+                        return;
+                    }
+                    if (ComponentWithProperties.debug) {
+                        console.log('history.replaceState', count, url)
+                    }
+                    console.log("history.replaceState", count, url, state.title);
+                    history.replaceState({ counter: count }, "", url);
+                    if (state.title) {
+                        window.document.title = state.title; // use state title here, because could have changed already
+                    }
+                });
+            }, 50)
+
+            state.url = url;
+            if (title) {
+                state.title = title;
+            }
         } else {
             const state = this.states[index];
+            if (!state) {
+                console.error('Search state with index ', index, 'but no such state found')
+                return;
+            }
+
             if (state.index !== index) {
                 console.error('Search state with index ', index, 'but received state with index', state.index)
                 return;
@@ -126,6 +150,33 @@ class HistoryManagerStatic {
                 }
             }
             state.url = url;
+            if (title) {
+                state.title = title;
+            }
+        }
+    }
+
+
+    /**
+     * Set the saved title for a given state. If that state is the current one, it will also get set immediately
+     */
+    setTitle(title: string, index?: number) {
+        if (!this.active) {
+            return;
+        }
+
+        console.log('Set state title', title, index, this.counter)
+
+        if (index === undefined || index === this.counter) {
+            const state = this.states[this.states.length - 1]
+            window.document.title = title;
+            state.title = title;
+        } else {
+            const state = this.states[index];
+            if (state.index !== index) {
+                console.error('Search state with index ', index, 'but received state with index', state.index)
+                return;
+            }
             state.title = title;
         }
     }
@@ -195,10 +246,24 @@ class HistoryManagerStatic {
         if (ComponentWithProperties.debug) {
             console.log("Did return to history index " + counter + ", coming from " + this.counter);
         }
+
         if (counter > this.counter) {
             console.warn('Performed non-compatible navigation. Probably because side-by-side views navigating')
             this.invalidateHistory();
-            return;
+            
+            // Append invalid history items
+            for (let i = this.counter + 1; i <= counter; i++) {
+                this.states.push({
+                    index: i,
+                    adjustHistory: false,
+                    url: undefined,
+                    title: undefined,
+                    invalid: true,
+                    undoAction: null
+                })
+            }
+
+            this.counter = counter;
         }
 
         if (counter < this.counter) {
@@ -246,7 +311,6 @@ class HistoryManagerStatic {
                 return;
             }
             if (this.manualStateAction) {
-                this.manualStateAction = false;
                 return;
             }
             this.isAdjustingState = true;

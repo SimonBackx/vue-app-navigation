@@ -67,6 +67,8 @@ export class ComponentWithProperties {
     // Hisotry index
     public historyIndex: number | null = null;
 
+    static historyIndexOwners = new Map<number, ComponentWithProperties>()
+
     // private static ignoreActivate: ComponentWithProperties | null = null
 
     constructor(component: any, properties: Record<string, any> = {}, options?: {provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
@@ -144,8 +146,14 @@ export class ComponentWithProperties {
             return
         }
 
+        if (this.historyIndex !== null) {
+            this.returnToHistoryIndex()
+            return;
+        }
+
         const state = HistoryManager.getCurrentState()
         this.historyIndex = state.index
+        ComponentWithProperties.historyIndexOwners.set(state.index, this)
     }
 
     inheritHistoryIndex(index: number) {
@@ -153,6 +161,10 @@ export class ComponentWithProperties {
         if (this.historyIndex === null) {
             this.historyIndex = index
         }
+    }
+
+    ownsHistoryIndex() {
+        return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this
     }
 
     setUrl(url: string, title?: string) {
@@ -164,7 +176,33 @@ export class ComponentWithProperties {
         if (!HistoryManager.active) {
             return
         }
+
+        if (!this.ownsHistoryIndex()) {
+            console.error('Tried setting url on a component that does not own the history index', this.component.name)
+            return
+        }
+        
         HistoryManager.setUrl(url, title, this.historyIndex)
+    }
+
+    setTitle(title: string) {
+        if (!title) {
+            return;
+        }
+
+        if (this.historyIndex === null) {
+            console.error('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
+            return
+        }
+
+        if (!HistoryManager.active) {
+            return
+        }
+
+        // This does not need to own the history index
+        // a decendant of a view can set the title
+        
+        HistoryManager.setTitle(title, this.historyIndex)
     }
 
     /**
@@ -190,6 +228,7 @@ export class ComponentWithProperties {
             return false;
         }
 
+        ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this)
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
     }
