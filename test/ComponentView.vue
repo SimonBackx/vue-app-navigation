@@ -92,8 +92,7 @@ export default class ComponentView extends Mixins(NavigationMixin) {
     something = 'else';
 
     push() {
-        this.navigateTo({
-            url: '/test/@count',
+        this.$navigate('/test/@count', {
             params: {
                 count: this.count + 1
             }
@@ -127,8 +126,7 @@ export default class ComponentView extends Mixins(NavigationMixin) {
             modalDisplayStyle: "popup"
         }).catch(console.error)*/
 
-        this.navigateTo({
-            url: '/modal/@count',
+        this.$navigate('/modal/@count', {
             params: {
                 count: this.count + 1
             }

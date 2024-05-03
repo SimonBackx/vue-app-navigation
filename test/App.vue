@@ -24,12 +24,10 @@ export default defineComponent({
         return {
             root: new ComponentWithProperties(SplitViewController, {
                 root: new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(BasicView, {}, {provide: {
-                        isDetail: true
-                    }})
+                    root: new ComponentWithProperties(BasicView, {}).setCheckRoutes()
                 }),
                 rootDetail: new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(ComponentView, {})
+                    root: new ComponentWithProperties(ComponentView, {}).setCheckRoutes()
                 })
             })
         }

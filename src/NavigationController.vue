@@ -174,6 +174,7 @@ const NavigationController = defineComponent({
             return this.$el && (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         },
         returnToHistoryIndex() {
+            console.log('Called returnToHistoryIndex on navigation controller')
             const lastComponent = this.components[this.components.length - 1];
             if (lastComponent && lastComponent.hasHistoryIndex()) {
                 return lastComponent.returnToHistoryIndex();

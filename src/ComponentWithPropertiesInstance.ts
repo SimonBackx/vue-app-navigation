@@ -157,11 +157,49 @@ export default {
             // if not set, we are probably the root view, so we can set the url to an empty url
             const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? unref(inheritedUrlRaw) ?? ''
             const disableUrlUnwrapped = unref(disableUrl) ?? false;
+
             if (!disableUrlUnwrapped) {
+                console.log('SEt url activated', '/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
                 props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
+            } else {
+                console.log('Setting url activated disabled for', props.component.component.name)
             }
         });
 
+        // onActivated is not always called reliably here
+        onMounted(() => {
+            // We cannot inherit here because url could be set on component itself
+            // if not set, we are probably the root view, so we can set the url to an empty url
+            const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? unref(inheritedUrlRaw) ?? ''
+            const disableUrlUnwrapped = unref(disableUrl) ?? false;
+
+            if (!disableUrlUnwrapped) {
+                console.log('SEt url', '/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
+                props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
+            } else {
+                console.log('Setting url disabled for', props.component.component.name)
+            }
+        });
+
+        /*onMounted(() => {
+            if (!current) {
+                // Not yet correctly mounted, or already unmounted.
+                return
+            }
+
+            const componentInstance = props.component.componentInstance()
+
+            if (props.component.checkRoutes && componentInstance) {
+                console.log('Component allowed to check routes', props.component.component.name)
+                props.component.checkRoutes = false;
+
+                if (componentInstance.$options.onCheckRoutes) {
+                    componentInstance.$options.onCheckRoutes.call(componentInstance);
+                } else {
+                    console.log('Component did not have a routes handler')
+                }
+            }
+        })*/
         const {
             renderer: {
                 //p: patch,

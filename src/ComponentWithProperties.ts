@@ -32,6 +32,25 @@ function getExposeProxy(instance: ComponentInternalInstance) {
     return instance.exposeProxy as ComponentPublicInstance;
 }
 
+export function forAllRoots(root: ComponentWithProperties, handler: (root: ComponentWithProperties) => void, alreadyProcessed?: Set<ComponentWithProperties>) {
+    const handled = alreadyProcessed ?? new Set() // to avoid recursive calling
+    handler(root);
+    handled.add(root);
+
+    for (const key in root.properties) {
+        const v = root.properties[key];
+        if (v instanceof ComponentWithProperties) {
+            forAllRoots(v, handler, handled)
+        }
+        if (Array.isArray(v) && v.length) {
+            const lastItem = v[v.length - 1]
+            if (lastItem instanceof ComponentWithProperties) {
+                forAllRoots(lastItem, handler, handled)
+            }
+        }
+    }
+}
+
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
     public component: any;
@@ -62,6 +81,7 @@ export class ComponentWithProperties {
 
     // If the display animation should be animated
     public animated = true
+    public checkRoutes = false; // Setting this will allow the component to check the routes on the next activation
     public isDismissing = ref(false) // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
@@ -70,6 +90,13 @@ export class ComponentWithProperties {
     static historyIndexOwners = new Map<number, ComponentWithProperties>()
 
     // private static ignoreActivate: ComponentWithProperties | null = null
+
+    setCheckRoutes() {
+        forAllRoots(this, (c) => {
+            c.checkRoutes = true;
+        })
+        return this;
+    }
 
     constructor(component: any, properties: Record<string, any> = {}, options?: {provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
         this.component = component;
@@ -154,6 +181,7 @@ export class ComponentWithProperties {
         const state = HistoryManager.getCurrentState()
         this.historyIndex = state.index
         ComponentWithProperties.historyIndexOwners.set(state.index, this)
+        this.logHistoryOwners()
     }
 
     inheritHistoryIndex(index: number) {
@@ -229,8 +257,19 @@ export class ComponentWithProperties {
         }
 
         ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this)
+        console.log('New owner of history index ', this.historyIndex, this.component.name)
+        this.logHistoryOwners()
+
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
+    }
+
+    logHistoryOwners() {
+        console.log('Updated owners: ', JSON.stringify([...ComponentWithProperties.historyIndexOwners.entries()].flatMap(a => {
+            return {
+                [a[0]]: a[1].component.name ?? 'unknown'
+            }
+        }), null, 2))
     }
 
     componentInstance(): ComponentPublicInstance | null {

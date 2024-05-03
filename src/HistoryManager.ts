@@ -232,7 +232,6 @@ class HistoryManagerStatic {
         }
 
         for (const state of this.states) {
-            state.adjustHistory = false;
             state.undoAction = null;
             state.invalid = state.index !== this.counter;
         }

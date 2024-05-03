@@ -17,6 +17,12 @@ export interface PushOptions {
     adjustHistory?: boolean;
 
     /**
+     * Whether this component was pushed as result of a url reconstruction.
+     * Setting this will allow the component to build further on the url reconstruction
+     */
+    checkRoutes?: boolean;
+
+    /**
      * Use animations if possible. Default value is the animated property of ComponentWithProperties. 
      * In the future, we might remove the animated property of ComponentWithProperties and enable animations by default here.
      */
@@ -49,4 +55,5 @@ export interface PushOptions {
     modalDisplayStyle?: ModalDisplayStyle
     modalClass?: string
     modalCssStyle?: string
+
 }

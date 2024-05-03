@@ -18,7 +18,7 @@ import { HistoryManager } from "./HistoryManager";
 import NavigationController from "./NavigationController.vue";
 import { type PushOptions } from "./PushOptions";
 import { injectHooks } from "./utils/injectHooks";
-import { useUrl } from "./utils/navigationHooks";
+import { type DefaultRouteHandler,useUrl } from "./utils/navigationHooks";
 
 // Credits https://codeburst.io/throttling-and-debouncing-in-javascript-b01cad5c8edf
 const throttle = (func: any, limit: any) => {
@@ -66,14 +66,6 @@ const SplitViewController = defineComponent({
             type: Object as PropType<ComponentWithProperties>,
 
         },
-        rootDetail: {
-            default: null as ComponentWithProperties | null,
-            type: Object as PropType<ComponentWithProperties|null>
-        },
-        getDefaultDetail: {
-            default: null as (() => ComponentWithProperties | null) | null,
-            type: Function as PropType<() => ComponentWithProperties | null>
-        },
         detailWidth: {
             default: null,
             type: String
@@ -83,13 +75,18 @@ const SplitViewController = defineComponent({
         return {
             detail: null as ComponentWithProperties | null,
             detailKey: null as number | null,
+            defaultHandler: null as DefaultRouteHandler|null,
+            isChangingComponents: false as boolean
         };
     },
     computed: {
         masterProvide() {
             return {
                 // The master cannot make changes to the url or title if there is a detail
-                reactive_navigation_disable_url: computed(() => !!this.detail)
+                reactive_navigation_disable_url: computed(() => !!this.detail),
+                reactive_provide_default_handler: (defaultHandler: DefaultRouteHandler) => {
+                    this.defaultHandler = defaultHandler
+                }
             }
         },
         lastIsDetail() {
@@ -100,13 +97,6 @@ const SplitViewController = defineComponent({
         },
         masterElement() {
             return this.$refs["masterElement"] as HTMLElement;
-        },
-        correctedRootDetail(): ComponentWithProperties | null {
-            if (this.getDefaultDetail) {
-                return this.getDefaultDetail()
-            } else {
-                return this.rootDetail;
-            }
         }
     },
     created(this: any) {
@@ -144,7 +134,7 @@ const SplitViewController = defineComponent({
         onResize() {
             if (this.shouldCollapse()) {
                 if (this.detail) {
-                    this.collapse();
+                    this.collapse().catch(console.error);
                 }
             } else {
                 if (this.canExpand()) {
@@ -182,42 +172,52 @@ const SplitViewController = defineComponent({
             return true;
         },
         async showDetail(options: PushOptions): Promise<boolean> {
+            if (this.isChangingComponents) {
+                console.error('Show detail called on a splitViewController that is busy')
+                return false;
+            }
+
             const component = options.components[options.components.length - 1] as ComponentWithProperties
             this.detailKey = component.key;
-
-            if (this.shouldCollapse()) {
-                if (this.lastIsDetail || this.detail) {
-                    console.error("Pusing a detail when a detail is already presented is not allowed");
-                    return false;
-                }
-
-                await this.navigationController.push(options);
-            } else {
-                // Replace existing detail component
-                // First check if we don't destroy anything
-                if (this.detail) {
-                    const r = await this.detail.shouldNavigateAway();
-                    if (!r) {
+            this.isChangingComponents = true;
+            try {
+                if (this.shouldCollapse()) {
+                    if (this.lastIsDetail || this.detail) {
+                        console.error("Pushing a detail when a detail is already presented is not allowed");
+                        this.isChangingComponents = false;
                         return false;
                     }
+
+                    await this.navigationController.push(options);
+                } else {
+                    // Replace existing detail component
+                    // First check if we don't destroy anything
+                    if (this.detail) {
+                        const r = await this.detail.shouldNavigateAway();
+                        if (!r) {
+                            this.isChangingComponents = false;
+                            return false;
+                        }
+                    }
+
+                    this.getScrollElement().scrollTop = 0;
+                    if (this.detail) {
+                        HistoryManager.invalidateHistory()
+                    }
+
+                    HistoryManager.pushState(undefined, null, options?.adjustHistory ?? true);
+                    this.detail = component;
+                    this.detail.assignHistoryIndex()
                 }
-
-
-                this.getScrollElement().scrollTop = 0;
-                if (this.detail) {
-                    HistoryManager.invalidateHistory()
-                }
-
-                HistoryManager.pushState(undefined, null, options?.adjustHistory ?? true);
-                this.detail = component;
-                this.detail.assignHistoryIndex()
+            } finally {
+                this.isChangingComponents = false;
             }
             return true;
         },
         shouldCollapse() {
             return (this.$el as HTMLElement).offsetWidth < 850;
         },
-        collapse() {
+        async collapse() {
             if (!this.navigationController) {
                 console.error("Cannot collapse without navigation controller");
                 return;
@@ -230,11 +230,21 @@ const SplitViewController = defineComponent({
                 console.error("Cannot collapse without detail");
                 return;
             }
-            this.detail.keepAlive = true;
-            const detail = this.detail;
-            this.detail = null;
-            this.navigationController.push({ components: [detail], animated: false });
-            HistoryManager.invalidateHistory()
+            if (this.isChangingComponents) {
+                console.error("Cannot collapse while already isChangingComponents");
+                return;
+            }
+
+            this.isChangingComponents = true;
+            try {
+                this.detail.keepAlive = true;
+                const detail = this.detail;
+                this.detail = null;
+                await this.navigationController.push({ components: [detail], animated: false });
+                HistoryManager.invalidateHistory()
+            } finally {
+                this.isChangingComponents = false;
+            }
         },
         canExpand() {
             if (!this.navigationController) {
@@ -243,11 +253,14 @@ const SplitViewController = defineComponent({
             if (this.detail) {
                 return false;
             }
+            if (this.isChangingComponents) {
+                return false;
+            }
             if (!this.lastIsDetail) {
-                if (!this.correctedRootDetail) {
-                    return false;
+                if (this.defaultHandler) {
+                    return true;
                 }
-                return true;
+                return false;
             }
             return true;
         },
@@ -260,36 +273,57 @@ const SplitViewController = defineComponent({
                 console.error("Cannot expand when detail is already visible");
                 return;
             }
+            if (this.isChangingComponents) {
+                console.error("Cannot expand while already isChangingComponents");
+                return false;
+            }
             if (!this.lastIsDetail) {
                 // Expand with rootDetail
-                if (!this.correctedRootDetail) {
-                    console.error("Cannot expand with rootDetail when there is no rootDetail");
+                if (!this.defaultHandler) {
+                    console.error("Cannot expand when there is no defaultHandler");
+                    return;
+                }
+                HistoryManager.invalidateHistory()
+
+                this.isChangingComponents = false;
+                try {
+                    const succeeded = await this.defaultHandler() // will call showDetail normally
+                    if (succeeded && !this.detail) {
+                        console.warn('Did call defaultHandler but no detail was set. Are all mounts properly awaited?')
+                    }
+                    if (!succeeded) {
+                        console.warn('Failed to show default handler')
+                    }
+                    console.info('Used default handler for split view controller')
+                } finally {
+                    this.isChangingComponents = false
+                }
+               
+                return;
+            }
+            this.isChangingComponents = true;
+
+            try {
+                const popped = await this.navigationController.pop({
+                    animated: false,
+                    destroy: false
+                });
+                if (!popped || popped.length == 0) {
+                    this.isChangingComponents = false
                     return;
                 }
 
-                this.detail = this.correctedRootDetail.clone();
-                this.detailKey = this.detail.key;
-
+                // We need to wait until it is removed from the vnode
+                await this.$nextTick();
+                HistoryManager.pushState(undefined, null, false);
+                this.detailKey = popped[0].key;
+                this.detail = popped[0];
+                
                 HistoryManager.invalidateHistory()
                 this.detail.assignHistoryIndex()
-                return;
+            } finally {
+                this.isChangingComponents = false
             }
-            const popped = await this.navigationController.pop({
-                animated: false,
-                destroy: false
-            });
-            if (!popped || popped.length == 0) {
-                return;
-            }
-
-            // We need to wait until it is removed from the vnode
-            await this.$nextTick();
-            HistoryManager.pushState(undefined, null, false);
-            this.detailKey = popped[0].key;
-            this.detail = popped[0];
-            
-            HistoryManager.invalidateHistory()
-            this.detail.assignHistoryIndex()
         }
     }
 })

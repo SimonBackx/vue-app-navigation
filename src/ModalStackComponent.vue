@@ -89,9 +89,10 @@ const ModalStackComponent = defineComponent({
                 })
                 c.inheritFromDisplayer(component) // fixes popup not inheriting from displayer (inherits wrong url)
 
-                HistoryManager.pushState(undefined, (canAnimate: boolean) => {
+                const adjustHistory = options?.adjustHistory ?? true
+                HistoryManager.pushState(undefined, adjustHistory ? ((canAnimate: boolean) => {
                     (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate});
-                }, options?.adjustHistory ?? true);
+                }) : null, adjustHistory);
                 c.assignHistoryIndex()
                 
                 this.stackComponent.show(c);

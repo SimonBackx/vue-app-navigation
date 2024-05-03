@@ -159,6 +159,27 @@ export type Route<Params, T> = {
     component: unknown | 'self',
     present?: 'popup' | 'sheet' | true,
     show?: true|'detail',
+    isDefault?: RouteNavigationOptions<Params>, // Only used in splitViewController for now, in combination with show: detail
+    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>,
+
+    /**
+     * Used for building back the URL if only properties are provided
+     */
+    propsToParams?: (props: Record<string, unknown>) => {params: Params, query?: URLSearchParams},
+} | {
+    name?: string
+    url: string,
+    params?: UrlParamsConstructors<Params>,
+    query?: UrlParamsConstructors<unknown>,
+    handler: (options: {
+        url: string,
+        adjustHistory: boolean,
+        animated: boolean,
+        modalDisplayStyle: string|undefined,
+        checkRoutes: boolean
+        componentProperties: Record<string, unknown>
+    }) => Promise<void>, // replaces component + present + show
+    isDefault?: RouteNavigationOptions<Params>, // Only used in splitViewController for now, in combination with show: detail
     paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>,
 
     /**
@@ -167,7 +188,7 @@ export type Route<Params, T> = {
     propsToParams?: (props: Record<string, unknown>) => {params: Params, query?: URLSearchParams},
 }
 
-export type RouteNavigationOptions<Params> = {params?: Params, properties?: Record<string, unknown>, query?: URLSearchParams, animated?: boolean, adjustHistory?: boolean}
+export type RouteNavigationOptions<Params> = {params?: Params, properties?: Record<string, unknown>, query?: URLSearchParams, animated?: boolean, adjustHistory?: boolean, checkRoutes?: boolean}
 
 export type RouteIdentification<Params> = {name: string} | {url: string} | {route: Route<Params, any>}
 

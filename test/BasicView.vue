@@ -62,6 +62,7 @@ import { defineComponent, unref } from "vue";
 
 import { ComponentWithProperties, NavigationMixin } from "../index";
 import NavigationController from "../src/NavigationController.vue";
+import ComponentView from "./ComponentView.vue";
 
 const BasicView = defineComponent({
     mixins: [NavigationMixin],
@@ -69,6 +70,21 @@ const BasicView = defineComponent({
         _isMaster: {from: 'isMaster', default: false},
         _isDetail: {from: 'isDetail', default: false},
         reactiv_isMaster: {from: 'reactiv_isMaster', default: false}
+    },
+    navigation: {
+        title: 'Basic View',
+        routes: [
+            {
+                isDefault: {
+                    properties: {
+                        count: 123
+                    }
+                },
+                url: 'detailed',
+                show: 'detail',
+                component: ComponentView
+            }
+        ]
     },
     props: {
         count: {
@@ -109,13 +125,7 @@ const BasicView = defineComponent({
         },
 
         pushDetail() {
-            this.showDetail(
-                new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(BasicView, {
-                        count: this.count + 1
-                    })
-                })
-            ).catch(console.error)
+            this.$navigate('detailed').catch(console.error)
         },
 
         popop() {
