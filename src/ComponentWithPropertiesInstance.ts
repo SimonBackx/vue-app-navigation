@@ -150,10 +150,12 @@ export default {
         }
 
         const disableUrl = inject<boolean|null>('reactive_navigation_disable_url', null)
+        const inheritedUrlRaw = inject<string|null>('reactive_navigation_url', null)
+
         onActivated(() => {
             // We cannot inherit here because url could be set on component itself
             // if not set, we are probably the root view, so we can set the url to an empty url
-            const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? ''
+            const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? unref(inheritedUrlRaw) ?? ''
             const disableUrlUnwrapped = unref(disableUrl) ?? false;
             if (!disableUrlUnwrapped) {
                 props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
