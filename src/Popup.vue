@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
     <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div v-if="!hide" :class="buildClass" @click="onClick">
+        <div v-if="!hide" :class="buildClass" :style="style" @click="onClick">
             <div ref="mainContent">
                 <div class="scrollable-container">
                     <ComponentWithPropertiesInstance :key="root.key" :component="root" />
@@ -27,10 +27,12 @@ const Popup = instance!.type
 const props = withDefaults(
     defineProps<{
         root: ComponentWithProperties,
-        className: string
+        className: string,
+        style: string|Record<string, string>,
     }>(),
     {
-        className: 'popup'
+        className: 'popup',
+        style: '',
     }
 )
 const hide = ref(false)

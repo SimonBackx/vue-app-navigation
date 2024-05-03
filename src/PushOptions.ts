@@ -48,4 +48,5 @@ export interface PushOptions {
 
     modalDisplayStyle?: ModalDisplayStyle
     modalClass?: string
+    modalCssStyle?: string
 }

@@ -82,7 +82,11 @@ const ModalStackComponent = defineComponent({
             component.setDisplayStyle(style)
 
             if ((style === "popup" || style === "sheet" || style === "side-view") && (this.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (this.$el as HTMLElement).offsetWidth > 700)) {
-                const c = new ComponentWithProperties(Popup, { root: component, className: options.modalClass ?? style })
+                const c = new ComponentWithProperties(Popup, { 
+                    root: component, 
+                    className: options.modalClass ?? style,
+                    style: options.modalCssStyle ?? undefined,
+                })
                 c.inheritFromDisplayer(component) // fixes popup not inheriting from displayer (inherits wrong url)
 
                 HistoryManager.pushState(undefined, (canAnimate: boolean) => {
