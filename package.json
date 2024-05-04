@@ -2,15 +2,15 @@
     "name": "@simonbackx/vue-app-navigation",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "version": "2.0.0-alpha.1",
+    "version": "2.0.0-alpha.2",
     "exports": {
         ".": {
-          "import": "./dist/index.js",
-          "types": "./dist/index.d.ts"
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
         },
         "./classes": {
-          "import": "./dist/classes.js",
-          "types": "./dist/src/classes.d.ts"
+            "import": "./dist/classes.js",
+            "types": "./dist/src/classes.d.ts"
         },
         "./dist/main.css": {
             "import": "./dist/main.css"
