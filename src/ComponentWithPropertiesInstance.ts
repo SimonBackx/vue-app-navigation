@@ -152,57 +152,29 @@ export default {
         const disableUrl = inject<boolean|null>('reactive_navigation_disable_url', null)
         const inheritedUrlRaw = inject<string|null>('reactive_navigation_url', null)
 
-        onActivated(() => {
+        const updateUrl = () => {
             // We cannot inherit here because url could be set on component itself
             // if not set, we are probably the root view, so we can set the url to an empty url
             const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? unref(inheritedUrlRaw) ?? ''
             const disableUrlUnwrapped = unref(disableUrl) ?? false;
 
             if (!disableUrlUnwrapped) {
-                console.log('SEt url activated', '/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
                 props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
-            } else {
-                console.log('Setting url activated disabled for', props.component.component.name)
             }
+        }
+
+        onActivated(() => {
+            updateUrl()
         });
 
         // onActivated is not always called reliably here
         onMounted(() => {
-            // We cannot inherit here because url could be set on component itself
-            // if not set, we are probably the root view, so we can set the url to an empty url
-            const url = unref(props.component.combinedProvide.reactive_navigation_url) ?? unref(inheritedUrlRaw) ?? ''
-            const disableUrlUnwrapped = unref(disableUrl) ?? false;
-
-            if (!disableUrlUnwrapped) {
-                console.log('SEt url', '/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
-                props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
-            } else {
-                console.log('Setting url disabled for', props.component.component.name)
-            }
+            updateUrl()
         });
-
-        /*onMounted(() => {
-            if (!current) {
-                // Not yet correctly mounted, or already unmounted.
-                return
-            }
-
-            const componentInstance = props.component.componentInstance()
-
-            if (props.component.checkRoutes && componentInstance) {
-                console.log('Component allowed to check routes', props.component.component.name)
-                props.component.checkRoutes = false;
-
-                if (componentInstance.$options.onCheckRoutes) {
-                    componentInstance.$options.onCheckRoutes.call(componentInstance);
-                } else {
-                    console.log('Component did not have a routes handler')
-                }
-            }
-        })*/
+        
         const {
             renderer: {
-                //p: patch,
+                p: patch,
                 m: move,
                 um: _unmount,
                 o: { createElement },
@@ -223,17 +195,17 @@ export default {
             
             // We never allow to change props 🙏, so we can skip the patch
             // in case props have changed
-            // patch(
-            //     instance.vnode,
-            //     vnode,
-            //     container,
-            //     anchor,
-            //     instance,
-            //     parentSuspense,
-            //     namespace,
-            //     (vnode as any).slotScopeIds,
-            //     optimized,
-            // )
+            patch(
+                instance.vnode,
+                vnode,
+                container,
+                anchor,
+                instance,
+                parentSuspense,
+                namespace,
+                (vnode as any).slotScopeIds,
+                optimized,
+            )
             queuePostFlushCb(() => {
                 instance.isDeactivated = false
                 if (instance.a) {

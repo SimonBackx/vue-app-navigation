@@ -86,6 +86,7 @@ const SplitViewController = defineComponent({
                 reactive_navigation_disable_url: computed(() => !!this.detail),
                 reactive_provide_default_handler: (defaultHandler: DefaultRouteHandler) => {
                     this.defaultHandler = defaultHandler
+                    this.onResize()
                 }
             }
         },

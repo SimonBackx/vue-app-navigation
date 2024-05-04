@@ -1,11 +1,56 @@
-import { computed, customRef,getCurrentInstance, inject, onMounted,provide,type Ref,unref } from "vue";
+import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated,onMounted, provide, type Ref,unref } from "vue";
 
-import type { Route, RouteNavigationOptions } from "../class-components/Component";
-import { ComponentWithProperties,useCurrentComponent } from "../ComponentWithProperties";
+import { ComponentWithProperties, useCurrentComponent } from "../ComponentWithProperties";
 import NavigationController from "../NavigationController.vue";
 import type { PopOptions } from "../PopOptions";
 import type { PushOptions } from "../PushOptions";
 import { templateToUrl, UrlHelper, type UrlMatchResult, type UrlParamsConstructors } from "./UrlHelper";
+
+export type Route<Params, T> = {
+    name?: string
+    url: string,
+    params?: UrlParamsConstructors<Params>,
+    query?: UrlParamsConstructors<unknown>,
+    component: ComponentOptions | (() => Promise<ComponentOptions>) | 'self',
+    present?: 'popup' | 'sheet' | true,
+    show?: true|'detail',
+    isDefault?: RouteNavigationOptions<Params>, // Only used in splitViewController for now, in combination with show: detail
+    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>,
+
+    /**
+     * Used for building back the URL if only properties are provided
+     */
+    propsToParams?: (props: Record<string, unknown>) => {params: Params, query?: URLSearchParams},
+} | {
+    name?: string
+    url: string,
+    params?: UrlParamsConstructors<Params>,
+    query?: UrlParamsConstructors<unknown>,
+    handler: (options: {
+        url: string,
+        adjustHistory: boolean,
+        animated: boolean,
+        modalDisplayStyle: string|undefined,
+        checkRoutes: boolean
+        componentProperties: Record<string, unknown>
+    }) => Promise<void>, // replaces component + present + show
+    isDefault?: RouteNavigationOptions<Params>, // Only used in splitViewController for now, in combination with show: detail
+    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>,
+
+    /**
+     * Used for building back the URL if only properties are provided
+     */
+    propsToParams?: (props: Record<string, unknown>) => {params: Params, query?: URLSearchParams},
+}
+
+export type RouteNavigationOptions<Params> = {params?: Params, properties?: Record<string, unknown>, query?: URLSearchParams, animated?: boolean, adjustHistory?: boolean, checkRoutes?: boolean}
+
+export type RouteIdentification<Params> = {name: string} | {url: string} | {route: Route<Params, any>}
+
+export type NavigationOptions<T> = {
+    title: string | ((this: T) => string),
+    routes?: Route<{}, T>[]
+}
 
 export function usePop() {
     const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => void) | undefined> | null
@@ -44,7 +89,7 @@ export function useNavigate() {
         const url = templateToUrl(route.url, params ?? {})
         console.log('resolve url of navigate call', url)
 
-        if (route.handler) {
+        if ("handler" in route) {
             await route.handler({
                 url,
                 adjustHistory: options?.adjustHistory ?? true,
@@ -56,7 +101,26 @@ export function useNavigate() {
             return;
         }
 
-        const component = route.component === 'self' ? instance?.type : (typeof route.component === 'function' ? (await route.component()) : route.component)
+        let component: ComponentOptions;
+
+        if (typeof route.component === 'function') {
+            const method = route.component
+            const originalProperties = componentProperties
+
+            if (!("PromiseComponent" in window)) {
+                throw new Error('Required PromiseComponent window variable to make async components work in routes')
+            }
+
+            component = window.PromiseComponent as ComponentOptions;
+            componentProperties = {
+                promise: async () => {
+                    const realComponent = await method()
+                    return new ComponentWithProperties(realComponent, originalProperties)
+                }
+            }
+        } else {
+            component = route.component === 'self' ? (instance?.type as ComponentOptions) : route.component
+        }
 
         if (!component) {
             throw new Error('Component not found')
@@ -146,7 +210,7 @@ function getCurrentRoutes() {
 
 export type DefaultRouteHandler = () => Promise<boolean>
 
-export function defineRoutes(routes: (Route<{}, undefined>[])|(() => Promise<boolean|(Route<{}, undefined>[])>)) {
+export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<boolean|(Route<any, undefined>[])>)) {
     const component = useCurrentComponent();
     const urlhelpers = useUrl();
     const navigate = useNavigate();
@@ -162,7 +226,7 @@ export function defineRoutes(routes: (Route<{}, undefined>[])|(() => Promise<boo
 
     console.log('Did define routes for ', component?.component.name)
 
-    async function handleRoutes(routes: Route<{}, undefined>[]) {
+    async function handleRoutes(routes: Route<any, undefined>[]) {
         // Handle automatically
         for (const route of routes) {
             const result = urlhelpers.match(route.url, route.params) as UrlMatchResult<any> | undefined
@@ -371,6 +435,21 @@ export function extendUrl(url: string|Ref<string>) {
     }))
 }
 
+let titleSuffix = '';
+export function setTitleSuffix(title: string) {
+    titleSuffix = title;
+}
+
+export function setTitle(title: string) {
+    if (!title) {
+        return;
+    }
+    const urlHelpers = useUrl();
+    onActivated(() => {
+        urlHelpers.setTitle(title);
+    })
+}
+
 export function useUrl() {
     const currentComponent = useCurrentComponent()
     const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null
@@ -379,10 +458,6 @@ export function useUrl() {
     return {
         getUrl() {
             return unref(navigationUrl) ?? ''
-        },
-
-        getTransformedUrl() {
-            return UrlHelper.transformUrl(this.getUrl())
         },
 
         /**
@@ -394,16 +469,11 @@ export function useUrl() {
                 return;
             }
             if (unref(disableUrl)) {
-                console.log('setTitle', title, 'by', currentComponent.component.name, 'but disabled')
                 return;
             }
 
-            console.log('setTitle', title, this.getTransformedUrl(), 'by', currentComponent.component.name)
-
-            // Local prefix?
-            // currentComponent.setUrl('/' + this.getTransformedUrl(), title)
             if (title) {
-                currentComponent.setTitle(title)
+                currentComponent.setTitle(title + (titleSuffix ? (' | ' + titleSuffix) : ''))
             }
         },
 

@@ -206,7 +206,6 @@ export class ComponentWithProperties {
         }
 
         if (!this.ownsHistoryIndex()) {
-            console.error('Tried setting url on a component that does not own the history index', this.component.name)
             return
         }
         
