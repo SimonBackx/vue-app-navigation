@@ -227,7 +227,7 @@ export default {
             const instance = vnode.component! as any
 
             // This causes an issue with leave animations because the element is removed from the DOM
-            move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
+            // move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
             queuePostFlushCb(() => {
                 if (instance.da) {
                     invokeArrayFns(instance.da)
