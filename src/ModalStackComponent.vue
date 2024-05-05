@@ -43,6 +43,10 @@ const ModalStackComponent = defineComponent({
         initialComponents: { 
             default: null,
             type: Object as PropType<ComponentWithProperties[] | null>
+        },
+        initialPresents: { 
+            default: null,
+            type: Object as PropType<PushOptions[] | null>
         }
     },
     computed: {
@@ -68,6 +72,13 @@ const ModalStackComponent = defineComponent({
         };
 
         injectHooks(this, definitions);
+    },
+    mounted() {
+        if (this.initialPresents) {
+            for (const p of this.initialPresents) {
+                this.present(p);
+            }
+        }
     },
     //extends: NavigationMixin,
     methods: {
