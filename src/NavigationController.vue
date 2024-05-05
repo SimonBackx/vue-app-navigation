@@ -123,7 +123,7 @@ const NavigationController = defineComponent({
 
         for (const [index, component] of this.components.entries()) {
             if (index < this.components.length - 1) {
-                HistoryManager.pushState(undefined, null, false)
+                HistoryManager.pushState(undefined, null, {adjustHistory: false})
             }
             component.assignHistoryIndex()
         }
@@ -285,14 +285,20 @@ const NavigationController = defineComponent({
 
                         // todo: fix reference to this and memory handling here!!
                         await this.pop({ animated: animated && canAnimate})
-                    }, adjustHistory);
+                    }, {
+                        adjustHistory,
+                        invalid: options.invalidHistory ?? (!!replace)
+                    });
 
                     component.assignHistoryIndex()
                 }
             } else {
                 // Todo: implement back behaviour
                 for (const component of components) {
-                    HistoryManager.pushState(undefined, null, adjustHistory)
+                    HistoryManager.pushState(undefined, null, {
+                        adjustHistory,
+                        invalid: options.invalidHistory ?? (!!replace)
+                    })
                     // Assign history index
                     component.assignHistoryIndex()
                 }

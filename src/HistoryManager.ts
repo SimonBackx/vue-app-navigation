@@ -62,7 +62,6 @@ class HistoryManagerStatic {
         this.addToQueue(async () => {
             return new Promise<void>((resolve) => {
                 this.manualStateAction = true;
-                console.log('history.go', delta)
                 history.go(delta); // should be negative
                 let timer: NodeJS.Timeout | undefined = undefined
                 let called = false;
@@ -97,9 +96,9 @@ class HistoryManagerStatic {
             return;
         }
 
-        //if (ComponentWithProperties.debug) {
-        console.log("Set url: " + url+", for index "+index+" with current counter: "+this.counter, title);
-        //}
+        if (ComponentWithProperties.debug) {
+            console.log("Set url: " + url+", for index "+index+" with current counter: "+this.counter, title);
+        }
 
         if (index === undefined || index === this.counter) {
             const state = this.states[this.states.length - 1]
@@ -120,7 +119,6 @@ class HistoryManagerStatic {
                     if (ComponentWithProperties.debug) {
                         console.log('history.replaceState', count, url)
                     }
-                    console.log("history.replaceState", count, url, state.title);
                     history.replaceState({ counter: count }, "", url);
                     if (state.title) {
                         window.document.title = state.title; // use state title here, because could have changed already
@@ -165,8 +163,6 @@ class HistoryManagerStatic {
             return;
         }
 
-        console.log('Set state title', title, index, this.counter)
-
         if (index === undefined || index === this.counter) {
             const state = this.states[this.states.length - 1]
             window.document.title = title;
@@ -185,22 +181,24 @@ class HistoryManagerStatic {
         return this.states[this.counter];
     }
 
-    pushState(url: string | undefined, undoAction: ((animate: boolean) => void|Promise<void>)|null, adjustHistory: boolean) {
+    pushState(url: string | undefined, undoAction: ((animate: boolean) => void|Promise<void>)|null, options?: Partial<HistoryState>) {
         if (!this.active) {
             return;
         }
         this.counter++;
 
-        this.states.push({
+        const state = {
             url: url,
             index: this.counter,
-            adjustHistory,
+            adjustHistory: true,
             undoAction,
-            invalid: false
-        })
+            invalid: false,
+            ...options
+        };
+        this.states.push(state)
         const c = this.counter;
 
-        if (adjustHistory) {
+        if (state.adjustHistory) {
             this.addToQueue(() => {
                 if (ComponentWithProperties.debug) {
                     console.log('history.pushState', c, url)
@@ -370,7 +368,6 @@ class HistoryManagerStatic {
         this.active = true;
 
         if (history.state && history.state.counter !== undefined && typeof history.state.counter === "number") {
-            console.log('Loaded page with an already active state...', history.state.counter)
             // Push invalid items to the states
             for (let i = 0; i < history.state.counter; i++) {
                 this.states.push({

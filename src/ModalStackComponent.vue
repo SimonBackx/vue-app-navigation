@@ -92,7 +92,10 @@ const ModalStackComponent = defineComponent({
                 const adjustHistory = options?.adjustHistory ?? true
                 HistoryManager.pushState(undefined, adjustHistory ? ((canAnimate: boolean) => {
                     (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate});
-                }) : null, adjustHistory);
+                }) : null, {
+                    adjustHistory,
+                    invalid: options.invalidHistory ?? false
+                });
                 c.assignHistoryIndex()
                 
                 this.stackComponent.show(c);

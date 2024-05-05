@@ -202,11 +202,11 @@ const SplitViewController = defineComponent({
                     }
 
                     this.getScrollElement().scrollTop = 0;
-                    if (this.detail) {
-                        HistoryManager.invalidateHistory()
-                    }
 
-                    HistoryManager.pushState(undefined, null, options?.adjustHistory ?? true);
+                    HistoryManager.pushState(undefined, null, {
+                        adjustHistory: options.adjustHistory ?? true,
+                        invalid: options.invalidHistory ?? (!!this.detail)
+                    });
                     this.detail = component;
                     this.detail.assignHistoryIndex()
                 }
@@ -316,11 +316,12 @@ const SplitViewController = defineComponent({
 
                 // We need to wait until it is removed from the vnode
                 await this.$nextTick();
-                HistoryManager.pushState(undefined, null, false);
+                HistoryManager.pushState(undefined, null, {
+                    adjustHistory: false,
+                    invalid: true
+                });
                 this.detailKey = popped[0].key;
                 this.detail = popped[0];
-                
-                HistoryManager.invalidateHistory()
                 this.detail.assignHistoryIndex()
             } finally {
                 this.isChangingComponents = false

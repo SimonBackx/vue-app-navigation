@@ -17,6 +17,11 @@ export interface PushOptions {
     adjustHistory?: boolean;
 
     /**
+     * When the user will click back, the page will reload if this set is true, instead of doing js based navigation
+     */
+    invalidHistory?: boolean;
+
+    /**
      * Whether this component was pushed as result of a url reconstruction.
      * Setting this will allow the component to build further on the url reconstruction
      */
