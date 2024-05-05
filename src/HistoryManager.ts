@@ -331,7 +331,7 @@ class HistoryManagerStatic {
                     this.counter = newCounter
                     
                     // Delete all future states
-                    const deletedStates = this.states.splice(this.counter + 1);
+                    const deletedStates = this.states.splice(this.counter + 1).reverse();
 
                     const newState = this.states[this.counter];
                     if (newState.invalid) {
@@ -341,7 +341,16 @@ class HistoryManagerStatic {
                     }
 
                     // Execute undo actions in right order
-                    for (const state of deletedStates.reverse()) {
+                    for (const state of deletedStates) {
+                        if (state.invalid) {
+                            console.warn('Reloading page bacause of invalid history', state)
+                            window.location.reload();
+                            return;
+                        }
+                    }
+
+                    // Execute undo actions in right order
+                    for (const state of deletedStates) {
                         if (state.undoAction) {
                             if (ComponentWithProperties.debug) {
                                 console.log("Executing undoAction...");
