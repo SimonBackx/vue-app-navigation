@@ -124,7 +124,11 @@ export default {
 
         if (props.customProvide) {
             for (const key in props.customProvide) {
-                provide(key, props.customProvide[key])
+                if (key.startsWith('reactive_')) {
+                    provide(key, computed(() => unref(props.customProvide[key])))
+                } else {
+                    provide(key, props.customProvide[key])
+                }
             }
         }
 
