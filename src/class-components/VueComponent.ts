@@ -1,4 +1,6 @@
-export class VueComponent {
+import type { ComponentCustomProperties } from "vue";
+
+export class VueComponent implements ComponentCustomProperties {
     // This will allow us to pass the vue proxy inside the component
     constructor() {
         return new Proxy(this, {
