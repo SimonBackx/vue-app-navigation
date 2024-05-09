@@ -128,7 +128,10 @@ const ModalStackComponent = defineComponent({
         replace(component: ComponentWithProperties, animated = true) {
             const nav = this.navigationController;
             nav.push({ components: [component], animated, replace: nav.components.length });
-        }
+        },
+        async shouldNavigateAway(): Promise<boolean> {
+            return (this.$refs["navigationController"] as InstanceType<typeof NavigationController>).shouldNavigateAway()
+        },
     }
 })
 export default ModalStackComponent;
