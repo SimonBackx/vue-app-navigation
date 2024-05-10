@@ -34,6 +34,8 @@ class HistoryManagerStatic {
     isQueueRunning = false;
     changeUrlTimeout: NodeJS.Timeout | null = null;
 
+    pageLoadedAt = Date.now();
+
     private addToQueue(action: () => Promise<void>|void) {
         this.historyQueue.push(action);
         if (!this.isQueueRunning) {
@@ -108,6 +110,8 @@ class HistoryManagerStatic {
             if (this.changeUrlTimeout) {
                 clearTimeout(this.changeUrlTimeout);
             }
+
+            const didJustLoadPage = Date.now() - this.pageLoadedAt < 1000 * 5;
             this.changeUrlTimeout = setTimeout(() => {
                 if (this.counter !== count || (state.url !== url)) {
                     return;
@@ -124,7 +128,7 @@ class HistoryManagerStatic {
                         window.document.title = state.title; // use state title here, because could have changed already
                     }
                 });
-            }, 50)
+            }, didJustLoadPage ? 1000 : 20)
 
             state.url = url;
             if (title) {
@@ -373,6 +377,11 @@ class HistoryManagerStatic {
         window.addEventListener("popstate", (event) => {
             onPopState.call(this, event).catch(console.error)
         });
+
+        const clickHandler = () => {
+            this.pageLoadedAt = 0; // All url changes should be instant now
+        };
+        document.addEventListener("pointerdown", clickHandler, {once: true, passive: true});
 
         this.active = true;
 
