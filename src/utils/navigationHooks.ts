@@ -242,6 +242,12 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
                 return true; // The route should clear url helpers
             }
         }
+
+        // Check default route
+        if (await defaultHandler()) {
+            return true;
+        }
+
         return false;
     }
 
@@ -249,7 +255,7 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
         if (!Array.isArray(routes)) {
             return null;
         }
-        return routes.find(route => route.isDefault && route.show === 'detail') ?? null
+        return routes.find(route => route.isDefault) ?? null
     }
 
     const defaultHandler = async () => {
