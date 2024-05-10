@@ -99,7 +99,7 @@ export class UrlHelper {
             ) 
             && (
                 (
-                    parts[0].length == 5// && I18nController.isValidLocale(parts[0])
+                    parts[0].length == 5 && parts[0].substring(2, 3) === '-' // && I18nController.isValidLocale(parts[0])
                 )
                 || (
                     parts[0].length == 2// && I18nController.isValidLanguage(parts[0])
