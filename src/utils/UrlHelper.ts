@@ -92,22 +92,22 @@ export class UrlHelper {
             parts.pop()
         }
 
-        //if (
-        //    parts.length > 0 
-        //    && (
-        //        options?.removeLocale === undefined || options?.removeLocale === true
-        //    ) 
-        //    && (
-        //        (
-        //            parts[0].length == 5 && I18nController.isValidLocale(parts[0])
-        //        )
-        //        || (
-        //            parts[0].length == 2 && I18nController.isValidLanguage(parts[0])
-        //        )
-        //    )
-        //) {
-        //    parts.shift()
-        //}
+        if (
+            parts.length > 0 
+            && (
+                options?.removeLocale === undefined || options?.removeLocale === true
+            ) 
+            && (
+                (
+                    parts[0].length == 5// && I18nController.isValidLocale(parts[0])
+                )
+                || (
+                    parts[0].length == 2// && I18nController.isValidLanguage(parts[0])
+                )
+            )
+        ) {
+            parts.shift()
+        }
 
         if ((options?.removePrefix === undefined || options?.removePrefix === true) && this.fullPrefix) {
             for (const part of this.fullPrefix.split("/") ?? []) {
