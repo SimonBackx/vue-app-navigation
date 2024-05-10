@@ -224,14 +224,11 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
 
     currentRoutes.value = Array.isArray(routes) ? routes : [];
 
-    console.log('Did define routes for ', component?.component.name)
-
     async function handleRoutes(routes: Route<any, undefined>[]) {
         // Handle automatically
         for (const route of routes) {
             const result = urlhelpers.match(route.url, route.params) as UrlMatchResult<any> | undefined
             if (result) {
-                console.log('Matched route', route.name ?? route.url, 'in', component?.component.name)
                 await navigate(route, {
                     params: result.params, 
                     animated: false, 
@@ -244,22 +241,22 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
         }
 
         // Check default route
-        if (await defaultHandler()) {
+        if (await defaultHandler({allowDetail: false})) {
             return true;
         }
 
         return false;
     }
 
-    const getDefaultRoute = () => {
+    const getDefaultRoute = ({allowDetail}: {allowDetail?: boolean} = {allowDetail: true}) => {
         if (!Array.isArray(routes)) {
             return null;
         }
-        return routes.find(route => route.isDefault) ?? null
+        return routes.find(route => route.isDefault && (allowDetail || !("show" in route) || route.show !== 'detail')) ?? null
     }
 
-    const defaultHandler = async () => {
-        const defaultRoute = getDefaultRoute()
+    const defaultHandler = async ({allowDetail}: {allowDetail?: boolean} = {allowDetail: true}) => {
+        const defaultRoute = getDefaultRoute({allowDetail})
         if (defaultRoute) {
             console.log('Showing default route', defaultRoute.name ?? defaultRoute.url, 'in', component?.component.name)
             await navigate(defaultRoute, {
@@ -284,7 +281,6 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
 
     onMounted(async () => {
         if (component && component.checkRoutes) {
-            console.log('Component allowed to check routes', component.component.name)
             component.checkRoutes = false;
 
             // Check routes
@@ -311,7 +307,8 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
                 }
             }
         } else {
-            console.log('Component not allowed to check routes', component?.component.name)
+            // Always allowed to check default routes (unless detail routes which are handled by the split view controller)
+            await defaultHandler({allowDetail: false});
         }
         setDefaultHandler()
     });
