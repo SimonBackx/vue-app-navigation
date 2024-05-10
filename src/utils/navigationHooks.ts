@@ -87,7 +87,6 @@ export function useNavigate() {
 
         // Build url
         const url = templateToUrl(route.url, params ?? {})
-        console.log('resolve url of navigate call', url)
 
         if ("handler" in route) {
             await route.handler({

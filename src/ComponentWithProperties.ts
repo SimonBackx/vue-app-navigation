@@ -181,7 +181,6 @@ export class ComponentWithProperties {
         const state = HistoryManager.getCurrentState()
         this.historyIndex = state.index
         ComponentWithProperties.historyIndexOwners.set(state.index, this)
-        this.logHistoryOwners()
     }
 
     inheritHistoryIndex(index: number) {
@@ -197,7 +196,7 @@ export class ComponentWithProperties {
 
     setUrl(url: string, title?: string) {
         if (this.historyIndex === null) {
-            console.error('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
+            if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
             return
         }
 
@@ -218,7 +217,7 @@ export class ComponentWithProperties {
         }
 
         if (this.historyIndex === null) {
-            console.error('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
+            if (ComponentWithProperties.debug) console.warn('Tried calling .setTitle on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
             return
         }
 
@@ -244,31 +243,22 @@ export class ComponentWithProperties {
         const instance = this.componentInstance() as any;
         if (instance?.returnToHistoryIndex) {
             const worked = instance?.returnToHistoryIndex();
-            console.log('returning to instance that has an instance with custom returnToHistoryIndex method', this.component.name, worked)
+            if (ComponentWithProperties.debug) console.log('returning to instance that has an instance with custom returnToHistoryIndex method', this.component.name, worked)
             if (worked === true) {
                 return true;
             }
         }
 
         if (this.historyIndex === null) {
-            console.warn('Returning to a component that has no history index assigned. Has this component been pushed to a navigation controller properly before returning to it?', this.component.name);
+            if (ComponentWithProperties.debug) console.warn('Returning to a component that has no history index assigned. Has this component been pushed to a navigation controller properly before returning to it?', this.component.name);
             return false;
         }
 
         ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this)
-        console.log('New owner of history index ', this.historyIndex, this.component.name)
-        this.logHistoryOwners()
+        if (ComponentWithProperties.debug) console.log('New owner of history index ', this.historyIndex, this.component.name)
 
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
-    }
-
-    logHistoryOwners() {
-        console.log('Updated owners: ', JSON.stringify([...ComponentWithProperties.historyIndexOwners.entries()].flatMap(a => {
-            return {
-                [a[0]]: a[1].component.name ?? 'unknown'
-            }
-        }), null, 2))
     }
 
     componentInstance(): ComponentPublicInstance | null {
@@ -300,7 +290,7 @@ export class ComponentWithProperties {
     destroy(vnode: VNode) {
         if (this.vnode) {
             if (vnode !== this.vnode) {
-                console.warn('Received destroy event from old/different vnode', this.vnode, vnode);
+                if (ComponentWithProperties.debug) console.warn('Received destroy event from old/different vnode', this.vnode, vnode);
                 return;
             }
             if (this.keepAlive) {
