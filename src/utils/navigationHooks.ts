@@ -53,7 +53,7 @@ export type NavigationOptions<T> = {
 }
 
 export function usePop() {
-    const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => void) | undefined> | null
+    const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => Promise<void>) | undefined> | null
 
     return (options?: PopOptions) => {
         const pop = unref(rawPop) // not always reactive
