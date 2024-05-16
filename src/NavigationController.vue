@@ -103,7 +103,12 @@ const NavigationController = defineComponent({
             nextScrollPosition: 0,
             previousScrollPosition: 0,
             nextInternalScrollPosition: 0,
-            savedInternalScrollPositions
+            savedInternalScrollPositions,
+
+            // Because push/pop is async, it can cause issues if we call it multiple times after each other
+            // all push/pop operations should be queued
+            asyncQueue: [] as (() => Promise<void>)[],
+            asyncQueueRunning: false
         };
     },
     beforeMount() {
@@ -141,6 +146,41 @@ const NavigationController = defineComponent({
         this.mainComponent = null;
     },
     methods: {
+        runQueue<T>(run: () => Promise<T>): Promise<T> {
+            return new Promise<T>((resolve, reject) => {
+                this.asyncQueue.push(async () => {
+                    try {
+                        const r = await run();
+                        resolve(r)
+                    } catch (e) {
+                        reject(e)
+                    }
+                });
+                this.runQueueIfNeeded();
+            });
+        },
+        runQueueIfNeeded() {
+            if (this.asyncQueueRunning) {
+                return;
+            }
+            if (this.asyncQueue.length == 0) {
+                return;
+            }
+            this.asyncQueueRunning = true;
+            const next = this.asyncQueue.shift()
+            if (!next) {
+                this.asyncQueueRunning = false;
+                this.runQueueIfNeeded();
+                return;
+            }
+
+            next().catch((e) => {
+                console.error("Error in async queue", e);
+            }).finally(() => {
+                this.asyncQueueRunning = false;
+                this.runQueueIfNeeded();
+            });
+        },
         freezeSize() {
             const el = this.$el as HTMLElement;
 
@@ -182,133 +222,135 @@ const NavigationController = defineComponent({
             return false;
         },
         async push(options: PushOptions) {
-            if (options.components.length == 0) {
-                console.error("Missing component when pushing")
-                return
-            }
-            (document.activeElement as any)?.blur()
-            const components = options.components
-            const component = components[components.length - 1]
+            return await this.runQueue(async () => {
+                if (options.components.length == 0) {
+                    console.error("Missing component when pushing")
+                    return
+                }
+                (document.activeElement as any)?.blur()
+                const components = options.components
+                const component = components[components.length - 1]
 
-            // shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}
-            const destroy = options.destroy ?? true
-            const force = options.force ?? false
-            const animated = this.shouldAnimate() ? (options.animated === undefined ? component.animated : options.animated) : false
+                // shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}
+                const destroy = options.destroy ?? true
+                const force = options.force ?? false
+                const animated = this.shouldAnimate() ? (options.animated === undefined ? component.animated : options.animated) : false
 
-            let replace = options.replace ?? 0
-            if (replace > this.components.length) {
-                replace = this.components.length
-            }
+                let replace = options.replace ?? 0
+                if (replace > this.components.length) {
+                    replace = this.components.length
+                }
 
-            if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
+                if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
 
-            if (replace > 0) {
-                // Check if we are allowed to dismiss them all.
-                // If one fails, we skip everything.
-                if (destroy && !force) {
-                    for (let index = this.components.length - 1; index >= this.components.length - replace; index--) {
-                        const component = this.components[index];
-                        const r = await component.shouldNavigateAway();
-                        if (!r) {
-                            return;
+                if (replace > 0) {
+                    // Check if we are allowed to dismiss them all.
+                    // If one fails, we skip everything.
+                    if (destroy && !force) {
+                        for (let index = this.components.length - 1; index >= this.components.length - replace; index--) {
+                            const component = this.components[index];
+                            const r = await component.shouldNavigateAway();
+                            if (!r) {
+                                return;
+                            }
                         }
                     }
                 }
-            }
 
-            if (!animated) {
-                this.transitionName = "none";
-            } else {
-                this.transitionName = this.animationType == "modal" ? "modal-push" : options.reverse ? "pop" : "push";
-            }
+                if (!animated) {
+                    this.transitionName = "none";
+                } else {
+                    this.transitionName = this.animationType == "modal" ? "modal-push" : options.reverse ? "pop" : "push";
+                }
 
-            // Add the client height from the saved height (check pop method for information)
+                // Add the client height from the saved height (check pop method for information)
 
-            // Check if we have an internal scroll position
-            const internalScrollElement = this.getInternalScrollElement()
+                // Check if we have an internal scroll position
+                const internalScrollElement = this.getInternalScrollElement()
 
-            // The scroll element can also be located inside the component, and should be marked as the main element
-            const w = window as any;
+                // The scroll element can also be located inside the component, and should be marked as the main element
+                const w = window as any;
 
-            let clientHeight = document.documentElement.clientHeight;
-            if (w.visualViewport) {
-                clientHeight = w.visualViewport.height;
-            }
+                let clientHeight = document.documentElement.clientHeight;
+                if (w.visualViewport) {
+                    clientHeight = w.visualViewport.height;
+                }
 
-            const internalClientHeight = internalScrollElement?.clientHeight;
+                const internalClientHeight = internalScrollElement?.clientHeight;
 
-            // Save scroll position
-            this.previousScrollPosition = 0; //scrollElement.scrollTop;
-            this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
-            this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
-            this.nextScrollPosition = 0;
-            this.nextInternalScrollPosition = 0;
+                // Save scroll position
+                this.previousScrollPosition = 0; //scrollElement.scrollTop;
+                this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
+                this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
+                this.nextScrollPosition = 0;
+                this.nextInternalScrollPosition = 0;
 
-            // Save width and height
-            if (animated) {
-                this.freezeSize();
-            }
+                // Save width and height
+                if (animated) {
+                    this.freezeSize();
+                }
 
-            // Make sure the transition name changed, so wait for a rerender
-            if (replace > 0) {
-                const popped = this.components.splice(this.components.length - replace, replace, ...components);
-                        
-                if (!destroy) {
-                    // Stop destroy
-                    for (const comp of popped) {
-                        comp.keepAlive = true;
+                // Make sure the transition name changed, so wait for a rerender
+                if (replace > 0) {
+                    const popped = this.components.splice(this.components.length - replace, replace, ...components);
+                            
+                    if (!destroy) {
+                        // Stop destroy
+                        for (const comp of popped) {
+                            comp.keepAlive = true;
+                        }
+                    }
+
+                    // Back/forward buttons won't work anymore in a reliable/predicable way
+                    HistoryManager.invalidateHistory()
+                } else {
+                    this.components.push(...components);
+                }
+
+                if (this.mainComponent) {
+                    // Keep the component alive while it is removed from the DOM, unless it is being replaced
+                    this.mainComponent.keepAlive = !replace;
+                }
+
+                const adjustHistory = options?.adjustHistory ?? true
+
+                if (adjustHistory) {
+                    // We can provide a back action
+
+                    for (const component of components) {
+                        HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
+                            if (!this.mainComponent) {
+                                console.error('Tried to pop NavigationController, but it was already unmounted')
+                                return
+                            }
+
+                            // todo: fix reference to this and memory handling here!!
+                            await this.pop({ animated: animated && canAnimate})
+                        }, {
+                            adjustHistory,
+                            invalid: options.invalidHistory ?? (!!replace)
+                        });
+
+                        component.assignHistoryIndex()
+                    }
+                } else {
+                    // Todo: implement back behaviour
+                    for (const component of components) {
+                        HistoryManager.pushState(undefined, null, {
+                            adjustHistory,
+                            invalid: options.invalidHistory ?? (!!replace)
+                        })
+                        // Assign history index
+                        component.assignHistoryIndex()
                     }
                 }
 
-                // Back/forward buttons won't work anymore in a reliable/predicable way
-                HistoryManager.invalidateHistory()
-            } else {
-                this.components.push(...components);
-            }
+                this.mainComponent = component;
+                this.$emit("didPush");
 
-            if (this.mainComponent) {
-                // Keep the component alive while it is removed from the DOM, unless it is being replaced
-                this.mainComponent.keepAlive = !replace;
-            }
-
-            const adjustHistory = options?.adjustHistory ?? true
-
-            if (adjustHistory) {
-                // We can provide a back action
-
-                for (const component of components) {
-                    HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
-                        if (!this.mainComponent) {
-                            console.error('Tried to pop NavigationController, but it was already unmounted')
-                            return
-                        }
-
-                        // todo: fix reference to this and memory handling here!!
-                        await this.pop({ animated: animated && canAnimate})
-                    }, {
-                        adjustHistory,
-                        invalid: options.invalidHistory ?? (!!replace)
-                    });
-
-                    component.assignHistoryIndex()
-                }
-            } else {
-                // Todo: implement back behaviour
-                for (const component of components) {
-                    HistoryManager.pushState(undefined, null, {
-                        adjustHistory,
-                        invalid: options.invalidHistory ?? (!!replace)
-                    })
-                    // Assign history index
-                    component.assignHistoryIndex()
-                }
-            }
-
-            this.mainComponent = component;
-            this.$emit("didPush");
-
-            // Await mount
-            await this.$nextTick()
+                // Await mount
+                await this.$nextTick()
+            });
         },
         async shouldNavigateAway(): Promise<boolean> {
             for (let index = this.components.length - 1; index >= 0; index--) {
@@ -338,70 +380,75 @@ const NavigationController = defineComponent({
             return null;
         },
         async pop(options: PopOptions = {}): Promise<ComponentWithProperties[] | undefined> {
-            (document.activeElement as any)?.blur()
+            return await this.runQueue(async () => {
+                (document.activeElement as any)?.blur()
 
-            const animated = this.shouldAnimate() ? (options.animated ?? true) : false;
-            const destroy = options.destroy ?? true;
-            const count = options.count ?? 1;
-            const force = options.force ?? false;
+                const animated = this.shouldAnimate() ? (options.animated ?? true) : false;
+                const destroy = options.destroy ?? true;
+                const count = options.count ?? 1;
+                const force = options.force ?? false;
 
-            if (this.components.length <= count) {
-                const parentPop = unref(this.reactive_navigation_pop) as any;
+                if (this.components.length <= count) {
+                    const parentPop = unref(this.reactive_navigation_pop) as any;
 
-                // Prevent multiple count pop across modal levels
-                options.count = 1
+                    // Prevent multiple count pop across modal levels
+                    options.count = 1
 
-                if (!parentPop) {
-                    console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
-                    return;
-                }
-                return await parentPop(options)
-            }
-
-            if (count === 0) {
-                return;
-            }
-
-            if (destroy && !force) {
-                for (let index = this.components.length - 1; index >= this.components.length - count; index--) {
-                    const component = this.components[index];
-                    const r = await component.shouldNavigateAway();
-                    if (!r) {
+                    if (!parentPop) {
+                        console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
                         return;
                     }
+                    return await parentPop(options)
                 }
-            }
 
-            this.previousScrollPosition = 0; //this.getScrollElement().scrollTop;
-
-            if (!animated) {
-                this.transitionName = "none";
-            } else {
-                this.transitionName = this.animationType == "modal" ? "modal-pop" : "pop";
-                this.freezeSize();
-            }
-            //console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
-
-            const popped = this.components.splice(this.components.length - count, count);
-
-            if (!destroy) {
-                // Stop destroy
-                for (const comp of popped) {
-                    comp.keepAlive = true;
+                if (count === 0) {
+                    return;
                 }
-            }
 
-            // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
-            // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
-            this.nextScrollPosition = 0; //Math.max(0, (this.savedScrollPositions.pop() ?? 0));
-            this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
+                if (destroy && !force) {
+                    for (let index = this.components.length - 1; index >= this.components.length - count; index--) {
+                        const component = this.components[index];
+                        const r = await component.shouldNavigateAway();
+                        if (!r) {
+                            return;
+                        }
+                    }
+                }
 
-            this.mainComponent = this.components[this.components.length - 1];
+                this.previousScrollPosition = 0; //this.getScrollElement().scrollTop;
 
-            this.mainComponent.returnToHistoryIndex();
+                if (!animated) {
+                    this.transitionName = "none";
+                } else {
+                    this.transitionName = this.animationType == "modal" ? "modal-pop" : "pop";
+                    this.freezeSize();
+                }
+                //console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
-            this.$emit("didPop");
-            return popped;
+                const popped = this.components.splice(this.components.length - count, count);
+
+                if (!destroy) {
+                    // Stop destroy
+                    for (const comp of popped) {
+                        comp.keepAlive = true;
+                    }
+                }
+
+                // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
+                // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
+                this.nextScrollPosition = 0; //Math.max(0, (this.savedScrollPositions.pop() ?? 0));
+                this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
+
+                this.mainComponent = this.components[this.components.length - 1];
+
+                this.mainComponent.returnToHistoryIndex();
+
+                // Await mount
+                await this.$nextTick()
+
+                this.$emit("didPop");
+                return popped;
+            })
         },
         beforeEnter(insertedElement: Element) {
             if (this.transitionName == "none") {
