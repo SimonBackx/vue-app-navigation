@@ -126,10 +126,6 @@ export function useNavigate() {
             throw new Error('Component not found')
         }
 
-        if (!component.navigation) {
-            console.warn('Component', component.name, 'does not have navigation options. This will cause issues with routing as the url will not be reset')
-        }
-
         if (route.present) {
             await present({ 
                 url,
