@@ -1,6 +1,7 @@
 import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated,onMounted, provide, type Ref,unref } from "vue";
 
 import { ComponentWithProperties, useCurrentComponent } from "../ComponentWithProperties";
+import { HistoryManager } from "../HistoryManager";
 import NavigationController from "../NavigationController.vue";
 import type { PopOptions } from "../PopOptions";
 import type { PushOptions } from "../PushOptions";
@@ -437,9 +438,8 @@ export function extendUrl(url: string|Ref<string>) {
     }))
 }
 
-let titleSuffix = '';
 export function setTitleSuffix(title: string) {
-    titleSuffix = title;
+    HistoryManager.titleSuffix = title;
 }
 
 export function setTitle(title: string) {
@@ -475,7 +475,7 @@ export function useUrl() {
             }
 
             if (title) {
-                currentComponent.setTitle(title + (titleSuffix ? (' | ' + titleSuffix) : ''))
+                currentComponent.setTitle(title)
             }
         },
 

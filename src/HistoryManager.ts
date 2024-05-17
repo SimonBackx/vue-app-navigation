@@ -34,6 +34,7 @@ class HistoryManagerStatic {
     historyQueue: (() => Promise<void>|void)[] = [];
     isQueueRunning = false;
     changeUrlTimeout: NodeJS.Timeout | null = null;
+    titleSuffix = '';
 
     pageLoadedAt = Date.now();
 
@@ -127,7 +128,7 @@ class HistoryManagerStatic {
                     const formattedUrl = '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
                     history.replaceState({ counter: count }, "", formattedUrl);
                     if (state.title) {
-                        window.document.title = state.title; // use state title here, because could have changed already
+                        window.document.title = this.formatTitle(state.title); // use state title here, because could have changed already
                     }
                 });
             }, didJustLoadPage ? 1000 : 20)
@@ -160,6 +161,32 @@ class HistoryManagerStatic {
         }
     }
 
+    // Call this when url formatting or prefix has changed
+    updateUrl() {
+        if (!this.active) {
+            return;
+        }
+        this.addToQueue(() => {
+            if (ComponentWithProperties.debug) {
+                console.log('history.replaceState - updateUrl')
+            }
+            const current = new UrlHelper()
+            const formattedUrl = '/' + UrlHelper.trim(
+                UrlHelper.transformUrl(
+                    current.getPath()
+                )
+            )
+            history.replaceState({ counter: this.counter }, "", formattedUrl);
+            // if (state.title) {
+            //     window.document.title = this.formatTitle(state.title);
+            // }
+        });
+    }
+
+    formatTitle(title: string) {
+        return title + (this.titleSuffix ? (' | ' + this.titleSuffix) : '');
+    }
+
 
     /**
      * Set the saved title for a given state. If that state is the current one, it will also get set immediately
@@ -171,7 +198,7 @@ class HistoryManagerStatic {
 
         if (index === undefined || index === this.counter) {
             const state = this.states[this.states.length - 1]
-            window.document.title = title;
+            window.document.title = this.formatTitle(title);
             state.title = title;
         } else {
             const state = this.states[index];
