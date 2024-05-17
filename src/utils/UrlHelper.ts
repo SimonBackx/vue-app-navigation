@@ -8,6 +8,7 @@ export class UrlHelper {
      * Slashes are added automatically on the sides if needed
     */
     static fixedPrefix: string | null = null
+    static localePrefix: string | null = null
 
     static shared = new UrlHelper(window.location.href)
 
@@ -45,12 +46,12 @@ export class UrlHelper {
 
 
     get fullPrefix() {
-        let prefix = UrlHelper.fixedPrefix ? UrlHelper.fixedPrefix : null
+        let prefix = UrlHelper.fixedPrefix ? UrlHelper.trim(UrlHelper.fixedPrefix) : null
         if (this.localFixedPrefix) {
             if (prefix) {
-                prefix += "/" + this.localFixedPrefix
+                prefix += "/" + UrlHelper.trim(this.localFixedPrefix)
             } else {
-                prefix = this.localFixedPrefix
+                prefix = UrlHelper.trim(this.localFixedPrefix)
             }
         }
         return prefix
@@ -143,23 +144,6 @@ export class UrlHelper {
     }
 
     /**
-     * setURL, but add locale
-     */
-    static transformUrlForLocale(url: string, language: string, country: string, addPrefix = true) {
-        const prefix = this.fixedPrefix && addPrefix ? "/"+this.fixedPrefix : ""
-        const locale = language+"-"+country
-        if (I18nController.shared && I18nController.addUrlPrefix && (I18nController.skipUrlPrefixForLocale === undefined || I18nController.skipUrlPrefixForLocale !== locale)) {
-            if (I18nController.fixedCountry) {
-                return "/"+language+prefix+url
-            } else {
-                return "/"+language+"-"+country+prefix+url
-            }
-        } else {
-            return prefix+url
-        }
-    }
-
-    /**
      * override params
      */
     static setSearchParams(params: URLSearchParams) {
@@ -184,30 +168,24 @@ export class UrlHelper {
      * Return a transformed url (adds locale and fixed prefix to it)
      */
     static transformUrl(url: string, localFixedPrefix?: string) {
-        let prefix = this.fixedPrefix ? "/"+this.fixedPrefix : ""
+        let prefix = this.fixedPrefix ? ('/' + UrlHelper.trim(this.fixedPrefix)) : ""
         if (localFixedPrefix) {
-            prefix += "/"+localFixedPrefix
+            prefix += '/' + UrlHelper.trim(localFixedPrefix)
         }
 
-        // if (I18nController.shared && I18nController.addUrlPrefix && (I18nController.skipUrlPrefixForLocale === undefined || I18nController.skipUrlPrefixForLocale !== I18nController.shared.locale)) {
-        //     if (I18nController.fixedCountry) {
-        //         return "/"+I18nController.shared.language+prefix+url
-        //     } else {
-        //         return "/"+I18nController.shared.locale+prefix+url
-        //     }
-        // } else {
-        //     return prefix+url
-        // }
-        return prefix+url
+        if (this.localePrefix) {
+            return "/"+ UrlHelper.trim(this.localePrefix) + prefix + '/' + UrlHelper.trim(url)
+        }
+
+        return prefix + '/' + UrlHelper.trim(url)
     }
 
     /**
+     * @deprecated
      * setURL, but add locale
      */
     static setUrl(url: string) {
         console.warn('Used UrlHelper.setUrl', url, 'which should be replaced with this.setUrl()')
-        // HistoryManager.setUrl(this.transformUrl(url))
-        // I18nController.shared?.updateMetaData()
     }
 
     static trim(url: string): string {

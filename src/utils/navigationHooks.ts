@@ -482,9 +482,9 @@ export function useUrl() {
         extendUrl(url: string): string {
             const prefix = this.getUrl()
             if (prefix && prefix !== '/') {
-                return prefix + '/' + url.replace(/^\/+/, "").replace(/\/+$/, "")
+                return prefix + '/' + UrlHelper.trim(url)
             }
-            return url.replace(/^\/+/, "").replace(/\/+$/, "")
+            return UrlHelper.trim(url)
         },
 
         match<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
