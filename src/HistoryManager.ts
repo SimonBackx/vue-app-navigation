@@ -1,4 +1,5 @@
 import { ComponentWithProperties } from "./ComponentWithProperties";
+import { UrlHelper } from "./utils/UrlHelper";
 
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
@@ -123,7 +124,8 @@ class HistoryManagerStatic {
                     if (ComponentWithProperties.debug) {
                         console.log('history.replaceState', count, url)
                     }
-                    history.replaceState({ counter: count }, "", url);
+                    const formattedUrl = '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
+                    history.replaceState({ counter: count }, "", formattedUrl);
                     if (state.title) {
                         window.document.title = state.title; // use state title here, because could have changed already
                     }
@@ -207,7 +209,8 @@ class HistoryManagerStatic {
                 if (ComponentWithProperties.debug) {
                     console.log('history.pushState', c, url)
                 }
-                history.pushState({ counter: c }, "", url);
+                const formattedUrl = url === undefined ? undefined : '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
+                history.pushState({ counter: c }, "", formattedUrl);
             });
         } else {
             this.addToQueue(() => {

@@ -163,7 +163,7 @@ export default {
             const disableUrlUnwrapped = unref(disableUrl) ?? false;
 
             if (!disableUrlUnwrapped) {
-                props.component.setUrl('/' + UrlHelper.trim(UrlHelper.transformUrl(url)))
+                props.component.setUrl(url)
             }
         }
 
