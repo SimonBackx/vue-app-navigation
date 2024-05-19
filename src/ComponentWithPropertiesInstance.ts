@@ -1,8 +1,7 @@
 import { invokeArrayFns, ShapeFlags } from "@vue/shared";
-import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject,onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
-import { UrlHelper } from "./utils/UrlHelper";
 
 export function invokeVNodeHook(
     hook: any,

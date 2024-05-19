@@ -101,7 +101,7 @@ export class ComponentWithProperties {
     constructor(component: any, properties: Record<string, any> = {}, options?: {provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
         this.component = component;
         this.key = ComponentWithProperties.keyCounter++;
-        this.properties = properties;
+        this.properties = reactive(properties);
         this.provide = options?.provide || {};
         this.inheritedDisplayerProvide = options?.inheritedDisplayerProvide || {};
         this.inheritedParentProvide = options?.inheritedParentProvide || {};
