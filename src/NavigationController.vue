@@ -15,13 +15,14 @@
                 :key="mainComponent.key"
                 ref="child"
                 :root="mainComponent"
+                :custom-provide="provideForComponent(mainComponent.key)"
             />
         </transition>
     </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref,shallowRef, unref } from "vue";
+import { computed, defineComponent, inject, markRaw, type PropType, type Raw,type Ref,shallowRef, unref } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
@@ -93,11 +94,11 @@ const NavigationController = defineComponent({
     data() {
         const savedInternalScrollPositions: number[] = [];
         const savedScrollPositions: number[] = [];
-        const components: ComponentWithProperties[] = [];
+        const components: Raw<ComponentWithProperties>[] = [];
 
         return {
             components,
-            mainComponent: null as ComponentWithProperties | null,
+            mainComponent: null as Raw<ComponentWithProperties> | null,
             transitionName: "none",
             savedScrollPositions,
             nextScrollPosition: 0,
@@ -108,8 +109,18 @@ const NavigationController = defineComponent({
             // Because push/pop is async, it can cause issues if we call it multiple times after each other
             // all push/pop operations should be queued
             asyncQueue: [] as (() => Promise<void>)[],
-            asyncQueueRunning: false
+            asyncQueueRunning: false,
+            cachedProvides: new Map<number, any>()
         };
+    },
+    watch: {
+        // whenever question changes, this function will run
+        mainComponent(newComponent: ComponentWithProperties | null) {
+            if (!newComponent) {
+                return;
+            }
+            this.cacheComponentProvides(newComponent)
+        }
     },
     beforeMount() {
         if (this.initialComponents && this.initialComponents.length > 0) {
@@ -127,6 +138,8 @@ const NavigationController = defineComponent({
         }
 
         for (const [index, component] of this.components.entries()) {
+            this.cacheComponentProvides(component)
+
             if (index < this.components.length - 1) {
                 HistoryManager.pushState(undefined, null, {adjustHistory: false})
             }
@@ -146,6 +159,20 @@ const NavigationController = defineComponent({
         this.mainComponent = null;
     },
     methods: {
+        cacheComponentProvides(newComponent: ComponentWithProperties) {
+            if (this.animationType === 'modal') {
+                this.cachedProvides.set(newComponent.key, {
+                    reactive_navigation_can_dismiss: this.components.length > 1
+                })
+            } else {
+                this.cachedProvides.set(newComponent.key, {
+                    reactive_navigation_can_pop: this.components.length > 1 || unref(this.reactive_navigation_can_pop)
+                })
+            }
+        },
+        provideForComponent(key: number) {
+            return this.cachedProvides.get(key) ?? {};
+        },
         runQueue<T>(run: () => Promise<T>): Promise<T> {
             return new Promise<T>((resolve, reject) => {
                 this.asyncQueue.push(async () => {
