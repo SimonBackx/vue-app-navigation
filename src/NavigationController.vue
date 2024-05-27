@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, markRaw, type PropType, type Raw,type Ref,shallowRef, unref } from "vue";
+import { computed, defineComponent, inject, type PropType, type Raw, type Ref,shallowRef, unref } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";

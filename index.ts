@@ -5,6 +5,7 @@ export * from "./src/HistoryManager";
 export { default as ModalStackComponent } from "./src/ModalStackComponent.vue";
 export * from "./src/ModalStackComponentFinderMixin";
 export { default as NavigationController } from "./src/NavigationController.vue";
+export { useNavigationController } from "./src/NavigationController.vue";
 export * from "./src/NavigationMixin";
 export * from "./src/PopOptions";
 export { default as Popup } from "./src/Popup.vue";
