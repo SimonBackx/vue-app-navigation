@@ -2,7 +2,7 @@
     "name": "@simonbackx/vue-app-navigation",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "version": "2.0.0-alpha.15",
+    "version": "2.0.0-alpha.16",
     "exports": {
         ".": {
             "import": "./dist/index.js",
