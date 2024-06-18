@@ -1,4 +1,4 @@
-import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated,onMounted, provide, type Ref,unref } from "vue";
+import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated,onMounted, onScopeDispose,provide, reactive, type Ref,ref, unref } from "vue";
 
 import { ComponentWithProperties, useCurrentComponent } from "../ComponentWithProperties";
 import { HistoryManager } from "../HistoryManager";
@@ -310,6 +310,119 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
     });
 }
 
+const checkRouteCache: {
+    lastUrl: null|string, 
+    results: Map<string, {result: UrlMatchResult<any> | null | undefined, route: Route<any, unknown>}>
+} = {
+    lastUrl: null,
+    results: new Map()
+}
+
+export function useCurrentHref() {
+    const state = ref(window.location.href)
+    const owner = {}
+
+    HistoryManager.addListener(owner, () => {
+        console.log('Updating current href', window.location.href)
+        state.value = window.location.href
+    })
+
+    onScopeDispose(() => {
+        HistoryManager.removeListener(owner)
+    })
+
+    return state
+}
+
+export function useCheckRoute() {
+    const urlhelpers = useUrl();
+    const currentRoutes = getCurrentRoutes()
+    const instance = getCurrentInstance()
+    const currentPath = useCurrentHref()
+
+    const checkMatchResult = function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, result: UrlMatchResult<Params> | undefined | null, options?: RouteNavigationOptions<Params>) {
+        if (!result) {
+            return false;
+        }
+
+        if (options) {
+            for (const key in options.params) {
+                if (result.params[key] !== options.params[key]) {
+                    return false;
+                }
+            }
+
+            for (const key in options.query) {
+                if (result.query.get(key) !== options.query.get(key)) {
+                    return false;
+                }
+            }
+
+            if (!options?.params && route.propsToParams && options.properties) {
+                const {params} = route.propsToParams(options.properties);
+                
+                // todo: building back query won't really work for now
+                for (const key in params) {
+                    if (result.params[key] !== params[key]) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    const quickCheckCache = function<Params extends Record<string, unknown>> (id: string, options?: RouteNavigationOptions<Params>) {    
+        if (checkRouteCache.lastUrl !== currentPath.value) {
+            // Clear cache
+            checkRouteCache.results.clear()
+            checkRouteCache.lastUrl = currentPath.value
+
+        } else {
+            const result = checkRouteCache.results.get(id)
+            if (result) {
+                return checkMatchResult(result.route, result.result, options)
+            }
+        }
+    }
+
+    const checkRoute = function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, options?: RouteNavigationOptions<Params>) {
+        const result = urlhelpers.matchCurrent(route.url, route.params) as UrlMatchResult<Params> | undefined
+        checkRouteCache.results.set(route.url, {result, route})
+        if (route.name) {
+            checkRouteCache.results.set(route.name, {result, route})
+        }
+
+        return checkMatchResult(route, result, options);
+    }
+
+    const checkId = function<Params extends Record<string, unknown>>(urlOrName: string, options?: RouteNavigationOptions<Params>) {           
+        const result = quickCheckCache(urlOrName, options)
+        if (result !== undefined) {
+            return result
+        }
+        const route = currentRoutes.value.find(r => r.name === urlOrName || r.url === urlOrName)
+        if (!route) {
+            throw new Error('Route '+urlOrName+' not found in ' + instance?.type.name)
+        }
+
+        return checkRoute(route, options)
+    }
+
+    
+    return function<Params extends Record<string, unknown>> (prop1: string|Route<Params, unknown>, prop2?: RouteNavigationOptions<Params>) {
+        if (typeof prop1 === 'string') {
+            return checkId(prop1, prop2)
+        }
+        const result = quickCheckCache(prop1.name || prop1.url, prop2)
+        if (result !== undefined) {
+            return result
+        }
+        return checkRoute(prop1, prop2)
+    }
+}
+
 export function normalizePushOptions(o: PushOptions | ComponentWithProperties, currentComponent: ComponentWithProperties|null, urlHelpers: ReturnType<typeof useUrl>): PushOptions {
     let options: PushOptions
     if (!(o as any).components) {
@@ -486,6 +599,11 @@ export function useUrl() {
         match<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
             const shared = UrlHelper.shared;
             const helper = new UrlHelper(shared.url, this.getUrl())
+            return helper.match(template, params)
+        },
+
+        matchCurrent<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
+            const helper = new UrlHelper(undefined, this.getUrl())
             return helper.match(template, params)
         }
     }

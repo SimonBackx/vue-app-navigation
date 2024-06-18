@@ -38,6 +38,23 @@ class HistoryManagerStatic {
 
     pageLoadedAt = Date.now();
 
+    listeners: Map<unknown, () => void> = new Map()
+
+    addListener(owner: unknown, handler: () => void) {
+        this.listeners.set(owner, handler)
+    }
+
+    removeListener(owner: unknown) {
+        this.listeners.delete(owner)
+    }
+
+    callListeners() {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for (const [_, handler] of this.listeners) {
+            handler()
+        }
+    }
+
     private addToQueue(action: () => Promise<void>|void) {
         this.historyQueue.push(action);
         if (!this.isQueueRunning) {
@@ -59,6 +76,7 @@ class HistoryManagerStatic {
         } else {
             // console.log('History queue done');
             this.isQueueRunning = false;
+            this.callListeners();
         }
     }
 
