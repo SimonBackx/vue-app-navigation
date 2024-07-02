@@ -225,20 +225,32 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
         for (const route of routes) {
             const result = urlhelpers.match(route.url, route.params) as UrlMatchResult<any> | undefined
             if (result) {
-                await navigate(route, {
-                    params: result.params, 
-                    animated: false, 
-                    adjustHistory: false,
-                    query: result.query,
-                    checkRoutes: true
-                })
-                return true; // The route should clear url helpers
+                try {
+                    await navigate(route, {
+                        params: result.params, 
+                        animated: false, 
+                        adjustHistory: false,
+                        query: result.query,
+                        checkRoutes: true
+                    })
+                    return true; // The route should clear url helpers
+                } catch (e) {
+                    // Route error:
+                    // - continue to next route
+                    console.error('Failed to navigate to route', route, e)
+                }
             }
         }
 
         // Check default route
-        if (await defaultHandler({allowDetail: false})) {
-            return true;
+        try {
+            if (await defaultHandler({allowDetail: true})) {
+                return true;
+            }
+        } catch (e) {
+            // Route error:
+            // - continue to next route
+            console.error('Failed to navigate to default (non-detail) route', e)
         }
 
         return false;
@@ -255,12 +267,17 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
         const defaultRoute = getDefaultRoute({allowDetail})
         if (defaultRoute) {
             console.log('Showing default route', defaultRoute.name ?? defaultRoute.url, 'in', component?.component.name)
-            await navigate(defaultRoute, {
-                ...defaultRoute.isDefault,
-                adjustHistory: false,
-                checkRoutes: false
-            })
-            return true;
+
+            try {
+                await navigate(defaultRoute, {
+                    ...defaultRoute.isDefault,
+                    adjustHistory: false,
+                    checkRoutes: false
+                })
+                return true;
+            } catch (e) {
+                console.error('Failed to navigate to default route', defaultRoute, e)
+            }
         }
         return false;
     }
