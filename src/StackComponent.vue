@@ -1,12 +1,14 @@
 <template>
-    <div>
-        <ComponentWithPropertiesInstance
-            v-for="(component, index) in components"
-            :key="component.key"
-            ref="children"
-            :component="component"
-            :custom-provide="getCustomProvide(index, component.key)"
-        />
+    <div class="stack-component">
+        <TransitionGroup name="show" :duration="300">
+            <ComponentWithPropertiesInstance
+                v-for="(component, index) in components"
+                :key="component.key"
+                ref="children"
+                :component="component"
+                :custom-provide="getCustomProvide(index, component.key)"
+            />
+        </TransitionGroup>
     </div>
 </template>
 

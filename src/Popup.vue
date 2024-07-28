@@ -1,14 +1,12 @@
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
-    <transition :appear="shouldAppear" name="fade" :duration="300">
-        <div v-if="!hide" :class="buildClass" :style="style" @click="onClick">
-            <div ref="mainContent">
-                <div class="scrollable-container">
-                    <ComponentWithPropertiesInstance :key="root.key" :component="root" />
-                </div>
+    <div :class="buildClass" :style="style" @click="onClick">
+        <div ref="mainContent">
+            <div class="scrollable-container">
+                <ComponentWithPropertiesInstance :key="root.key" :component="root" />
             </div>
         </div>
-    </transition>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -38,7 +36,6 @@ const props = withDefaults(
 const hide = ref(false)
 
 // ComponentWithProperties is never reactive, so we don't need computed
-const shouldAppear = props.root.animated
 const modalStackComponent = useModalStackComponent();
 const pop = usePop();
 const mainContent = ref<HTMLElement | null>(null)
@@ -74,7 +71,7 @@ const pushDown = computed(() => {
 const buildClass = computed(() => {
     const vvv = {'push-down': pushDown.value == 1, 'push-down-full': pushDown.value > 1 };
     const j = Object.keys(vvv).filter(p => !!(vvv as any)[p]).join(' ');
-    return j + (j ? ' ' : '') + (props.className ? props.className : 'popup')
+    return j + (j ? ' ' : '') + (props.className ? props.className : 'popup') + (props.root.animated ? ' animated' : '')
 })
 
 const isFocused = computed(() => {
@@ -120,12 +117,8 @@ const dismiss = async (options?: PopOptions) => {
     }
 
     // Let everyone know they should ignore us for now
-    component.isDismissing.value = true;
-
-    hide.value = true;
-    setTimeout(() => {
-        pop(options)
-    }, 300)
+    component!.isDismissing.value = true;
+    pop(options)?.catch(console.error)
 }
 
 const onClick = (event: MouseEvent) => {

@@ -10,8 +10,6 @@ export * from "./src/NavigationMixin";
 export * from "./src/PopOptions";
 export { default as Popup } from "./src/Popup.vue";
 export * from "./src/PushOptions";
-export { default as Sheet } from "./src/Sheet.vue";
-export { default as SideView } from "./src/SideView.vue";
 export { default as SplitViewController } from "./src/SplitViewController.vue";
 export { default as StackComponent } from "./src/StackComponent.vue";
 export * from "./src/utils/injectHooks";
