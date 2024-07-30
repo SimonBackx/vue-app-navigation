@@ -8,7 +8,6 @@
 <script lang="ts">
 import { defineComponent, inject, type PropType, type Ref,shallowRef } from "vue";
 
-import { usePop } from "../dist";
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { HistoryManager } from './HistoryManager';
 import NavigationController from "./NavigationController.vue";
@@ -16,7 +15,7 @@ import Popup from "./Popup.vue";
 import type { PushOptions } from "./PushOptions";
 import StackComponent from "./StackComponent.vue";
 import { injectHooks } from "./utils/injectHooks";
-import { useDismiss, usePresent, useShow } from "./utils/navigationHooks";
+import { useDismiss, usePop, usePresent, useShow } from "./utils/navigationHooks";
 
 export function useModalStackComponent(): Ref<InstanceType<typeof ModalStackComponent>> {
     const c = inject('reactive_modalStackComponent') as InstanceType<typeof ModalStackComponent>|Ref<InstanceType<typeof ModalStackComponent>>;
