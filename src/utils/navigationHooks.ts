@@ -73,15 +73,17 @@ export function useNavigate() {
     const showDetail = useShowDetail()
 
     const toRoute = async function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, options?: RouteNavigationOptions<Params>) {
-        let componentProperties = options?.properties ?? options?.params ?? {};
+        let componentProperties: Record<string, unknown>|Promise<Record<string, unknown>> = options?.properties ?? options?.params ?? {};
         let params = options?.params ?? {} as Params;
         
         if (!options?.properties && route.paramsToProps) {
-            componentProperties = await route.paramsToProps(params, options?.query)
+            // Do not await here yet
+            componentProperties = route.paramsToProps(params, options?.query)
         }
 
         if (!options?.params && route.propsToParams && componentProperties) {
-            const {params: p} = route.propsToParams(componentProperties);
+            // Note that this will never await because componentProperties is already resolved
+            const {params: p} = route.propsToParams(await componentProperties);
             // todo: building back query won't really work for now
             params = p
         }
@@ -96,15 +98,16 @@ export function useNavigate() {
                 animated: options?.animated ?? true,
                 modalDisplayStyle: typeof route.present === 'string' ? route.present : undefined,
                 checkRoutes: options?.checkRoutes ?? false,
-                componentProperties
+                componentProperties: await componentProperties
             })
             return;
         }
 
         let component: ComponentOptions;
 
-        if (typeof route.component === 'function') {
-            const method = route.component
+        // If component is a method, or if componentProperties is a promise, we'll need to wrap it in a loading component
+        if (typeof route.component === 'function' || (componentProperties as Promise<Record<string, unknown>>).then) {
+            const method = typeof route.component === 'function' ? route.component : (() => route.component)
             const originalProperties = componentProperties
 
             if (!("PromiseComponent" in window)) {
@@ -115,7 +118,7 @@ export function useNavigate() {
             componentProperties = {
                 promise: async () => {
                     const realComponent = await method()
-                    return new ComponentWithProperties(realComponent, originalProperties)
+                    return new ComponentWithProperties(realComponent, await originalProperties)
                 }
             }
         } else {
