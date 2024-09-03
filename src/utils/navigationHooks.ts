@@ -247,7 +247,7 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
 
         // Check default route
         try {
-            if (await defaultHandler({allowDetail: true})) {
+            if (await defaultHandler({allowDetail: false})) {
                 return true;
             }
         } catch (e) {

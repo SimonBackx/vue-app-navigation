@@ -11,6 +11,7 @@ export * from "./src/PopOptions";
 export { default as Popup } from "./src/Popup.vue";
 export * from "./src/PushOptions";
 export { default as SplitViewController } from "./src/SplitViewController.vue";
+export { useSplitViewController } from "./src/SplitViewController.vue";
 export { default as StackComponent } from "./src/StackComponent.vue";
 export * from "./src/utils/injectHooks";
 export * from "./src/utils/navigationHooks";
