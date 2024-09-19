@@ -212,7 +212,7 @@ export type OnCheckRoutesHandler = () => Promise<void>|void
 
 export function onCheckRoutes(handler: OnCheckRoutesHandler) {
     const instance = getCurrentInstance() as any;
-    instance._navigationCheckRoutesHandlers = [...instance._navigationCheckRoutes, handler]
+    instance._navigationCheckRoutesHandlers = [...(instance._navigationCheckRoutes ?? []), handler]
 }
 
 export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<boolean|(Route<any, undefined>[])>)) {
