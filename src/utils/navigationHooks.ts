@@ -208,6 +208,12 @@ function getCurrentRoutes() {
 }
 
 export type DefaultRouteHandler = () => Promise<boolean>
+export type OnCheckRoutesHandler = () => Promise<void>|void
+
+export function onCheckRoutes(handler: OnCheckRoutesHandler) {
+    const instance = getCurrentInstance() as any;
+    instance._navigationCheckRoutesHandlers = [...instance._navigationCheckRoutes, handler]
+}
 
 export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<boolean|(Route<any, undefined>[])>)) {
     const component = useCurrentComponent();
@@ -298,6 +304,16 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
     onMounted(async () => {
         if (component && component.checkRoutes) {
             component.checkRoutes = false;
+
+            if ('_navigationCheckRoutesHandlers' in component && Array.isArray(component._navigationCheckRoutesHandlers)) {
+                for (const handler of component._navigationCheckRoutesHandlers as OnCheckRoutesHandler[]) {
+                    if (typeof handler === 'function') {
+                        await handler()
+                    } else {
+                        console.error('Invalid checkRoutes handler', handler)
+                    }
+                }
+            }
 
             // Check routes
             if (Array.isArray(routes)) {
