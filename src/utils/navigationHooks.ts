@@ -213,6 +213,50 @@ export type OnCheckRoutesHandler = () => Promise<void>|void
 export function onCheckRoutes(handler: OnCheckRoutesHandler) {
     const instance = getCurrentInstance() as any;
     instance._navigationCheckRoutesHandlers = [...(instance._navigationCheckRoutes ?? []), handler]
+    addCheckRoutesMountedHandler()
+}
+
+export function onNotCheckRoutes(handler: OnCheckRoutesHandler) {
+    const instance = getCurrentInstance() as any;
+    instance._navigationNotCheckRoutesHandlers = [...(instance._navigationNotCheckRoutesHandlers ?? []), handler]
+    addCheckRoutesMountedHandler()
+}
+
+function addCheckRoutesMountedHandler() {
+    const instance = getCurrentInstance() as any;
+    const component = useCurrentComponent();
+
+    if (instance._didAddCheckRoutesMountedHandler) {
+        return;
+    }
+
+    instance._didAddCheckRoutesMountedHandler = true;
+
+    onMounted(async () => {
+        if (component && component.checkRoutes) {
+            component.checkRoutes = false;
+
+            if ('_navigationCheckRoutesHandlers' in instance && Array.isArray(instance._navigationCheckRoutesHandlers)) {
+                for (const handler of instance._navigationCheckRoutesHandlers as OnCheckRoutesHandler[]) {
+                    if (typeof handler === 'function') {
+                        await handler()
+                    } else {
+                        console.error('Invalid checkRoutes handler', handler)
+                    }
+                }
+            }
+        } else {
+            if ('_navigationNotCheckRoutesHandlers' in instance && Array.isArray(instance._navigationNotCheckRoutesHandlers)) {
+                for (const handler of instance._navigationNotCheckRoutesHandlers as OnCheckRoutesHandler[]) {
+                    if (typeof handler === 'function') {
+                        await handler()
+                    } else {
+                        console.error('Invalid not checkRoutes handler', handler)
+                    }
+                }
+            }
+        }
+    })
 }
 
 export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<boolean|(Route<any, undefined>[])>)) {
@@ -301,47 +345,36 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
         }
     }
 
-    onMounted(async () => {
-        if (component && component.checkRoutes) {
-            component.checkRoutes = false;
-
-            if ('_navigationCheckRoutesHandlers' in component && Array.isArray(component._navigationCheckRoutesHandlers)) {
-                for (const handler of component._navigationCheckRoutesHandlers as OnCheckRoutesHandler[]) {
-                    if (typeof handler === 'function') {
-                        await handler()
-                    } else {
-                        console.error('Invalid checkRoutes handler', handler)
-                    }
-                }
+    onCheckRoutes(async () => {
+        // Check routes
+        if (Array.isArray(routes)) {
+            if (await handleRoutes(routes)) {
+                // Handled a route: do not show the default
+                setDefaultHandler()
+                return;
             }
-
-            // Check routes
-            if (Array.isArray(routes)) {
-                if (await handleRoutes(routes)) {
+        } else {
+            const extraRoutes = await routes();
+            if (Array.isArray(extraRoutes)) {
+                if (await handleRoutes(extraRoutes)) {
                     // Handled a route: do not show the default
                     setDefaultHandler()
                     return;
                 }
             } else {
-                const extraRoutes = await routes();
-                if (Array.isArray(extraRoutes)) {
-                    if (await handleRoutes(extraRoutes)) {
-                        // Handled a route: do not show the default
-                        setDefaultHandler()
-                        return;
-                    }
-                } else {
-                    if (extraRoutes) {
-                        // Handled a route: do not show the default
-                        setDefaultHandler()
-                        return;
-                    }
+                if (extraRoutes) {
+                    // Handled a route: do not show the default
+                    setDefaultHandler()
+                    return;
                 }
             }
-        } else {
-            // Always allowed to check default routes (unless detail routes which are handled by the split view controller)
-            await defaultHandler({allowDetail: false});
         }
+        setDefaultHandler()
+    });
+
+    onNotCheckRoutes(async () => {
+        // Always allowed to check default routes (unless detail routes which are handled by the split view controller)
+        await defaultHandler({allowDetail: false});
         setDefaultHandler()
     });
 }
