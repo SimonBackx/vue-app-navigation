@@ -630,6 +630,14 @@ export function setTitle(title: string) {
     })
 }
 
+export function setUrl(url: string, title?: string) {
+    const urlHelpers = useUrl();
+
+    onMounted(() => {
+        urlHelpers.overrideUrl(url, title)
+    });
+}
+
 export function useUrl() {
     const currentComponent = useCurrentComponent()
     const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null
@@ -674,6 +682,17 @@ export function useUrl() {
         matchCurrent<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
             const helper = new UrlHelper(undefined, this.getUrl())
             return helper.match(template, params)
+        },
+
+        overrideUrl(url: string, title?: string) {
+            if (!currentComponent) {
+                console.error("No current component while setting title", title)
+                return;
+            }
+            if (unref(disableUrl)) {
+                return;
+            }
+            currentComponent?.overrideUrl(url, title)
         }
     }
 }

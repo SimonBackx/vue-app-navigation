@@ -194,6 +194,11 @@ export class ComponentWithProperties {
         return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this
     }
 
+    overrideUrl(url: string, title?: string) {
+        this.provide.reactive_navigation_url = url;
+        this.setUrl(url, title)
+    }
+
     setUrl(url: string, title?: string) {
         if (this.historyIndex === null) {
             if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
