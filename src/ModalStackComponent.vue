@@ -54,7 +54,6 @@ function returnToHistoryIndex() {
 const navigationFocused = computed(() => parentIsFocused.value && !stackComponent.value?.getFocusedComponent())
 
 const customProvide = computed(() => {
-    console.log('Calculated custom provide', navigationFocused.value)
     return {
         reactive_navigation_focused: navigationFocused
     }

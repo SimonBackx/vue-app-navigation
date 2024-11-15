@@ -319,8 +319,6 @@ export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<bo
     const defaultHandler = async ({allowDetail}: {allowDetail?: boolean} = {allowDetail: true}) => {
         const defaultRoute = getDefaultRoute({allowDetail})
         if (defaultRoute) {
-            console.log('Showing default route', defaultRoute.name ?? defaultRoute.url, 'in', component?.component.name)
-
             try {
                 await navigate(defaultRoute, {
                     ...defaultRoute.isDefault,
@@ -392,7 +390,6 @@ export function useCurrentHref() {
     const owner = {}
 
     HistoryManager.addListener(owner, () => {
-        console.log('Updating current href', window.location.href)
         state.value = window.location.href
     })
 

@@ -57,7 +57,6 @@ function removeAt(index: number, key: number) {
             const newFocused = getComponentWithHistory();                    
             if (!newFocused) {
                 // The normalModalStackComponent is visible again
-                console.log('No history index found in stack component')
                 emit("returnToHistoryIndex");
             } else {
                 newFocused.returnToHistoryIndex()
