@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef, unref } from 'vue';
+import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef } from 'vue';
 
 import { type ComponentWithProperties, getExposeProxy, useCurrentComponent } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
