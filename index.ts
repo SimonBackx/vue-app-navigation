@@ -3,7 +3,6 @@ export { default as ComponentWithPropertiesInstance } from "./src/ComponentWithP
 export { default as FramedComponent } from "./src/FramedComponent.vue";
 export * from "./src/HistoryManager";
 export { default as ModalStackComponent } from "./src/ModalStackComponent.vue";
-export { useModalStackComponent } from "./src/ModalStackComponent.vue";
 export * from "./src/ModalStackComponentFinderMixin";
 export { default as NavigationController } from "./src/NavigationController.vue";
 export { useNavigationController } from "./src/NavigationController.vue";
@@ -17,3 +16,4 @@ export { default as StackComponent } from "./src/StackComponent.vue";
 export * from "./src/utils/injectHooks";
 export * from "./src/utils/navigationHooks";
 export * from "./src/utils/UrlHelper";
+export * from "./src/utils/useModalStackComponent";

@@ -2,9 +2,8 @@
     <div class="stack-component">
         <TransitionGroup name="show" :duration="300">
             <ComponentWithPropertiesInstance
-                v-for="(component, index) in components"
+                v-for="(component, index) in children"
                 :key="component.key"
-                ref="children"
                 :component="component"
                 :custom-provide="getCustomProvide(index, component.key)"
             />
@@ -12,83 +11,85 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
+<script lang="ts" setup>
+
+import { onBeforeUnmount, type Ref,ref } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
+import { useFocused } from "./utils/navigationHooks.ts";
 
-const StackComponent =  defineComponent({
-    name: "StackComponent",
-    components: {
-        ComponentWithPropertiesInstance,
-    },
-    emits: ["present", 'returnToHistoryIndex'],
-    data() {
-        return {
-            components: [] as ComponentWithProperties[],
-        };
-    },
-    beforeUnmount() {
-        this.components = [];
-    },
-    methods: {
-        getCustomProvide(index: number, key: number) {
-            return {
-                reactive_navigation_pop: () => {
-                    this.removeAt(index, key);
-                },
-                reactive_navigation_can_pop: true,
-                reactive_navigation_dismiss: () => {
-                    console.warn('Avoid calling dismiss in components on the StackComponent, since options are not supported here')
-                    this.removeAt(index, key);
-                },
-                reactive_navigation_can_dismiss: false
-            };
-        },
-        show(component: ComponentWithProperties) {
-            this.components.push(component);
-        },
-        getFocusedComponent() {
-            for (let i = this.components.length - 1; i >= 0; i--) {
-                if (this.components[i].hasHistoryIndex() && !this.components[i].isDismissing.value) {
-                    // We returned to this component
-                    return this.components[i];
-                }
-            }
-            return null;
-        },
-        removeAt(index: number, key: number) {            
-            if (!this.components[index]) {
-                // Manually search for the key (race conditions with slow events in vue)
-                for (const [i, comp] of this.components.entries()) {
-                    if (comp.key === key) {
-                        console.warn("Corrected index from "+index+" to "+i)
-                        index = i;
-                        break;
-                    }
-                }
-            }
-            if (this.components[index] !== undefined && this.components[index].key === key) {
-                const hadHistory = this.components[index].hasHistoryIndex()
-                this.components.splice(index, 1);
+const children = ref([]) as Ref<ComponentWithProperties[]>;
+const parentIsFocused = useFocused();
+const emit = defineEmits(["returnToHistoryIndex"]);
 
-                if (hadHistory) {
-                    const newFocused = this.getFocusedComponent();                    
-                    if (!newFocused) {
-                        // The normalModalStackComponent is visible again
-                        console.log('No history index found in stack component')
-                        this.$emit("returnToHistoryIndex");
-                    } else {
-                        newFocused.returnToHistoryIndex()
-                    }
-                }
-            } else {
-                console.warn("Expected component with key " + key + " at index " + index);
+function getCustomProvide(index: number, key: number) {
+    return {
+        reactive_navigation_pop: () => {
+            removeAt(index, key);
+        },
+        reactive_navigation_can_pop: true,
+        reactive_navigation_dismiss: () => {
+            console.warn('Avoid calling dismiss in components on the StackComponent, since options are not supported here')
+            removeAt(index, key);
+        },
+        reactive_navigation_can_dismiss: false,
+        reactive_navigation_focused: parentIsFocused.value && getFocusedComponent() === children.value[index],
+    };
+}
+
+function removeAt(index: number, key: number) {
+    if (!children.value[index]) {
+        // Manually search for the key (timing conditions with slow events in vue)
+        for (const [i, comp] of children.value.entries()) {
+            if (comp.key === key) {
+                console.warn("Corrected index from "+index+" to "+i)
+                index = i;
+                break;
             }
         }
     }
-})
-export default StackComponent;
+    if (children.value[index] !== undefined && children.value[index].key === key) {
+        const hadHistory = children.value[index].hasHistoryIndex()
+        children.value.splice(index, 1);
 
+        if (hadHistory) {
+            const newFocused = getFocusedComponent();                    
+            if (!newFocused) {
+                // The normalModalStackComponent is visible again
+                console.log('No history index found in stack component')
+                emit("returnToHistoryIndex");
+            } else {
+                newFocused.returnToHistoryIndex()
+            }
+        }
+    } else {
+        console.warn("Expected component with key " + key + " at index " + index);
+    }
+}
+
+function getFocusedComponent() {
+    for (let i = children.value.length - 1; i >= 0; i--) {
+        if (children.value[i].hasHistoryIndex() && !children.value[i].isDismissing.value) {
+            return children.value[i];
+        }
+    }
+
+    return null;
+}
+
+function show(component: ComponentWithProperties) {
+    children.value.push(component);
+}
+
+onBeforeUnmount(() => {
+    children.value = [];
+});
+
+defineExpose({
+    show,
+    getFocusedComponent,
+    removeAt,
+    children
+});
 </script>

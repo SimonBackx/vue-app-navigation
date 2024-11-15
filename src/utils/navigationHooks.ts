@@ -1,7 +1,7 @@
-import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated,onMounted, onScopeDispose,provide, reactive, type Ref,ref, unref } from "vue";
+import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated, onMounted, onScopeDispose, provide, type Ref, ref, unref } from "vue";
 
 import { ComponentWithProperties, useCurrentComponent } from "../ComponentWithProperties";
-import { HistoryManager } from "../HistoryManager";
+import { HistoryManager, type HistoryUrl } from "../HistoryManager";
 import NavigationController from "../NavigationController.vue";
 import type { PopOptions } from "../PopOptions";
 import type { PushOptions } from "../PushOptions";
@@ -96,7 +96,7 @@ export function useNavigate() {
                 url,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
-                modalDisplayStyle: typeof route.present === 'string' ? route.present : undefined,
+                modalDisplayStyle: 'present' in route && typeof route.present === 'string' ? route.present : undefined,
                 checkRoutes: options?.checkRoutes ?? false,
                 componentProperties: await componentProperties
             })
@@ -603,7 +603,8 @@ export function useCanDismiss(): Ref<boolean> {
 }
 
 export function useFocused() {
-    return inject('reactive_navigation_focused', true) as Ref<boolean> | boolean
+    const rawFocused = inject('reactive_navigation_focused', true) as Ref<boolean> | boolean
+    return computed(() => !!unref(rawFocused))
 }
 
 /**
@@ -630,7 +631,7 @@ export function setTitle(title: string) {
     })
 }
 
-export function setUrl(url: string, title?: string) {
+export function setUrl(url: HistoryUrl, title?: string) {
     const urlHelpers = useUrl();
 
     onMounted(() => {
@@ -684,7 +685,7 @@ export function useUrl() {
             return helper.match(template, params)
         },
 
-        overrideUrl(url: string, title?: string) {
+        overrideUrl(url: HistoryUrl, title?: string) {
             if (!currentComponent) {
                 console.error("No current component while setting title", title)
                 return;

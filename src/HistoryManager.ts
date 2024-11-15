@@ -1,9 +1,14 @@
 import { ComponentWithProperties } from "./ComponentWithProperties";
 import { UrlHelper } from "./utils/UrlHelper";
 
+/**
+ * null makes sure the previous URL is used for this route
+ */
+export type HistoryUrl = string | null;
+
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
-    url?: string;
+    url?: HistoryUrl;
     title?: string;
 
     /// Counter at which the state was added.
@@ -112,8 +117,22 @@ class HistoryManagerStatic {
         });
     }
 
+    resolveUrl(url: HistoryUrl, index: number): string {
+        if (url !== null) {
+            return '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
+        }
+
+        if (!this.states[index - 1]) {
+            return '/' + UrlHelper.trim(UrlHelper.transformUrl('/'))
+        }
+
+        // Use previous URL
+        const previousUrl = this.states[index - 1].url;
+        return this.resolveUrl(previousUrl ?? null, index - 1);
+    }
+
     /// Set the current URL without modifying states
-    setUrl(url: string, title?: string, index?: number) {
+    setUrl(url: HistoryUrl, title?: string, index?: number) {
         if (!this.active) {
             return;
         }
@@ -143,7 +162,7 @@ class HistoryManagerStatic {
                     if (ComponentWithProperties.debug) {
                         console.log('history.replaceState', count, url)
                     }
-                    const formattedUrl = '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
+                    const formattedUrl = this.resolveUrl(url, count)
                     history.replaceState({ counter: count }, "", formattedUrl);
                     if (state.title) {
                         window.document.title = this.formatTitle(state.title); // use state title here, because could have changed already
@@ -188,12 +207,8 @@ class HistoryManagerStatic {
             if (ComponentWithProperties.debug) {
                 console.log('history.replaceState - updateUrl')
             }
-            const current = new UrlHelper()
-            const formattedUrl = '/' + UrlHelper.trim(
-                UrlHelper.transformUrl(
-                    current.getPath()
-                )
-            )
+            const lastState = this.states[this.states.length - 1]
+            const formattedUrl = this.resolveUrl(lastState.url ?? null, lastState.index)
             history.replaceState({ counter: this.counter }, "", formattedUrl);
             // if (state.title) {
             //     window.document.title = this.formatTitle(state.title);
@@ -350,7 +365,7 @@ class HistoryManagerStatic {
         // We'll handle the scroll stuff
         history.scrollRestoration = "manual";
 
-        async function onPopState(this: HistoryManagerStatic, event) {
+        async function onPopState(this: HistoryManagerStatic, event: any) {
             if (ComponentWithProperties.debug) {
                 console.log("HistoryManager popstate");
             }

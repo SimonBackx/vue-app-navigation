@@ -10,7 +10,7 @@ export class VueComponent implements ComponentCustomProperties {
         });
     }
 
-    __getter(object, key, proxy) {
+    __getter(object: any, key: string|symbol, _proxy: any) {
         // Default behaviour
         return object[key];
     }

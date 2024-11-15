@@ -1,5 +1,5 @@
 import { invokeArrayFns, ShapeFlags } from "@vue/shared";
-import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode,warn } from "vue";
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode, warn } from "vue";
 
 import { ComponentWithProperties } from "./ComponentWithProperties";
 
@@ -124,7 +124,7 @@ export default {
         if (props.customProvide) {
             for (const key in props.customProvide) {
                 if (key.startsWith('reactive_')) {
-                    provide(key, computed(() => unref(props.customProvide[key])))
+                    provide(key, computed(() => unref(props.customProvide?.[key])))
                 } else {
                     provide(key, props.customProvide[key])
                 }
@@ -179,11 +179,9 @@ export default {
             renderer: {
                 p: patch,
                 m: move,
-                um: _unmount,
-                o: { createElement },
+                um: _unmount
             },
         } = sharedContext
-        const storageContainer = createElement('div')
         const parentSuspense = (instance as any).suspense
 
         sharedContext.activate = (

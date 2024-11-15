@@ -12,11 +12,11 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef } from 'vue';
 
-import { type ComponentWithProperties,useCurrentComponent } from './ComponentWithProperties';
+import { type ComponentWithProperties, getExposeProxy, useCurrentComponent } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
-import { useModalStackComponent } from './ModalStackComponent.vue';
 import type { PopOptions } from './PopOptions';
-import { usePop } from './utils/navigationHooks';
+import { useFocused, usePop } from './utils/navigationHooks';
+import { useModalStackComponent } from './utils/useModalStackComponent.ts';
 
 // Self reference
 const instance = getCurrentInstance()
@@ -54,11 +54,10 @@ provide('reactive_navigation_pop', async (options?: PopOptions) => {
 
 provide('reactive_navigation_can_pop', false);
 provide('reactive_navigation_can_dismiss', true);
-
-provide('reactive_popup', instance?.proxy);
+provide('reactive_popup', computed(() => getExposeProxy(instance)));
 
 const pushDown = computed(() => {
-    const popups = modalStackComponent.value.stackComponent?.components.filter(c => c.component === Popup && (c.properties.className ?? 'popup') === (props.className ?? 'popup') && !c.isDismissing.value) ?? []
+    const popups = modalStackComponent.value?.stackComponent?.children.filter((c: ComponentWithProperties) => c.component === Popup && (c.properties.className ?? 'popup') === (props.className ?? 'popup') && !c.isDismissing.value) ?? []
     if (popups.length > 0 && popups[popups.length - 1] !== component) {
         if (popups.length > 1 && popups[popups.length - 2] === component) {
             return 1
@@ -71,17 +70,10 @@ const pushDown = computed(() => {
 const buildClass = computed(() => {
     const vvv = {'push-down': pushDown.value == 1, 'push-down-full': pushDown.value > 1 };
     const j = Object.keys(vvv).filter(p => !!(vvv as any)[p]).join(' ');
-    return j + (j ? ' ' : '') + (props.className ? props.className : 'popup') + (props.root.animated ? ' animated' : '')
+    return j + (j ? ' ' : '') + (props.className ? props.className : 'popup') + (props.root.animated ? ' animated' : '') + (isFocused.value ? ' focused' : '')
 })
 
-const isFocused = computed(() => {
-    const popups = modalStackComponent.value.stackComponent?.getFocusedComponent()
-    if (popups !== component) {
-        return false
-    }
-    return true
-})
-provide('reactive_navigation_focused', isFocused);
+const isFocused = useFocused()
 
 const onKey = (event: { defaultPrevented: any; repeat: any; key: any; keyCode: any; preventDefault: () => void; }) => {
     if (event.defaultPrevented || event.repeat) {
@@ -140,5 +132,4 @@ defineExpose({
     dismiss: shallowRef(dismiss),
     pop: shallowRef(dismiss)
 })
-
 </script>

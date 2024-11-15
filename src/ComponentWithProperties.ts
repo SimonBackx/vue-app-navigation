@@ -1,15 +1,18 @@
-import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,reactive,ref,type VNode } from "vue";
+import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,type Raw,reactive,ref,type VNode } from "vue";
 
-import { HistoryManager } from "./HistoryManager";
+import { HistoryManager, type HistoryUrl } from "./HistoryManager";
 
 export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
 
-export function useCurrentComponent(): ComponentWithProperties | null {
-    return inject('navigation_currentComponent', null) as ComponentWithProperties | null;
+export function useCurrentComponent(): ComponentWithPropertiesType | null {
+    return inject('navigation_currentComponent', null) as ComponentWithPropertiesType | null;
 }
 
 // Sadly getExposeProxy is not exposed from Vue so we have to mimic it
-function getExposeProxy(instance: ComponentInternalInstance) {
+export function getExposeProxy(instance: ComponentInternalInstance|null|undefined) {
+    if (!instance) {
+        return;
+    }
     if (!instance.exposed) {
         return;
     }
@@ -32,7 +35,7 @@ function getExposeProxy(instance: ComponentInternalInstance) {
     return instance.exposeProxy as ComponentPublicInstance;
 }
 
-export function forAllRoots(root: ComponentWithProperties, handler: (root: ComponentWithProperties) => void, alreadyProcessed?: Set<ComponentWithProperties>) {
+export function forAllRoots(root: ComponentWithProperties, handler: (root: ComponentWithPropertiesType) => void, alreadyProcessed?: Set<ComponentWithPropertiesType>) {
     const handled = alreadyProcessed ?? new Set() // to avoid recursive calling
     handler(root);
     handled.add(root);
@@ -51,6 +54,8 @@ export function forAllRoots(root: ComponentWithProperties, handler: (root: Compo
     }
 }
 
+/** Sadly we  cannot really tell TypeScript that ComponentWithProperties is always Raw */
+export type ComponentWithPropertiesType = Raw<ComponentWithProperties>;
 export class ComponentWithProperties {
     /// Name of component or component Options. Currently no way to force type
     public component: any;
@@ -87,7 +92,7 @@ export class ComponentWithProperties {
     // Hisotry index
     public historyIndex: number | null = null;
 
-    static historyIndexOwners = new Map<number, ComponentWithProperties>()
+    static historyIndexOwners = new Map<number, ComponentWithProperties>();
 
     // private static ignoreActivate: ComponentWithProperties | null = null
 
@@ -194,12 +199,12 @@ export class ComponentWithProperties {
         return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this
     }
 
-    overrideUrl(url: string, title?: string) {
+    overrideUrl(url: HistoryUrl, title?: string) {
         this.provide.reactive_navigation_url = url;
         this.setUrl(url, title)
     }
 
-    setUrl(url: string, title?: string) {
+    setUrl(url: HistoryUrl, title?: string) {
         if (this.historyIndex === null) {
             if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
             return

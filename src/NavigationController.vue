@@ -22,9 +22,9 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Raw, type Ref,shallowRef, unref } from "vue";
+import { computed, defineComponent, inject, type PropType, type Ref, shallowRef, unref } from "vue";
 
-import { ComponentWithProperties } from "./ComponentWithProperties";
+import { ComponentWithProperties, type ComponentWithPropertiesType } from "./ComponentWithProperties";
 import FramedComponent from "./FramedComponent.vue";
 import { HistoryManager } from "./HistoryManager";
 import { type PopOptions } from "./PopOptions";
@@ -94,11 +94,11 @@ const NavigationController = defineComponent({
     data() {
         const savedInternalScrollPositions: number[] = [];
         const savedScrollPositions: number[] = [];
-        const components: Raw<ComponentWithProperties>[] = [];
+        const components: ComponentWithPropertiesType[] = [];
 
         return {
             components,
-            mainComponent: null as Raw<ComponentWithProperties> | null,
+            mainComponent: null as ComponentWithPropertiesType | null,
             transitionName: "none",
             savedScrollPositions,
             nextScrollPosition: 0,
@@ -115,7 +115,7 @@ const NavigationController = defineComponent({
     },
     watch: {
         // whenever question changes, this function will run
-        mainComponent(newComponent: ComponentWithProperties | null) {
+        mainComponent(newComponent: ComponentWithPropertiesType | null) {
             if (!newComponent) {
                 return;
             }
@@ -159,7 +159,7 @@ const NavigationController = defineComponent({
         this.mainComponent = null;
     },
     methods: {
-        cacheComponentProvides(newComponent: ComponentWithProperties) {
+        cacheComponentProvides(newComponent: ComponentWithPropertiesType) {
             if (this.animationType === 'modal') {
                 this.cachedProvides.set(newComponent.key, {
                     reactive_navigation_can_dismiss: this.components.length > 1

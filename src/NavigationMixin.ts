@@ -1,11 +1,11 @@
 import { type DefineComponent, inject, type Ref } from "vue";
 
-import { useModalStackComponent } from "./ModalStackComponent.vue";
 import NavigationController, { useNavigationController } from "./NavigationController.vue";
 import type Popup from "./Popup.vue";
 import { useSplitViewController } from "./SplitViewController.vue";
 import { injectHooks } from "./utils/injectHooks";
 import { defineRoutes, type NavigationOptions, useCanDismiss, useCanPop, useDismiss, useFocused, useNavigate, usePop, usePresent, useShow, useShowDetail, useUrl } from "./utils/navigationHooks";
+import { useModalStackComponent } from "./utils/useModalStackComponent";
 
 // WARNING: do not add this mixin as a dependency in components that the navigationMixin also depens on -> circular dependency
 // Inject the navigation hooks into the component manually in that case
@@ -27,15 +27,15 @@ declare module 'vue' {
 
 const navigationMethods = {
     setTitle() {
-        const navigationOptions = this.$options?.navigation as NavigationOptions<any> | undefined
+        const navigationOptions = (this as any).$options?.navigation as NavigationOptions<any> | undefined
         if (!navigationOptions) return
 
         // Process routes
         const title = navigationOptions.title
         if (typeof title === 'function') {
-            this.$url.setTitle(title.call(this))
+            (this as any).$url.setTitle(title.call(this))
         } else {
-            this.$url.setTitle(title ?? '')
+            (this as any).$url.setTitle(title ?? '')
         }
     }
 }
