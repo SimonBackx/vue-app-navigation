@@ -260,7 +260,6 @@ function addCheckRoutesMountedHandler() {
 }
 
 export function defineRoutes(routes: (Route<any, undefined>[])|(() => Promise<boolean|(Route<any, undefined>[])>)) {
-    const component = useCurrentComponent();
     const urlhelpers = useUrl();
     const navigate = useNavigate();
     const currentRoutes = getCurrentRoutes()
