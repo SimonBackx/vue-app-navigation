@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef } from 'vue';
+import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef, unref } from 'vue';
 
 import { type ComponentWithProperties, getExposeProxy, useCurrentComponent } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
@@ -33,7 +33,7 @@ const props = withDefaults(
         style: '',
     }
 )
-const hide = ref(false)
+const hide = ref(false);
 
 // ComponentWithProperties is never reactive, so we don't need computed
 const modalStackComponent = useModalStackComponent();

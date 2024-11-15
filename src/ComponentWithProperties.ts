@@ -94,6 +94,8 @@ export class ComponentWithProperties {
 
     static historyIndexOwners = new Map<number, ComponentWithProperties>();
 
+    public forceCanHaveFocus = false; // Automatically true if it has a history state
+
     // private static ignoreActivate: ComponentWithProperties | null = null
 
     setCheckRoutes() {
@@ -103,13 +105,14 @@ export class ComponentWithProperties {
         return this;
     }
 
-    constructor(component: any, properties: Record<string, any> = {}, options?: {provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
+    constructor(component: any, properties: Record<string, any> = {}, options?: {forceCanHaveFocus?: boolean, provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
         this.component = component;
         this.key = ComponentWithProperties.keyCounter++;
         this.properties = reactive(properties);
         this.provide = options?.provide || {};
         this.inheritedDisplayerProvide = options?.inheritedDisplayerProvide || {};
         this.inheritedParentProvide = options?.inheritedParentProvide || {};
+        this.forceCanHaveFocus = options?.forceCanHaveFocus || false;
 
         // Prevent becoming reactive in any way
         markRaw(this);
@@ -168,6 +171,10 @@ export class ComponentWithProperties {
 
     hasHistoryIndex() {
         return this.historyIndex !== null;
+    }
+
+    canHaveFocus() {    
+        return this.hasHistoryIndex() || this.forceCanHaveFocus;
     }
 
     /**

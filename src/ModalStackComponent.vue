@@ -60,7 +60,7 @@ const customProvide = computed(() => {
     }
 });
 
-function present(options: PushOptions) {
+async function present(options: PushOptions) {
     const component = options.components[options.components.length - 1]
 
     if (options.animated !== undefined) {
@@ -96,7 +96,7 @@ function present(options: PushOptions) {
         return;
     }
 
-    navigationController.value?.push(options);
+    await navigationController.value?.push(options);
 }
 
 function replace(component: ComponentWithPropertiesType, animated = true) {

@@ -8,8 +8,9 @@ export interface PushOptions {
 
     /**
      * The url for this new route.
+     * Set to null to specifically ignore or extending url (displayed view will copy the previous url - which is not the same as the url of the previous view)
      */
-    url?: string;
+    url?: string|null;
 
     /**
      * Whether we should push a new real state in the browser history

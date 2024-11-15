@@ -50,10 +50,10 @@ function removeAt(index: number, key: number) {
         }
     }
     if (children.value[index] !== undefined && children.value[index].key === key) {
-        const hadHistory = children.value[index].hasHistoryIndex()
+        const hadFocus = children.value[index].canHaveFocus()
         children.value.splice(index, 1);
 
-        if (hadHistory) {
+        if (hadFocus) {
             const newFocused = getFocusedComponent();                    
             if (!newFocused) {
                 // The normalModalStackComponent is visible again
@@ -70,7 +70,7 @@ function removeAt(index: number, key: number) {
 
 function getFocusedComponent() {
     for (let i = children.value.length - 1; i >= 0; i--) {
-        if (children.value[i].hasHistoryIndex() && !children.value[i].isDismissing.value) {
+        if (children.value[i].canHaveFocus() && !children.value[i].isDismissing.value) {
             return children.value[i];
         }
     }

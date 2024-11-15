@@ -509,19 +509,28 @@ export function normalizePushOptions(o: PushOptions | ComponentWithProperties, c
         for (const component of options.components) {
             component.inheritFromDisplayer(currentComponent)
         }
-
-        if (options.url) {
-            const url = options.url;
-
-            for (const component of options.components) {
-                component.provide.reactive_navigation_url = computed(() => urlHelpers.extendUrl(url))
-            }
-        }
-
     } else {
         console.warn('Using show or present outside of a component: Inherited properties will not be set.')
     }
+
+    if (options.url !== undefined) {
+        const url = options.url;
+
+        for (const component of options.components) {
+            component.provide.reactive_navigation_url = computed(() => url === null ? null : urlHelpers.extendUrl(url))
+        }
+    }
+
     return options as PushOptions
+}
+
+export function useManualPresent() {
+    const currentComponent = useCurrentComponent()
+    const urlHelpers = useUrl()
+
+    return (present: (options: PushOptions) => Promise<void>|void, options: PushOptions | ComponentWithProperties) => {
+        return present(normalizePushOptions(options, currentComponent, urlHelpers))
+    }
 }
 
 export function useShow() {
