@@ -50,11 +50,11 @@ function removeAt(index: number, key: number) {
         }
     }
     if (children.value[index] !== undefined && children.value[index].key === key) {
-        const hadFocus = children.value[index].canHaveFocus()
+        const hadFocus = children.value[index].hasHistoryIndex() // need to check for history index otherwise well falsely return the history index to a possible wrong view
         children.value.splice(index, 1);
 
         if (hadFocus) {
-            const newFocused = getFocusedComponent();                    
+            const newFocused = getComponentWithHistory();                    
             if (!newFocused) {
                 // The normalModalStackComponent is visible again
                 console.log('No history index found in stack component')
@@ -68,6 +68,15 @@ function removeAt(index: number, key: number) {
     }
 }
 
+function getComponentWithHistory() {
+    for (let i = children.value.length - 1; i >= 0; i--) {
+        if (children.value[i].hasHistoryIndex() && !children.value[i].isDismissing.value) {
+            return children.value[i];
+        }
+    }
+
+    return null;
+}
 function getFocusedComponent() {
     for (let i = children.value.length - 1; i >= 0; i--) {
         if (children.value[i].canHaveFocus() && !children.value[i].isDismissing.value) {
