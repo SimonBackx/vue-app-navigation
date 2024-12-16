@@ -204,6 +204,10 @@ class HistoryManagerStatic {
         if (!this.active) {
             return;
         }
+        if (this.changeUrlTimeout) {
+            // No need to update: still waiting
+            return;
+        }
         this.addToQueue(() => {
             if (HistoryManagerStatic.debug) {
                 console.log('history.replaceState - updateUrl')
