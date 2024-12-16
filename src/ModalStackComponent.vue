@@ -70,8 +70,6 @@ async function present(options: PushOptions) {
     const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover'
     component.setDisplayStyle(style)
 
-    console.log('ModalStackComponent present', options)
-
     if ((style === "popup" || style === "sheet" || style === "side-view") && (stackComponent.value?.$el as HTMLElement).offsetWidth > 800 || (style === "sheet" && (stackComponent.value?.$el as HTMLElement).offsetWidth > 700)) {
         const c = new ComponentWithProperties(Popup, { 
             root: component, 
@@ -79,9 +77,6 @@ async function present(options: PushOptions) {
             style: options.modalCssStyle ?? undefined,
         })
         c.inheritFromDisplayer(component) // fixes popup not inheriting from displayer (inherits wrong url)
-
-        console.log('before history index', c.historyIndex)
-        console.log('before history index', component.historyIndex)
 
         const adjustHistory = options?.adjustHistory ?? true
         HistoryManager.pushState(undefined, adjustHistory ? (async (canAnimate: boolean) => {
@@ -91,9 +86,6 @@ async function present(options: PushOptions) {
             invalid: options.invalidHistory ?? false
         });
         c.assignHistoryIndex()
-        console.log('after history index', c.historyIndex)
-        console.log('after history index', component.historyIndex)
-
         stackComponent.value?.show(c);
         return;
     }
