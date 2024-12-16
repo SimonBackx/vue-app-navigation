@@ -1,4 +1,3 @@
-import { ComponentWithProperties } from "./ComponentWithProperties";
 import { UrlHelper } from "./utils/UrlHelper";
 
 /**
@@ -8,7 +7,7 @@ export type HistoryUrl = string | null;
 
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
-    url?: HistoryUrl;
+    url: HistoryUrl;
     title?: string;
 
     /// Counter at which the state was added.
@@ -24,6 +23,8 @@ type HistoryState = {
 }
 
 class HistoryManagerStatic {
+    static debug = false;
+
     // undoActions: Map<number, (animate: boolean) => void> = new Map();
 
     states: HistoryState[] = [];
@@ -137,7 +138,7 @@ class HistoryManagerStatic {
             return;
         }
 
-        if (ComponentWithProperties.debug) {
+        if (HistoryManagerStatic.debug) {
             console.log("Set url: " + url+", for index "+index+" with current counter: "+this.counter, title);
         }
 
@@ -159,7 +160,7 @@ class HistoryManagerStatic {
                     if (this.counter !== count || (state.url !== url)) {
                         return;
                     }
-                    if (ComponentWithProperties.debug) {
+                    if (HistoryManagerStatic.debug) {
                         console.log('history.replaceState', count, url)
                     }
                     const formattedUrl = this.resolveUrl(url, count)
@@ -187,7 +188,7 @@ class HistoryManagerStatic {
             }
 
             if (state.url !== url) {
-                if (ComponentWithProperties.debug) {
+                if (HistoryManagerStatic.debug) {
                     console.info("Changed url for old state: " + state.index + " to " + url);
                 }
             }
@@ -204,7 +205,7 @@ class HistoryManagerStatic {
             return;
         }
         this.addToQueue(() => {
-            if (ComponentWithProperties.debug) {
+            if (HistoryManagerStatic.debug) {
                 console.log('history.replaceState - updateUrl')
             }
             const lastState = this.states[this.states.length - 1]
@@ -253,8 +254,12 @@ class HistoryManagerStatic {
         }
         this.counter++;
 
+        if (this.counter !== this.states.length) {
+            console.error('Invalid initial history item when pushing state')
+        }
+
         const state = {
-            url: url,
+            url: url ?? null,
             index: this.counter,
             adjustHistory: true,
             undoAction,
@@ -266,7 +271,7 @@ class HistoryManagerStatic {
 
         if (state.adjustHistory) {
             this.addToQueue(() => {
-                if (ComponentWithProperties.debug) {
+                if (HistoryManagerStatic.debug) {
                     console.log('history.pushState', c, url)
                 }
                 const formattedUrl = url === undefined ? undefined : '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
@@ -274,7 +279,7 @@ class HistoryManagerStatic {
             });
         } else {
             this.addToQueue(() => {
-                if (ComponentWithProperties.debug) {
+                if (HistoryManagerStatic.debug) {
                     console.log('history.replaceState', c)
                 }
 
@@ -283,7 +288,7 @@ class HistoryManagerStatic {
             });
         }
 
-        if (ComponentWithProperties.debug) {
+        if (HistoryManagerStatic.debug) {
             console.log("Push new state " , this.states[this.states.length - 1]);
         }
     }
@@ -292,7 +297,7 @@ class HistoryManagerStatic {
      * Call when an action is performed that breaks back/forward navigation
      */
     invalidateHistory() {
-        if (ComponentWithProperties.debug) {
+        if (HistoryManagerStatic.debug) {
             console.log('HistoryManger.invalidateHistory')
         }
 
@@ -307,7 +312,7 @@ class HistoryManagerStatic {
      */
     returnToHistoryIndex(counter: number) {
         // We'll keep this for debugging and remove it if everything is stable
-        if (ComponentWithProperties.debug) {
+        if (HistoryManagerStatic.debug) {
             console.log("Did return to history index " + counter + ", coming from " + this.counter);
         }
 
@@ -317,10 +322,13 @@ class HistoryManagerStatic {
             
             // Append invalid history items
             for (let i = this.counter + 1; i <= counter; i++) {
+                if (i !== this.states.length) {
+                    console.error('Invalid history item at index', i, 'when returning to history index')
+                }
                 this.states.push({
                     index: i,
                     adjustHistory: false,
-                    url: undefined,
+                    url: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null
@@ -335,6 +343,7 @@ class HistoryManagerStatic {
 
             // Delete all future states
             const deletedStates = this.states.splice(this.counter + 1);
+            console.log('Deleted states', deletedStates.length)
 
             // Count how many states we have to delete from the history
             const adjustHistoryCount = deletedStates.filter(state => state.adjustHistory).length;
@@ -342,7 +351,7 @@ class HistoryManagerStatic {
             // Don't need to call undo actions, because the user did go back by itself, and the undo actions are already done manually
             if (adjustHistoryCount > 0) {
                 // Note: history.go is async, so all replaceState methods stop working until finished!
-                if (ComponentWithProperties.debug) {
+                if (HistoryManagerStatic.debug) {
                     console.log("Adjusting browser history state: popping " + adjustHistoryCount + " items");
                 }
                 this.go(-adjustHistoryCount);
@@ -350,7 +359,7 @@ class HistoryManagerStatic {
         }
 
         if (this.states[this.counter].url) {
-            if (ComponentWithProperties.debug) {
+            if (HistoryManagerStatic.debug) {
                 console.log("Setting manual url without history api: " + this.states[this.counter].url);
             }
 
@@ -366,7 +375,7 @@ class HistoryManagerStatic {
         history.scrollRestoration = "manual";
 
         async function onPopState(this: HistoryManagerStatic, event: any) {
-            if (ComponentWithProperties.debug) {
+            if (HistoryManagerStatic.debug) {
                 console.log("HistoryManager popstate");
             }
 
@@ -387,7 +396,7 @@ class HistoryManagerStatic {
                     const amount = newCounter - this.counter;
                     this.go(-amount);
 
-                    if (ComponentWithProperties.debug) {
+                    if (HistoryManagerStatic.debug) {
                         console.log("Not allowed to go forward, going back " + amount + " steps");
                     }
                 } else {
@@ -419,7 +428,7 @@ class HistoryManagerStatic {
                     // Execute undo actions in right order
                     for (const state of deletedStates) {
                         if (state.undoAction) {
-                            if (ComponentWithProperties.debug) {
+                            if (HistoryManagerStatic.debug) {
                                 console.log("Executing undoAction...");
                             }
                             await state.undoAction(animate);
@@ -451,10 +460,13 @@ class HistoryManagerStatic {
         if (history.state && history.state.counter !== undefined && typeof history.state.counter === "number") {
             // Push invalid items to the states
             for (let i = 0; i < history.state.counter; i++) {
+                if (i !== this.states.length) {
+                    console.error('Invalid history item at index', i, 'when activating history manager')
+                }
                 this.states.push({
                     index: i,
                     adjustHistory: false,
-                    url: undefined,
+                    url: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null
@@ -466,10 +478,14 @@ class HistoryManagerStatic {
         // Set counter of initial history
         history.replaceState({ counter: this.counter }, "");
 
+        if (this.counter !== this.states.length) {
+            console.error('Invalid initial history item when activating history manager')
+        }
+
         this.states.push({
             index: this.counter,
             adjustHistory: false,
-            url: undefined,
+            url: null,
             title: undefined,
             invalid: false,
             undoAction: null
