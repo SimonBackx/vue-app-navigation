@@ -675,7 +675,6 @@ export function useUrl() {
         extendUrl(url: string, options: {returnHistory?: number} = {}): string {
             let prefix = this.getUrl()
             if (options.returnHistory) {
-                console.log('returnHistory', options.returnHistory)
                 const index = unref(historyIndex)
                 if (index !== null && index !== undefined) {
                     prefix = HistoryManager.getStateUrl(index - options.returnHistory)
