@@ -118,18 +118,23 @@ class HistoryManagerStatic {
         });
     }
 
-    resolveUrl(url: HistoryUrl, index: number): string {
-        if (url !== null) {
-            return '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
+    getStateUrl(index: number): string {
+        if (index < 0) {
+            return '';
+        }
+        if (!this.states[index]) {
+            return this.getStateUrl(index - 1);
         }
 
-        if (!this.states[index - 1]) {
-            return '/' + UrlHelper.trim(UrlHelper.transformUrl('/'))
+        if (this.states[index].url !== null) {
+            return this.states[index].url;
         }
 
-        // Use previous URL
-        const previousUrl = this.states[index - 1].url;
-        return this.resolveUrl(previousUrl ?? null, index - 1);
+        return this.getStateUrl(index - 1);
+    }
+
+    resolveUrl(index: number): string {
+        return '/' + UrlHelper.trim(UrlHelper.transformUrl(this.getStateUrl(index)));
     }
 
     /// Set the current URL without modifying states
@@ -163,7 +168,7 @@ class HistoryManagerStatic {
                     if (HistoryManagerStatic.debug) {
                         console.log('history.replaceState', count, url)
                     }
-                    const formattedUrl = this.resolveUrl(url, count)
+                    const formattedUrl = this.resolveUrl(count)
                     history.replaceState({ counter: count }, "", formattedUrl);
                     if (state.title) {
                         window.document.title = this.formatTitle(state.title); // use state title here, because could have changed already
@@ -213,7 +218,7 @@ class HistoryManagerStatic {
                 console.log('history.replaceState - updateUrl')
             }
             const lastState = this.states[this.states.length - 1]
-            const formattedUrl = this.resolveUrl(lastState.url ?? null, lastState.index)
+            const formattedUrl = this.resolveUrl(lastState.index)
             history.replaceState({ counter: this.counter }, "", formattedUrl);
             // if (state.title) {
             //     window.document.title = this.formatTitle(state.title);
@@ -250,6 +255,18 @@ class HistoryManagerStatic {
 
     getCurrentState() {
         return this.states[this.counter];
+    }
+
+    getState(index: number): HistoryState | null {
+        if (index < 0) {
+            return null;
+        }
+        const s = this.states[index];
+        if (s && s.index === index) {
+            return s;
+        }
+        // Search previous
+        return this.getState(index - 1);
     }
 
     pushState(url: string | undefined, undoAction: ((animate: boolean) => void|Promise<void>)|null, options?: Partial<HistoryState>) {

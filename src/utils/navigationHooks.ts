@@ -513,7 +513,7 @@ export function normalizePushOptions(o: PushOptions | ComponentWithProperties, c
         const url = options.url;
 
         for (const component of options.components) {
-            component.provide.reactive_navigation_url = computed(() => url === null ? null : urlHelpers.extendUrl(url))
+            component.provide.reactive_navigation_url = computed(() => url === null ? null : urlHelpers.extendUrl(url, {returnHistory: options.replace ?? 0}))
         }
     }
 
@@ -648,6 +648,7 @@ export function useUrl() {
     const currentComponent = useCurrentComponent()
     const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null
     const disableUrl = inject('reactive_navigation_disable_url', null) as Ref<boolean | undefined> | null
+    const historyIndex = inject('navigation_historyIndex', null) as Ref<number | undefined> | null
 
     return {
         getUrl() {
@@ -671,8 +672,18 @@ export function useUrl() {
             }
         },
 
-        extendUrl(url: string): string {
-            const prefix = this.getUrl()
+        extendUrl(url: string, options: {returnHistory?: number} = {}): string {
+            let prefix = this.getUrl()
+            if (options.returnHistory) {
+                console.log('returnHistory', options.returnHistory)
+                const index = unref(historyIndex)
+                if (index !== null && index !== undefined) {
+                    prefix = HistoryManager.getStateUrl(index - options.returnHistory)
+                } else {
+                    console.error('Failed to get history index')
+                }
+            }
+
             if (prefix && prefix !== '/') {
                 return prefix + '/' + UrlHelper.trim(url)
             }

@@ -328,7 +328,9 @@ const NavigationController = defineComponent({
                     }
 
                     // Back/forward buttons won't work anymore in a reliable/predicable way
-                    HistoryManager.invalidateHistory()
+                    if (this.components.length !== components.length) {
+                        HistoryManager.invalidateHistory()
+                    }
                 } else {
                     this.components.push(...components);
                 }
@@ -362,10 +364,12 @@ const NavigationController = defineComponent({
                 } else {
                     // Todo: implement back behaviour
                     for (const component of components) {
-                        HistoryManager.pushState(undefined, null, {
-                            adjustHistory,
-                            invalid: options.invalidHistory ?? (!!replace)
-                        })
+                        if (!replace || this.components.length !== components.length) {
+                            HistoryManager.pushState(undefined, null, {
+                                adjustHistory,
+                                invalid: options.invalidHistory ?? (!!replace)
+                            })
+                        }
                         // Assign history index
                         component.assignHistoryIndex()
                     }
