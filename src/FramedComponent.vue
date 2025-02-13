@@ -12,25 +12,25 @@ import { ComponentWithProperties } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
 
 export default {
-    name: "FramedComponent",
+    name: 'FramedComponent',
     components: {
-        ComponentWithPropertiesInstance
+        ComponentWithPropertiesInstance,
     },
     provide() {
         return {
-            ...(this.customProvide ?? {})
-        }
+            ...(this.customProvide ?? {}),
+        };
     },
     props: {
         root: {
             type: ComponentWithProperties,
-            required: true
+            required: true,
         },
         customProvide: {
             type: Object,
-            default: null
-        }
+            default: null,
+        },
     },
     emits: ['show', 'push', 'pop'],
-}
+};
 </script>

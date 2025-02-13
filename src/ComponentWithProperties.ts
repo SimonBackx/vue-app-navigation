@@ -1,15 +1,15 @@
-import { type ComponentInternalInstance,type ComponentPublicInstance,inject, markRaw, proxyRefs,type Raw,reactive,ref,type VNode } from "vue";
+import { type ComponentInternalInstance, type ComponentPublicInstance, inject, markRaw, proxyRefs, type Raw, reactive, ref, type VNode } from 'vue';
 
-import { HistoryManager, type HistoryUrl } from "./HistoryManager";
+import { HistoryManager, type HistoryUrl } from './HistoryManager';
 
-export type ModalDisplayStyle = "cover" | "popup" | "overlay" | "sheet" | "side-view"
+export type ModalDisplayStyle = 'cover' | 'popup' | 'overlay' | 'sheet' | 'side-view';
 
 export function useCurrentComponent(): ComponentWithPropertiesType | null {
     return inject('navigation_currentComponent', null) as ComponentWithPropertiesType | null;
 }
 
 // Sadly getExposeProxy is not exposed from Vue so we have to mimic it
-export function getExposeProxy(instance: ComponentInternalInstance|null|undefined) {
+export function getExposeProxy(instance: ComponentInternalInstance | null | undefined) {
     if (!instance) {
         return;
     }
@@ -24,31 +24,31 @@ export function getExposeProxy(instance: ComponentInternalInstance|null|undefine
     instance.exposeProxy = new Proxy(proxyRefs(markRaw(instance.exposed)), {
         get(target, key: string) {
             if (key in target) {
-                return target[key]
-            } 
-            return extendingProxy[key]
+                return target[key];
+            }
+            return extendingProxy[key];
         },
         has(target, key: string) {
-            return key in target || key in extendingProxy
+            return key in target || key in extendingProxy;
         },
     });
     return instance.exposeProxy as ComponentPublicInstance;
 }
 
 export function forAllRoots(root: ComponentWithProperties, handler: (root: ComponentWithPropertiesType) => void, alreadyProcessed?: Set<ComponentWithPropertiesType>) {
-    const handled = alreadyProcessed ?? new Set() // to avoid recursive calling
+    const handled = alreadyProcessed ?? new Set(); // to avoid recursive calling
     handler(root);
     handled.add(root);
 
     for (const key in root.properties) {
         const v = root.properties[key];
         if (v instanceof ComponentWithProperties) {
-            forAllRoots(v, handler, handled)
+            forAllRoots(v, handler, handled);
         }
         if (Array.isArray(v) && v.length) {
-            const lastItem = v[v.length - 1]
+            const lastItem = v[v.length - 1];
             if (lastItem instanceof ComponentWithProperties) {
-                forAllRoots(lastItem, handler, handled)
+                forAllRoots(lastItem, handler, handled);
             }
         }
     }
@@ -82,12 +82,12 @@ export class ComponentWithProperties {
     static debug = false;
 
     /// Cover whole screen. Other style = popup
-    public modalDisplayStyle: ModalDisplayStyle = "cover"
+    public modalDisplayStyle: ModalDisplayStyle = 'cover';
 
     // If the display animation should be animated
-    public animated = true
+    public animated = true;
     public checkRoutes = false; // Setting this will allow the component to check the routes on the next activation
-    public isDismissing = ref(false) // Custom state for stack items that need to navigate way without being removed from the dom
+    public isDismissing = ref(false); // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
     public historyIndex: number | null = null;
@@ -101,11 +101,11 @@ export class ComponentWithProperties {
     setCheckRoutes() {
         forAllRoots(this, (c) => {
             c.checkRoutes = true;
-        })
+        });
         return this;
     }
 
-    constructor(component: any, properties: Record<string, any> = {}, options?: {forceCanHaveFocus?: boolean, provide?: Record<string, any>, inheritedDisplayerProvide?: Record<string, any>, inheritedParentProvide?: Record<string, any>}) {
+    constructor(component: any, properties: Record<string, any> = {}, options?: { forceCanHaveFocus?: boolean; provide?: Record<string, any>; inheritedDisplayerProvide?: Record<string, any>; inheritedParentProvide?: Record<string, any> }) {
         this.component = component;
         this.key = ComponentWithProperties.keyCounter++;
         this.properties = reactive(properties);
@@ -122,28 +122,28 @@ export class ComponentWithProperties {
         return {
             ...this.inheritedParentProvide,
             ...this.inheritedDisplayerProvide, // has priority
-            ...this.provide
-        }
+            ...this.provide,
+        };
     }
 
     inheritFromDisplayer(component: ComponentWithProperties) {
-        //console.log('Inheriting properties from displayer', this.component.name,' from ', component.component.name, component.combinedProvide)
-        
+        // console.log('Inheriting properties from displayer', this.component.name,' from ', component.component.name, component.combinedProvide)
+
         this.inheritedDisplayerProvide = {
             ...component.combinedProvide,
-        }
+        };
     }
 
     inheritFromParent(component: ComponentWithProperties) {
-        //console.log('Inheriting properties from parent', this.component.name,' from ', component.component.name, component.combinedProvide)
-        
+        // console.log('Inheriting properties from parent', this.component.name,' from ', component.component.name, component.combinedProvide)
+
         this.inheritedParentProvide = {
-            ...component.combinedProvide
-        }
+            ...component.combinedProvide,
+        };
     }
 
     clone() {
-        return new ComponentWithProperties(this.component, this.properties, {provide: this.provide, inheritedParentProvide: this.inheritedParentProvide, inheritedDisplayerProvide: this.inheritedDisplayerProvide});
+        return new ComponentWithProperties(this.component, this.properties, { provide: this.provide, inheritedParentProvide: this.inheritedParentProvide, inheritedDisplayerProvide: this.inheritedDisplayerProvide });
     }
 
     beforeMount() {
@@ -151,9 +151,10 @@ export class ComponentWithProperties {
             if (this.isKeptAlive) {
                 this.isKeptAlive = false;
                 ComponentWithProperties.keepAliveCounter--;
-                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
-            } else {
-                if (ComponentWithProperties.debug) console.warn("About to mount a component that was not destroyed properly " + this.component.name);
+                if (ComponentWithProperties.debug) console.log('Total components kept alive: ' + ComponentWithProperties.keepAliveCounter);
+            }
+            else {
+                if (ComponentWithProperties.debug) console.warn('About to mount a component that was not destroyed properly ' + this.component.name);
 
                 // Destroy the old vnode (unless keep alive), we should not reuse this one
                 this.destroy(this.vnode);
@@ -173,7 +174,7 @@ export class ComponentWithProperties {
         return this.historyIndex !== null;
     }
 
-    canHaveFocus() {    
+    canHaveFocus() {
         return this.hasHistoryIndex() || this.forceCanHaveFocus;
     }
 
@@ -182,50 +183,50 @@ export class ComponentWithProperties {
      */
     assignHistoryIndex() {
         if (!HistoryManager.active) {
-            return
-        }
-
-        if (this.historyIndex !== null) {
-            this.returnToHistoryIndex()
             return;
         }
 
-        const state = HistoryManager.getCurrentState()
-        this.historyIndex = state.index
-        ComponentWithProperties.historyIndexOwners.set(state.index, this)
+        if (this.historyIndex !== null) {
+            this.returnToHistoryIndex();
+            return;
+        }
+
+        const state = HistoryManager.getCurrentState();
+        this.historyIndex = state.index;
+        ComponentWithProperties.historyIndexOwners.set(state.index, this);
     }
 
     inheritHistoryIndex(index: number) {
         // This sets the default history index
         if (this.historyIndex === null) {
-            this.historyIndex = index
+            this.historyIndex = index;
         }
     }
 
     ownsHistoryIndex() {
-        return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this
+        return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this;
     }
 
     overrideUrl(url: HistoryUrl, title?: string) {
         this.provide.reactive_navigation_url = url;
-        this.setUrl(url, title)
+        this.setUrl(url, title);
     }
 
     setUrl(url: HistoryUrl, title?: string) {
         if (this.historyIndex === null) {
-            if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
-            return
+            if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present');
+            return;
         }
 
         if (!HistoryManager.active) {
-            return
+            return;
         }
 
         if (!this.ownsHistoryIndex()) {
-            return
+            return;
         }
-        
-        HistoryManager.setUrl(url, title, this.historyIndex)
+
+        HistoryManager.setUrl(url, title, this.historyIndex);
     }
 
     setTitle(title: string) {
@@ -234,18 +235,18 @@ export class ComponentWithProperties {
         }
 
         if (this.historyIndex === null) {
-            if (ComponentWithProperties.debug) console.warn('Tried calling .setTitle on a component that was never assigned a history index. Check if you displayed this component using .show or .present')
-            return
+            if (ComponentWithProperties.debug) console.warn('Tried calling .setTitle on a component that was never assigned a history index. Check if you displayed this component using .show or .present');
+            return;
         }
 
         if (!HistoryManager.active) {
-            return
+            return;
         }
 
         // This does not need to own the history index
         // a decendant of a view can set the title
-        
-        HistoryManager.setTitle(title, this.historyIndex)
+
+        HistoryManager.setTitle(title, this.historyIndex);
     }
 
     /**
@@ -260,7 +261,7 @@ export class ComponentWithProperties {
         const instance = this.componentInstance() as any;
         if (instance?.returnToHistoryIndex) {
             const worked = instance?.returnToHistoryIndex();
-            if (ComponentWithProperties.debug) console.log('returning to instance that has an instance with custom returnToHistoryIndex method', this.component.name, worked)
+            if (ComponentWithProperties.debug) console.log('returning to instance that has an instance with custom returnToHistoryIndex method', this.component.name, worked);
             if (worked === true) {
                 return true;
             }
@@ -271,8 +272,8 @@ export class ComponentWithProperties {
             return false;
         }
 
-        ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this)
-        if (ComponentWithProperties.debug) console.log('New owner of history index ', this.historyIndex, this.component.name)
+        ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this);
+        if (ComponentWithProperties.debug) console.log('New owner of history index ', this.historyIndex, this.component.name);
 
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
@@ -290,11 +291,12 @@ export class ComponentWithProperties {
         const instance = this.componentInstance() as any;
         if (instance && instance.shouldNavigateAway) {
             const promise = instance.shouldNavigateAway();
-            if (typeof promise === "boolean") {
+            if (typeof promise === 'boolean') {
                 if (!promise) {
                     return false;
                 }
-            } else if (promise.then && promise.catch) {
+            }
+            else if (promise.then && promise.catch) {
                 const r = (await promise) as boolean;
                 if (!r) {
                     return false;
@@ -316,8 +318,8 @@ export class ComponentWithProperties {
                 if (!this.isKeptAlive) {
                     this.isKeptAlive = true;
                     ComponentWithProperties.keepAliveCounter++;
-                    if (ComponentWithProperties.debug) console.log("Kept component alive " + this.component.name);
-                    if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+                    if (ComponentWithProperties.debug) console.log('Kept component alive ' + this.component.name);
+                    if (ComponentWithProperties.debug) console.log('Total components kept alive: ' + ComponentWithProperties.keepAliveCounter);
                 }
                 return;
             }
@@ -325,19 +327,20 @@ export class ComponentWithProperties {
             if (this.isKeptAlive) {
                 this.isKeptAlive = false;
                 ComponentWithProperties.keepAliveCounter--;
-                if (ComponentWithProperties.debug) console.log("Freed component from alive stack " + this.component.name);
-                if (ComponentWithProperties.debug) console.log("Total components kept alive: " + ComponentWithProperties.keepAliveCounter);
+                if (ComponentWithProperties.debug) console.log('Freed component from alive stack ' + this.component.name);
+                if (ComponentWithProperties.debug) console.log('Total components kept alive: ' + ComponentWithProperties.keepAliveCounter);
             }
 
-            if (ComponentWithProperties.debug) console.log("Destroyed component " + this.component.name, this.vnode);
-            
+            if (ComponentWithProperties.debug) console.log('Destroyed component ' + this.component.name, this.vnode);
+
             if (this.unmount) {
                 this.unmount(this.vnode);
 
                 // Remove reference to unmount method
                 this.unmount = null;
-            } else {
-                console.error("No unmount function for component " + this.vnode);
+            }
+            else {
+                console.error('No unmount function for component ' + this.vnode);
             }
             this.vnode = null;
         }

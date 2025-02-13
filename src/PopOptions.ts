@@ -5,7 +5,7 @@ export interface PopOptions {
     animated?: boolean;
 
     /**
-     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore 
+     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore
      * shouldNavigateAway. Most of the time you'll need to set this to true for programmatic navigation (e.g. as a result of an API call).
      * Set to false (= default) for user interaction (e.g. when he pressed the close button, when he tapped outside a popup, pressed the ESC key)
      */
@@ -19,7 +19,7 @@ export interface PopOptions {
     destroy?: boolean;
 
     /**
-     * How many components you need to pop on the same level. E.g. to pop multiple components from a navigation controller. 
+     * How many components you need to pop on the same level. E.g. to pop multiple components from a navigation controller.
      * This doesn't work across modal controllers, specifying 2 will only pop 1 component if the parent navigation controller
      * only has one child component.
      * Default to 1.

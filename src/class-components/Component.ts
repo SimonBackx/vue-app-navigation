@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { type ComponentOptions } from "vue";
-
+import { type ComponentOptions } from 'vue';
 
 export const $internalHooks = [
     'data',
@@ -16,23 +15,23 @@ export const $internalHooks = [
     'deactivated',
     'render',
     'errorCaptured', // 2.5
-    'serverPrefetch' // 2.6
-]
+    'serverPrefetch', // 2.6
+];
 
 export function createDecorator(factory: (options: ComponentOptions, key: string, index: number) => void): any {
     return (target: any, key?: any, index?: any) => {
         const Ctor = typeof target === 'function'
             ? target
-            : target.constructor
+            : target.constructor;
 
         if (!Ctor.__decorators__) {
-            Ctor.__decorators__ = []
+            Ctor.__decorators__ = [];
         }
         if (typeof index !== 'number') {
-            index = undefined
+            index = undefined;
         }
-        Ctor.__decorators__.push((options: ComponentOptions) => factory(options, key, index))
-    }
+        Ctor.__decorators__.push((options: ComponentOptions) => factory(options, key, index));
+    };
 }
 
 function buildComponent(OriginalClass: any, decoratorOptions?: any) {
@@ -45,15 +44,15 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
 
     if (decoratorOptions && decoratorOptions.data) {
         mixins.push({
-            data: decoratorOptions.data
-        
+            data: decoratorOptions.data,
+
         });
         delete decoratorOptions.data;
     }
 
     if (decoratorOptions && decoratorOptions.props) {
         mixins.push({
-            props: decoratorOptions.props
+            props: decoratorOptions.props,
         });
         delete decoratorOptions.props;
     }
@@ -62,36 +61,35 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
     const options: any = {
         ...(decoratorOptions ?? {}),
         name: decoratorOptions?.name || (OriginalClass as any)._componentTag || (OriginalClass as any).name,
-        mixins
+        mixins,
     };
 
     // decorate options
-    const decorators = (OriginalClass as any).__decorators__
+    const decorators = (OriginalClass as any).__decorators__;
     if (decorators) {
-        decorators.forEach((fn: any) => fn(options))
-        delete (OriginalClass as any).__decorators__
+        decorators.forEach((fn: any) => fn(options));
+        delete (OriginalClass as any).__decorators__;
     }
 
-
     // Disable custom constructor
-    options.data = function() {
+    options.data = function () {
         // This allows us to use 'this' in properties
         // to make this work, we use a proxy in the VueComponent class
         // ref https://stackoverflow.com/a/40714458/5306026
         let vm = this;
 
         if (!OriginalClass.prototype.__getter) {
-            throw new Error('Component '+options.name+' should either extend VueComponent or extend Mixins.')
+            throw new Error('Component ' + options.name + ' should either extend VueComponent or extend Mixins.');
         }
 
-        OriginalClass.prototype.__getter = function(object: any, key: string, proxy: any) {
+        OriginalClass.prototype.__getter = function (object: any, key: string, proxy: any) {
             // hasOwnProperty is not working on getters
-            const v = Reflect.get(object, key, proxy) // this makes sure 'this' inside the getters are set to the proxy
+            const v = Reflect.get(object, key, proxy); // this makes sure 'this' inside the getters are set to the proxy
             if (v === undefined) {
                 return vm[key];
             }
             return v;
-        }
+        };
         const defaultData: any = {};
 
         // This has side effects
@@ -102,58 +100,60 @@ function buildComponent(OriginalClass: any, decoratorOptions?: any) {
         for (const key of Object.getOwnPropertyNames(instance)) {
             if (instance[key] !== undefined) {
                 if (options.props && key in options.props) {
-                    console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})', {component: options.name, key, value: instance[key]})
-                } else {
+                    console.error('Setting the default property value via normal properties is not supported. Please use @Prop({default: 123})', { component: options.name, key, value: instance[key] });
+                }
+                else {
                     defaultData[key] = instance[key];
                 }
             }
         }
 
         return defaultData;
-    }
+    };
 
     // prototype props.
-    const proto = OriginalClass.prototype
+    const proto = OriginalClass.prototype;
     Object.getOwnPropertyNames(proto).forEach(function (key) {
         if (key === 'constructor') {
-            return
+            return;
         }
 
         // hooks
         if ($internalHooks.indexOf(key) > -1) {
-            options[key] = proto[key]
-            return
+            options[key] = proto[key];
+            return;
         }
 
-        const descriptor = Object.getOwnPropertyDescriptor(proto, key)!
+        const descriptor = Object.getOwnPropertyDescriptor(proto, key)!;
         if (descriptor.value !== void 0) {
             // methods
             if (typeof descriptor.value === 'function') {
-                (options.methods || (options.methods = {}))[key] = descriptor.value
-            } else {
+                (options.methods || (options.methods = {}))[key] = descriptor.value;
+            }
+            else {
                 // typescript decorated data
                 (options.mixins || (options.mixins = [])).push({
                     data() {
-                        return { [key]: descriptor.value }
-                    }
-                })
+                        return { [key]: descriptor.value };
+                    },
+                });
             }
-        } else if (descriptor.get || descriptor.set) {
+        }
+        else if (descriptor.get || descriptor.set) {
             // computed properties
             (options.computed || (options.computed = {}))[key] = {
                 get: descriptor.get,
-                set: descriptor.set
-            }
+                set: descriptor.set,
+            };
         }
-    })
+    });
 
     return options as any;
 }
 
-
-type ExtendedOptions<T> = ComponentOptions<{}, T> & ThisType<T>
-export type VueClass<V = any> = { new(...args: any[]): V }
-export function Component<V>(options: ExtendedOptions<V>): <VC extends VueClass<V>>(target: VC) => VC
+type ExtendedOptions<T> = ComponentOptions<{}, T> & ThisType<T>;
+export type VueClass<V = any> = { new(...args: any[]): V };
+export function Component<V>(options: ExtendedOptions<V>): <VC extends VueClass<V>>(target: VC) => VC;
 export function Component<VC extends VueClass>(target: VC): VC;
 export function Component(options: any) {
     if (typeof options === 'function') {
@@ -161,5 +161,3 @@ export function Component(options: any) {
     }
     return (OriginalClass: any) => buildComponent(OriginalClass, options);
 }
-
-

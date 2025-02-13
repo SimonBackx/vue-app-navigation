@@ -1,4 +1,4 @@
-import type { ComponentWithProperties, ModalDisplayStyle } from "./ComponentWithProperties";
+import type { ComponentWithProperties, ModalDisplayStyle } from './ComponentWithProperties';
 
 export interface PushOptions {
     /**
@@ -10,7 +10,7 @@ export interface PushOptions {
      * The url for this new route.
      * Set to null to specifically ignore or extending url (displayed view will copy the previous url - which is not the same as the url of the previous view)
      */
-    url?: string|null;
+    url?: string | null;
 
     /**
      * Whether we should push a new real state in the browser history
@@ -29,13 +29,13 @@ export interface PushOptions {
     checkRoutes?: boolean;
 
     /**
-     * Use animations if possible. Default value is the animated property of ComponentWithProperties. 
+     * Use animations if possible. Default value is the animated property of ComponentWithProperties.
      * In the future, we might remove the animated property of ComponentWithProperties and enable animations by default here.
      */
     animated?: boolean;
 
     /**
-     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore 
+     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore
      * shouldNavigateAway. Most of the time you'll need to set this to true for programmatic navigation (e.g. as a result of an API call).
      * Set to false (= default) for user interaction (e.g. when he pressed the close button, when he tapped outside a popup, pressed the ESC key)
      */
@@ -58,8 +58,8 @@ export interface PushOptions {
      */
     reverse?: boolean;
 
-    modalDisplayStyle?: ModalDisplayStyle
-    modalClass?: string
-    modalCssStyle?: string
+    modalDisplayStyle?: ModalDisplayStyle;
+    modalClass?: string;
+    modalCssStyle?: string;
 
 }

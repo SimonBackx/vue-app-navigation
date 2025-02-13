@@ -22,75 +22,76 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref, shallowRef, unref } from "vue";
+import { computed, defineComponent, inject, type PropType, type Ref, shallowRef, unref } from 'vue';
 
-import { ComponentWithProperties, type ComponentWithPropertiesType } from "./ComponentWithProperties";
-import FramedComponent from "./FramedComponent.vue";
-import { HistoryManager } from "./HistoryManager";
-import { type PopOptions } from "./PopOptions";
-import { type PushOptions } from "./PushOptions";
+import { ComponentWithProperties, type ComponentWithPropertiesType } from './ComponentWithProperties';
+import FramedComponent from './FramedComponent.vue';
+import { HistoryManager } from './HistoryManager';
+import { type PopOptions } from './PopOptions';
+import { type PushOptions } from './PushOptions';
 
 export function useNavigationController(): Ref<InstanceType<typeof NavigationController>> {
-    const c = inject('reactive_navigationController') as InstanceType<typeof NavigationController>|Ref<InstanceType<typeof NavigationController>>;
+    const c = inject('reactive_navigationController') as InstanceType<typeof NavigationController> | Ref<InstanceType<typeof NavigationController>>;
     return shallowRef(c);
 }
 
 const NavigationController = defineComponent({
-    name: "NavigationController",
+    name: 'NavigationController',
     components: {
         FramedComponent,
     },
     inject: {
         reactive_navigation_pop: {
-            default: null
+            default: null,
         },
         reactive_navigation_can_pop: {
-            default: false
+            default: false,
         },
         reactive_navigation_can_dismiss: {
-            default: false
-        }
+            default: false,
+        },
     },
     provide() {
-        let extra = {}
+        let extra = {};
         if (this.animationType === 'modal') {
             extra = {
                 reactive_navigation_dismiss: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
                 reactive_navigation_can_dismiss: computed(() => this.components.length > 1),
                 reactive_navigation_can_pop: false,
-            }
-        } else {
+            };
+        }
+        else {
             extra = {
                 reactive_navigation_can_pop: computed(() => this.components.length > 1 || unref(this.reactive_navigation_can_pop)),
-            }
+            };
         }
         return {
             reactive_navigationController: this,
             reactive_navigation_show: this.push,
             reactive_navigation_pop: computed(() => this.components.length > 1 ? this.pop : unref(this.reactive_navigation_pop)),
             ...extra,
-            ...(this.customProvide ?? {})
-        }
+            ...(this.customProvide ?? {}),
+        };
     },
     props: {
         root: {
             default: null,
-            type: Object as PropType<ComponentWithProperties | null>
+            type: Object as PropType<ComponentWithProperties | null>,
         },
-        initialComponents: { 
+        initialComponents: {
             default: null,
-            type: Object as PropType<ComponentWithProperties[] | null>
+            type: Object as PropType<ComponentWithProperties[] | null>,
         },
-        animationType: { 
-            default: "default",
-            type: String
+        animationType: {
+            default: 'default',
+            type: String,
         },
         customProvide: {
             type: Object,
-            default: null
-        }
+            default: null,
+        },
     },
-    emits: ["didPush", "didPop", "showDetail", "present"],
+    emits: ['didPush', 'didPop', 'showDetail', 'present'],
     data() {
         const savedInternalScrollPositions: number[] = [];
         const savedScrollPositions: number[] = [];
@@ -99,7 +100,7 @@ const NavigationController = defineComponent({
         return {
             components,
             mainComponent: null as ComponentWithPropertiesType | null,
-            transitionName: "none",
+            transitionName: 'none',
             savedScrollPositions,
             nextScrollPosition: 0,
             previousScrollPosition: 0,
@@ -110,7 +111,7 @@ const NavigationController = defineComponent({
             // all push/pop operations should be queued
             asyncQueue: [] as (() => Promise<void>)[],
             asyncQueueRunning: false,
-            cachedProvides: new Map<number, any>()
+            cachedProvides: new Map<number, any>(),
         };
     },
     watch: {
@@ -119,8 +120,8 @@ const NavigationController = defineComponent({
             if (!newComponent) {
                 return;
             }
-            this.cacheComponentProvides(newComponent)
-        }
+            this.cacheComponentProvides(newComponent);
+        },
     },
     beforeMount() {
         if (this.initialComponents && this.initialComponents.length > 0) {
@@ -129,21 +130,22 @@ const NavigationController = defineComponent({
 
             // Update property (even if not allowed, we know, but we need to remove the references)
             // this.initialComponents.splice(0, this.initialComponents.length);
-        } else {
+        }
+        else {
             if (!this.root) {
-                throw new Error("No root component provided for navigation controller");
+                throw new Error('No root component provided for navigation controller');
             }
             this.mainComponent = this.root;
             this.components = [this.root];
         }
 
         for (const [index, component] of this.components.entries()) {
-            this.cacheComponentProvides(component)
+            this.cacheComponentProvides(component);
 
             if (index < this.components.length - 1) {
-                HistoryManager.pushState(undefined, null, {adjustHistory: false})
+                HistoryManager.pushState(undefined, null, { adjustHistory: false });
             }
-            component.assignHistoryIndex()
+            component.assignHistoryIndex();
         }
     },
     beforeUnmount() {
@@ -162,12 +164,13 @@ const NavigationController = defineComponent({
         cacheComponentProvides(newComponent: ComponentWithPropertiesType) {
             if (this.animationType === 'modal') {
                 this.cachedProvides.set(newComponent.key, {
-                    reactive_navigation_can_dismiss: this.components.length > 1
-                })
-            } else {
+                    reactive_navigation_can_dismiss: this.components.length > 1,
+                });
+            }
+            else {
                 this.cachedProvides.set(newComponent.key, {
-                    reactive_navigation_can_pop: this.components.length > 1 || unref(this.reactive_navigation_can_pop)
-                })
+                    reactive_navigation_can_pop: this.components.length > 1 || unref(this.reactive_navigation_can_pop),
+                });
             }
         },
         provideForComponent(key: number) {
@@ -178,9 +181,10 @@ const NavigationController = defineComponent({
                 this.asyncQueue.push(async () => {
                     try {
                         const r = await run();
-                        resolve(r)
-                    } catch (e) {
-                        reject(e)
+                        resolve(r);
+                    }
+                    catch (e) {
+                        reject(e);
                     }
                 });
                 this.runQueueIfNeeded();
@@ -194,7 +198,7 @@ const NavigationController = defineComponent({
                 return;
             }
             this.asyncQueueRunning = true;
-            const next = this.asyncQueue.shift()
+            const next = this.asyncQueue.shift();
             if (!next) {
                 this.asyncQueueRunning = false;
                 this.runQueueIfNeeded();
@@ -202,7 +206,7 @@ const NavigationController = defineComponent({
             }
 
             next().catch((e) => {
-                console.error("Error in async queue", e);
+                console.error('Error in async queue', e);
             }).finally(() => {
                 this.asyncQueueRunning = false;
                 this.runQueueIfNeeded();
@@ -215,22 +219,22 @@ const NavigationController = defineComponent({
             const w = el.offsetWidth;
             const h = el.offsetHeight;
 
-            el.style.width = w + "px";
-            el.style.height = h + "px";
+            el.style.width = w + 'px';
+            el.style.height = h + 'px';
         },
         growSize(width: number, height: number) {
             const el = this.$el as HTMLElement;
 
-            el.style.height = height+ "px";
-            el.style.width = width + "px";
+            el.style.height = height + 'px';
+            el.style.width = width + 'px';
         },
         unfreezeSize() {
             const el = this.$el as HTMLElement;
-            el.style.width = "";
-            el.style.height = "";
+            el.style.width = '';
+            el.style.height = '';
         },
         getInternalScrollElement(element: Element | null = null) {
-            const mightBe = (element ?? this.$el as HTMLElement)?.querySelector("main")
+            const mightBe = (element ?? this.$el as HTMLElement)?.querySelector('main');
             return mightBe ? mightBe : null;
         },
         getScrollElement(element: HTMLElement | null = null): HTMLElement {
@@ -250,24 +254,24 @@ const NavigationController = defineComponent({
         async push(options: PushOptions) {
             return await this.runQueue(async () => {
                 if (options.components.length == 0) {
-                    console.error("Missing component when pushing")
-                    return
+                    console.error('Missing component when pushing');
+                    return;
                 }
-                (document.activeElement as any)?.blur()
-                const components = options.components
-                const component = components[components.length - 1]
+                (document.activeElement as any)?.blur();
+                const components = options.components;
+                const component = components[components.length - 1];
 
                 // shouldAnimate: boolean | null = null, replace = 0, reverse = false, replaceWith: ComponentWithProperties[] = [], popOptions: PopOptions = {}
-                const destroy = options.destroy ?? true
-                const force = options.force ?? false
-                const animated = this.shouldAnimate() ? (options.animated === undefined ? component.animated : options.animated) : false
+                const destroy = options.destroy ?? true;
+                const force = options.force ?? false;
+                const animated = this.shouldAnimate() ? (options.animated === undefined ? component.animated : options.animated) : false;
 
-                let replace = options.replace ?? 0
+                let replace = options.replace ?? 0;
                 if (replace > this.components.length) {
-                    replace = this.components.length
+                    replace = this.components.length;
                 }
 
-                if (ComponentWithProperties.debug) console.log("Pushing new component on navigation controller: " + component.component.name);
+                if (ComponentWithProperties.debug) console.log('Pushing new component on navigation controller: ' + component.component.name);
 
                 if (replace > 0) {
                     // Check if we are allowed to dismiss them all.
@@ -284,15 +288,16 @@ const NavigationController = defineComponent({
                 }
 
                 if (!animated) {
-                    this.transitionName = "none";
-                } else {
-                    this.transitionName = this.animationType == "modal" ? "modal-push" : options.reverse ? "pop" : "push";
+                    this.transitionName = 'none';
+                }
+                else {
+                    this.transitionName = this.animationType == 'modal' ? 'modal-push' : options.reverse ? 'pop' : 'push';
                 }
 
                 // Add the client height from the saved height (check pop method for information)
 
                 // Check if we have an internal scroll position
-                const internalScrollElement = this.getInternalScrollElement()
+                const internalScrollElement = this.getInternalScrollElement();
 
                 // The scroll element can also be located inside the component, and should be marked as the main element
                 const w = window as any;
@@ -305,7 +310,7 @@ const NavigationController = defineComponent({
                 const internalClientHeight = internalScrollElement?.clientHeight;
 
                 // Save scroll position
-                this.previousScrollPosition = 0; //scrollElement.scrollTop;
+                this.previousScrollPosition = 0; // scrollElement.scrollTop;
                 this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
                 this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
                 this.nextScrollPosition = 0;
@@ -319,7 +324,7 @@ const NavigationController = defineComponent({
                 // Make sure the transition name changed, so wait for a rerender
                 if (replace > 0) {
                     const popped = this.components.splice(this.components.length - replace, replace, ...components);
-                            
+
                     if (!destroy) {
                         // Stop destroy
                         for (const comp of popped) {
@@ -329,9 +334,10 @@ const NavigationController = defineComponent({
 
                     // Back/forward buttons won't work anymore in a reliable/predicable way
                     if (this.components.length !== components.length) {
-                        HistoryManager.invalidateHistory()
+                        HistoryManager.invalidateHistory();
                     }
-                } else {
+                }
+                else {
                     this.components.push(...components);
                 }
 
@@ -340,7 +346,7 @@ const NavigationController = defineComponent({
                     this.mainComponent.keepAlive = !replace;
                 }
 
-                const adjustHistory = options?.adjustHistory ?? true
+                const adjustHistory = options?.adjustHistory ?? true;
 
                 if (adjustHistory) {
                     // We can provide a back action
@@ -348,38 +354,39 @@ const NavigationController = defineComponent({
                     for (const component of components) {
                         HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
                             if (!this.mainComponent) {
-                                console.error('Tried to pop NavigationController, but it was already unmounted')
-                                return
+                                console.error('Tried to pop NavigationController, but it was already unmounted');
+                                return;
                             }
 
                             // todo: fix reference to this and memory handling here!!
-                            await this.pop({ animated: animated && canAnimate})
+                            await this.pop({ animated: animated && canAnimate });
                         }, {
                             adjustHistory,
-                            invalid: options.invalidHistory ?? (!!replace)
+                            invalid: options.invalidHistory ?? (!!replace),
                         });
 
-                        component.assignHistoryIndex()
+                        component.assignHistoryIndex();
                     }
-                } else {
+                }
+                else {
                     // Todo: implement back behaviour
                     for (const component of components) {
                         if (!replace || this.components.length !== components.length) {
                             HistoryManager.pushState(undefined, null, {
                                 adjustHistory,
-                                invalid: options.invalidHistory ?? (!!replace)
-                            })
+                                invalid: options.invalidHistory ?? (!!replace),
+                            });
                         }
                         // Assign history index
-                        component.assignHistoryIndex()
+                        component.assignHistoryIndex();
                     }
                 }
 
                 this.mainComponent = component;
-                this.$emit("didPush");
+                this.$emit('didPush');
 
                 // Await mount
-                await this.$nextTick()
+                await this.$nextTick();
             });
         },
         async shouldNavigateAway(): Promise<boolean> {
@@ -393,7 +400,7 @@ const NavigationController = defineComponent({
             return true;
         },
         popToRoot(options: PopOptions = {}) {
-            options.count = this.components.length - 1
+            options.count = this.components.length - 1;
             return this.pop(options);
         },
         getPoppableParent() {
@@ -403,7 +410,7 @@ const NavigationController = defineComponent({
                 if (prev.props.onPop) {
                     return prev;
                 }
-    
+
                 prev = start;
                 start = start.parent;
             }
@@ -411,7 +418,7 @@ const NavigationController = defineComponent({
         },
         async pop(options: PopOptions = {}): Promise<ComponentWithProperties[] | undefined> {
             return await this.runQueue(async () => {
-                (document.activeElement as any)?.blur()
+                (document.activeElement as any)?.blur();
 
                 const animated = this.shouldAnimate() ? (options.animated ?? true) : false;
                 const destroy = options.destroy ?? true;
@@ -422,13 +429,13 @@ const NavigationController = defineComponent({
                     const parentPop = unref(this.reactive_navigation_pop) as any;
 
                     // Prevent multiple count pop across modal levels
-                    options.count = 1
+                    options.count = 1;
 
                     if (!parentPop) {
-                        console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop")
+                        console.error("Tried to pop an empty navigation controller, but couldn't find a parent to pop");
                         return;
                     }
-                    return await parentPop(options)
+                    return await parentPop(options);
                 }
 
                 if (count === 0) {
@@ -445,15 +452,16 @@ const NavigationController = defineComponent({
                     }
                 }
 
-                this.previousScrollPosition = 0; //this.getScrollElement().scrollTop;
+                this.previousScrollPosition = 0; // this.getScrollElement().scrollTop;
 
                 if (!animated) {
-                    this.transitionName = "none";
-                } else {
-                    this.transitionName = this.animationType == "modal" ? "modal-pop" : "pop";
+                    this.transitionName = 'none';
+                }
+                else {
+                    this.transitionName = this.animationType == 'modal' ? 'modal-pop' : 'pop';
                     this.freezeSize();
                 }
-                //console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
+                // console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
                 const popped = this.components.splice(this.components.length - count, count);
 
@@ -466,7 +474,7 @@ const NavigationController = defineComponent({
 
                 // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
                 // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
-                this.nextScrollPosition = 0; //Math.max(0, (this.savedScrollPositions.pop() ?? 0));
+                this.nextScrollPosition = 0; // Math.max(0, (this.savedScrollPositions.pop() ?? 0));
                 this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
 
                 this.mainComponent = this.components[this.components.length - 1];
@@ -474,48 +482,48 @@ const NavigationController = defineComponent({
                 this.mainComponent.returnToHistoryIndex();
 
                 // Await mount
-                await this.$nextTick()
+                await this.$nextTick();
 
-                this.$emit("didPop");
+                this.$emit('didPop');
                 return popped;
-            })
+            });
         },
         beforeEnter(insertedElement: Element) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 return;
             }
 
             // We need to set the class already to hide the incoming element
-            insertedElement.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-from";
+            insertedElement.className = this.transitionName + '-enter-active ' + this.transitionName + '-enter-from';
         },
         beforeLeave(leavingElement: Element) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 return;
             }
             // We need to set the class already to hide the incoming element
-            leavingElement.className = this.transitionName + "-leave-active ";
+            leavingElement.className = this.transitionName + '-leave-active ';
         },
         beforeBeforeEnterAnimation() {
             if (this.mainComponent) {
-                const instance: any = this.mainComponent.componentInstance()
+                const instance: any = this.mainComponent.componentInstance();
                 if (instance && instance.beforeBeforeEnterAnimation) {
-                    instance.beforeBeforeEnterAnimation()
+                    instance.beforeBeforeEnterAnimation();
                 }
             }
         },
         finishedEnterAnimation() {
             if (this.mainComponent) {
-                const instance: any = this.mainComponent.componentInstance()
+                const instance: any = this.mainComponent.componentInstance();
                 if (instance && instance.finishedEnterAnimation) {
-                    instance.finishedEnterAnimation()
+                    instance.finishedEnterAnimation();
                 }
             }
         },
         enter(element: any, done: () => void) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 this.getScrollElement().scrollTop = this.nextScrollPosition;
 
-                const internal = this.getInternalScrollElement(element)
+                const internal = this.getInternalScrollElement(element);
                 if (internal) {
                     internal.scrollTop = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
                 }
@@ -542,33 +550,33 @@ const NavigationController = defineComponent({
                 // Request a frame, to avoid forced synchronous layout by fetching element sizes
 
                 // const scrollElement = this.getScrollElement();
-                // 
-                        
-                // 
+                //
+
+                //
                 // const scrollOuterHeight = this.getScrollOuterHeight(scrollElement);
-                // 
+                //
                 // // Limit
-                // 
+                //
                 // let next = this.nextScrollPosition;
-                // 
+                //
                 // //console.log("Entering element ", h, next, scrollOuterHeight)
-                // 
+                //
                 // if (next > h - scrollOuterHeight) {
                 //     // To much scrolled!
                 //     //console.log("Corrected maximum scroll position")
                 //     next = Math.max(0, h - scrollOuterHeight);
-                // 
+                //
                 //     // Also propagate this change to the .leave handler
                 //     this.nextScrollPosition = next
                 //     //console.log("corrected! ", h, next, scrollOuterHeight)
                 // }
 
-                const internal = this.getInternalScrollElement(element)
-                let nextInternal = this.nextInternalScrollPosition
+                const internal = this.getInternalScrollElement(element);
+                let nextInternal = this.nextInternalScrollPosition;
                 if (internal) {
                     nextInternal = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
                     const scrollOuterHeight = this.getScrollOuterHeight(internal);
-                    const h = internal.scrollHeight
+                    const h = internal.scrollHeight;
 
                     if (nextInternal > h - scrollOuterHeight) {
                         nextInternal = Math.max(0, h - scrollOuterHeight);
@@ -576,22 +584,22 @@ const NavigationController = defineComponent({
                 }
 
                 // Prepare animation
-                const childElement = (element.firstElementChild as HTMLElement)
+                const childElement = element.firstElementChild as HTMLElement;
 
-                let transitionDuration = 300
-                if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
+                let transitionDuration = 300;
+                if (this.transitionName === 'pop' || this.transitionName == 'modal-pop') {
                     // Pop animations should go faster
-                    transitionDuration = 250
+                    transitionDuration = 250;
                 }
 
                 // Layout changes
 
-                if (this.transitionName == "push" || this.transitionName == "pop" || this.transitionName == "modal-push") {
-                    childElement.style.willChange = "transform"
+                if (this.transitionName == 'push' || this.transitionName == 'pop' || this.transitionName == 'modal-push') {
+                    childElement.style.willChange = 'transform';
                 }
 
                 if (internal) {
-                    internal.style.willChange = "scroll-position"
+                    internal.style.willChange = 'scroll-position';
                 }
 
                 // Lock position if needed
@@ -607,7 +615,7 @@ const NavigationController = defineComponent({
                     if (internal) {
                         internal.scrollTop = nextInternal;
                     }
-                    //element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
+                    // element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
 
                     // Allow scrollTop override in a specified handler
                     // Call before
@@ -619,9 +627,9 @@ const NavigationController = defineComponent({
                     // }
 
                     // Start animation in the next frame
-                    //requestAnimationFrame(() => {
+                    // requestAnimationFrame(() => {
                     // We've reached our initial positioning and can start our animation
-                    element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
+                    element.className = this.transitionName + '-enter-active ' + this.transitionName + '-enter-to';
 
                     // Call start
                     // if (this.mainComponent) {
@@ -632,12 +640,12 @@ const NavigationController = defineComponent({
                     // }
 
                     setTimeout(() => {
-                        //scrollElement.style.overflow = "";
-                        element.style.willChange = ""
-                        childElement.style.willChange = ""
-                        //scrollElement.style.willChange = ""
+                        // scrollElement.style.overflow = "";
+                        element.style.willChange = '';
+                        childElement.style.willChange = '';
+                        // scrollElement.style.willChange = ""
                         if (internal) {
-                            internal.style.willChange = ""
+                            internal.style.willChange = '';
                         }
 
                         // Call finished
@@ -649,7 +657,7 @@ const NavigationController = defineComponent({
                         // }
                         done();
                     }, transitionDuration + 25);
-                    //});
+                    // });
                 });
             });
         },
@@ -666,26 +674,26 @@ const NavigationController = defineComponent({
                 // Fix viewport glitch
                 const w = window as any;
                 if (w.visualViewport) {
-                    //console.log("Used height " + w.visualViewport.height + " instead of " + h);
+                    // console.log("Used height " + w.visualViewport.height + " instead of " + h);
                     h = w.visualViewport.height;
                 }
             }
-            return h
+            return h;
         },
         leave(element: any, done: () => void) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 done();
                 return;
             }
 
             // Prepare animation
-            const childElement = (element.firstElementChild as HTMLElement)
-            childElement.style.willChange = "transform"
+            const childElement = element.firstElementChild as HTMLElement;
+            childElement.style.willChange = 'transform';
 
-            let transitionDuration = 300
-            if (this.transitionName === "pop" || this.transitionName == "modal-pop") {
+            let transitionDuration = 300;
+            if (this.transitionName === 'pop' || this.transitionName == 'modal-pop') {
                 // Pop animations should go faster
-                transitionDuration = 250
+                transitionDuration = 250;
             }
 
             // This animation frame is super important to prevent flickering on Safari and Webkit!
@@ -694,71 +702,71 @@ const NavigationController = defineComponent({
             requestAnimationFrame(() => {
                 // Prevent blinking due to slow rerender after scrollTop changes
                 // Create a clone and offset the clone first. After that, adjust the scroll position
-                //const current = this.previousScrollPosition;
-                //const next = this.nextScrollPosition;
+                // const current = this.previousScrollPosition;
+                // const next = this.nextScrollPosition;
 
                 const h = (this.$el as HTMLElement).offsetHeight;
                 const w = (this.$el as HTMLElement).offsetWidth;
-                const height = h + "px";
-                const width = w + "px";
+                const height = h + 'px';
+                const width = w + 'px';
 
-                //console.log("height", height);
+                // console.log("height", height);
 
                 // Setting the class has to happen in one go.
                 // First we need to make our element fixed / absolute positioned, and pinned to all the edges
                 // In the same frame, we need to update the scroll position.
                 // If we switch the ordering, this won't work!
-                element.className = this.transitionName + "-leave-active " + this.transitionName + "-leave-from";
+                element.className = this.transitionName + '-leave-active ' + this.transitionName + '-leave-from';
 
-                element.style.top = "0px";
+                element.style.top = '0px';
                 element.style.height = height;
                 element.style.width = width;
 
-                element.style.bottom = "auto";
-                element.style.overflow = "hidden";
+                element.style.bottom = 'auto';
+                element.style.overflow = 'hidden';
 
                 // Now scroll!
-                childElement.style.overflow = "hidden";
+                childElement.style.overflow = 'hidden';
                 childElement.style.height = height;
                 childElement.style.width = width;
 
-                //childElement.scrollTop = current;
+                // childElement.scrollTop = current;
 
                 requestAnimationFrame(() => {
                     // We've reached our initial positioning and can start our animation
-                    element.className = this.transitionName + "-leave-active " + this.transitionName + "-leave-to";
+                    element.className = this.transitionName + '-leave-active ' + this.transitionName + '-leave-to';
 
                     setTimeout(() => {
-                        element.style.overflow = "";
-                        element.style.top = "";
-                        element.style.height = "";
-                        element.style.bottom = "";
-                        childElement.style.overflow = "";
-                        childElement.style.willChange = "";
+                        element.style.overflow = '';
+                        element.style.top = '';
+                        element.style.height = '';
+                        element.style.bottom = '';
+                        childElement.style.overflow = '';
+                        childElement.style.willChange = '';
                         done();
                     }, transitionDuration + 25);
                 });
             });
         },
         afterLeave(element: any) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 return;
             }
 
-            element.className = "";
+            element.className = '';
         },
         afterEnter(element: any) {
-            if (this.transitionName == "none") {
+            if (this.transitionName == 'none') {
                 return;
             }
             this.unfreezeSize();
-            element.className = "";
+            element.className = '';
         },
         enterCancelled(_element: any) {
             this.unfreezeSize();
-        }
-    }
-})
+        },
+    },
+});
 
 export default NavigationController;
 
@@ -776,7 +784,7 @@ export default NavigationController;
             &-enter-active {
                 position: relative;
                 z-index: 100;
-                
+
                 & > div {
                     min-height: 100vh;
                     min-height: calc(var(--vh, 1vh) * 100);

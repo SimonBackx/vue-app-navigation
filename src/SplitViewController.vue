@@ -10,30 +10,31 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref, shallowRef } from "vue";
+import { computed, defineComponent, inject, type PropType, type Ref, shallowRef } from 'vue';
 
-import { ComponentWithProperties, type ComponentWithPropertiesType } from "./ComponentWithProperties";
-import FramedComponent from "./FramedComponent.vue";
-import { HistoryManager } from "./HistoryManager";
-import NavigationController from "./NavigationController.vue";
-import { type PushOptions } from "./PushOptions";
-import { injectHooks } from "./utils/injectHooks";
-import { type DefaultRouteHandler, useUrl } from "./utils/navigationHooks";
+import { ComponentWithProperties, type ComponentWithPropertiesType } from './ComponentWithProperties';
+import FramedComponent from './FramedComponent.vue';
+import { HistoryManager } from './HistoryManager';
+import NavigationController from './NavigationController.vue';
+import { type PushOptions } from './PushOptions';
+import { injectHooks } from './utils/injectHooks';
+import { type DefaultRouteHandler, useUrl } from './utils/navigationHooks';
 
 // Credits https://codeburst.io/throttling-and-debouncing-in-javascript-b01cad5c8edf
 const throttle = (func: any, limit: any) => {
     let lastFunc: any;
     let lastRan: any;
-    return function(this: any) {
+    return function (this: any) {
         const context = this;
-        // eslint-disable-next-line prefer-rest-params
+
         const args = arguments;
         if (!lastRan) {
             func.apply(context, args);
             lastRan = Date.now();
-        } else {
+        }
+        else {
             clearTimeout(lastFunc);
-            lastFunc = setTimeout(function() {
+            lastFunc = setTimeout(function () {
                 if (Date.now() - lastRan >= limit) {
                     func.apply(context, args);
                     lastRan = Date.now();
@@ -44,12 +45,12 @@ const throttle = (func: any, limit: any) => {
 };
 
 export function useSplitViewController(): Ref<InstanceType<typeof SplitViewController>> {
-    const c = inject('reactive_splitViewController') as InstanceType<typeof SplitViewController>|Ref<InstanceType<typeof SplitViewController>>;
+    const c = inject('reactive_splitViewController') as InstanceType<typeof SplitViewController> | Ref<InstanceType<typeof SplitViewController>>;
     return shallowRef(c);
 }
 
 const SplitViewController = defineComponent({
-    name: "SplitViewController",
+    name: 'SplitViewController',
     components: {
         NavigationController,
         FramedComponent,
@@ -58,7 +59,7 @@ const SplitViewController = defineComponent({
         return {
             reactive_splitViewController: this,
             reactive_navigation_show_detail: this.showDetail,
-        }
+        };
     },
     props: {
         root: {
@@ -68,15 +69,15 @@ const SplitViewController = defineComponent({
         },
         detailWidth: {
             default: null,
-            type: String
-        }
+            type: String,
+        },
     },
     data() {
         return {
             detail: null as ComponentWithPropertiesType | null,
             detailKey: null as number | null,
-            defaultHandler: null as DefaultRouteHandler|null,
-            isChangingComponents: false as boolean
+            defaultHandler: null as DefaultRouteHandler | null,
+            isChangingComponents: false as boolean,
         };
     },
     computed: {
@@ -85,44 +86,44 @@ const SplitViewController = defineComponent({
                 // The master cannot make changes to the url or title if there is a detail
                 reactive_navigation_disable_url: computed(() => !!this.detail),
                 reactive_provide_default_handler: (defaultHandler: DefaultRouteHandler) => {
-                    this.defaultHandler = defaultHandler
-                    this.onResize()
-                }
-            }
+                    this.defaultHandler = defaultHandler;
+                    this.onResize();
+                },
+            };
         },
         lastIsDetail() {
             return this.detailKey != null && this.navigationController?.mainComponent?.key == this.detailKey;
         },
         navigationController() {
-            return this.$refs["navigationController"] as InstanceType<typeof NavigationController>;
+            return this.$refs['navigationController'] as InstanceType<typeof NavigationController>;
         },
         masterElement() {
-            return this.$refs["masterElement"] as HTMLElement;
-        }
+            return this.$refs['masterElement'] as HTMLElement;
+        },
     },
     created(this: any) {
         // we cannot use setup in mixins, but we want to avoid having to duplicate the 'use' hooks logic.
         // so this is a workaround
         const definitions: any = {
-            $url: useUrl()
+            $url: useUrl(),
         };
 
         injectHooks(this, definitions);
     },
     mounted() {
         if (this.detailWidth) {
-            (this.$el as HTMLElement).style.setProperty("--split-view-width", this.detailWidth);
+            (this.$el as HTMLElement).style.setProperty('--split-view-width', this.detailWidth);
         }
     },
     activated() {
         (this as any).listener = throttle(this.onResize, 100);
-        window.addEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
+        window.addEventListener('resize', (this as any).listener, { passive: true } as EventListenerOptions);
 
         // Recheck if we need to show the detail
         this.onResize();
     },
     deactivated() {
-        window.removeEventListener("resize", (this as any).listener, { passive: true } as EventListenerOptions);
+        window.removeEventListener('resize', (this as any).listener, { passive: true } as EventListenerOptions);
     },
     methods: {
         returnToHistoryIndex() {
@@ -137,7 +138,8 @@ const SplitViewController = defineComponent({
                 if (this.detail) {
                     this.collapse().catch(console.error);
                 }
-            } else {
+            }
+            else {
                 if (this.canExpand()) {
                     this.expand().catch(console.error);
                 }
@@ -149,9 +151,10 @@ const SplitViewController = defineComponent({
             }
 
             const style = window.getComputedStyle(element);
-            if (style.overflowY == "scroll" || style.overflow == "scroll" || style.overflow == "auto" || style.overflowY == "auto") {
+            if (style.overflowY == 'scroll' || style.overflow == 'scroll' || style.overflow == 'auto' || style.overflowY == 'auto') {
                 return element;
-            } else {
+            }
+            else {
                 if (!element.parentElement) {
                     return document.documentElement;
                 }
@@ -174,23 +177,24 @@ const SplitViewController = defineComponent({
         },
         async showDetail(options: PushOptions): Promise<boolean> {
             if (this.isChangingComponents) {
-                console.error('Show detail called on a splitViewController that is busy')
+                console.error('Show detail called on a splitViewController that is busy');
                 return false;
             }
 
-            const component = options.components[options.components.length - 1] as ComponentWithProperties
+            const component = options.components[options.components.length - 1] as ComponentWithProperties;
             this.detailKey = component.key;
             this.isChangingComponents = true;
             try {
                 if (this.shouldCollapse()) {
                     if (this.lastIsDetail || this.detail) {
-                        console.error("Pushing a detail when a detail is already presented is not allowed");
+                        console.error('Pushing a detail when a detail is already presented is not allowed');
                         this.isChangingComponents = false;
                         return false;
                     }
 
                     await this.navigationController.push(options);
-                } else {
+                }
+                else {
                     // Replace existing detail component
                     // First check if we don't destroy anything
                     if (this.detail) {
@@ -205,12 +209,13 @@ const SplitViewController = defineComponent({
 
                     HistoryManager.pushState(undefined, null, {
                         adjustHistory: options.adjustHistory ?? true,
-                        invalid: options.invalidHistory ?? (!!this.detail)
+                        invalid: options.invalidHistory ?? (!!this.detail),
                     });
-                    this.detail = component; 
-                    this.detail.assignHistoryIndex()
+                    this.detail = component;
+                    this.detail.assignHistoryIndex();
                 }
-            } finally {
+            }
+            finally {
                 this.isChangingComponents = false;
             }
             return true;
@@ -220,19 +225,19 @@ const SplitViewController = defineComponent({
         },
         async collapse() {
             if (!this.navigationController) {
-                console.error("Cannot collapse without navigation controller");
+                console.error('Cannot collapse without navigation controller');
                 return;
             }
             if (this.lastIsDetail) {
-                console.error("Cannot collapse when the detail is already collaped");
+                console.error('Cannot collapse when the detail is already collaped');
                 return;
             }
             if (!this.detail) {
-                console.error("Cannot collapse without detail");
+                console.error('Cannot collapse without detail');
                 return;
             }
             if (this.isChangingComponents) {
-                console.error("Cannot collapse while already isChangingComponents");
+                console.error('Cannot collapse while already isChangingComponents');
                 return;
             }
 
@@ -242,8 +247,9 @@ const SplitViewController = defineComponent({
                 const detail = this.detail;
                 this.detail = null;
                 await this.navigationController.push({ components: [detail], animated: false });
-                HistoryManager.invalidateHistory()
-            } finally {
+                HistoryManager.invalidateHistory();
+            }
+            finally {
                 this.isChangingComponents = false;
             }
         },
@@ -267,39 +273,40 @@ const SplitViewController = defineComponent({
         },
         async expand() {
             if (!this.navigationController) {
-                console.error("Cannot expand without navigation controller");
+                console.error('Cannot expand without navigation controller');
                 return;
             }
             if (this.detail) {
-                console.error("Cannot expand when detail is already visible");
+                console.error('Cannot expand when detail is already visible');
                 return;
             }
             if (this.isChangingComponents) {
-                console.error("Cannot expand while already isChangingComponents");
+                console.error('Cannot expand while already isChangingComponents');
                 return false;
             }
             if (!this.lastIsDetail) {
                 // Expand with rootDetail
                 if (!this.defaultHandler) {
-                    console.error("Cannot expand when there is no defaultHandler");
+                    console.error('Cannot expand when there is no defaultHandler');
                     return;
                 }
-                HistoryManager.invalidateHistory()
+                HistoryManager.invalidateHistory();
 
                 this.isChangingComponents = false;
                 try {
-                    const succeeded = await this.defaultHandler() // will call showDetail normally
+                    const succeeded = await this.defaultHandler(); // will call showDetail normally
                     if (succeeded && !this.detail) {
-                        console.warn('Did call defaultHandler but no detail was set. Are all mounts properly awaited?')
+                        console.warn('Did call defaultHandler but no detail was set. Are all mounts properly awaited?');
                     }
                     if (!succeeded) {
-                        console.warn('Failed to show default handler')
+                        console.warn('Failed to show default handler');
                     }
-                    console.info('Used default handler for split view controller')
-                } finally {
-                    this.isChangingComponents = false
+                    console.info('Used default handler for split view controller');
                 }
-               
+                finally {
+                    this.isChangingComponents = false;
+                }
+
                 return;
             }
             this.isChangingComponents = true;
@@ -307,10 +314,10 @@ const SplitViewController = defineComponent({
             try {
                 const popped = await this.navigationController.pop({
                     animated: false,
-                    destroy: false
+                    destroy: false,
                 });
                 if (!popped || popped.length == 0) {
-                    this.isChangingComponents = false
+                    this.isChangingComponents = false;
                     return;
                 }
 
@@ -318,17 +325,18 @@ const SplitViewController = defineComponent({
                 await this.$nextTick();
                 HistoryManager.pushState(undefined, null, {
                     adjustHistory: false,
-                    invalid: true
+                    invalid: true,
                 });
                 this.detailKey = popped[0].key;
                 this.detail = popped[0];
-                this.detail.assignHistoryIndex()
-            } finally {
-                this.isChangingComponents = false
+                this.detail.assignHistoryIndex();
             }
-        }
-    }
-})
+            finally {
+                this.isChangingComponents = false;
+            }
+        },
+    },
+});
 
 export default SplitViewController;
 

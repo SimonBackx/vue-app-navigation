@@ -1,4 +1,4 @@
-import { createDecorator } from './Component'
+import { createDecorator } from './Component';
 
 /**
  * decorator of a ref prop
@@ -6,12 +6,12 @@ import { createDecorator } from './Component'
  */
 export function Ref(refKey?: string) {
     return createDecorator((options, key) => {
-        options.computed = options.computed || {}
+        options.computed = options.computed || {};
         options.computed[key] = {
             cache: false,
             get() {
-                return this.$refs[refKey || key]
+                return this.$refs[refKey || key];
             },
-        }
-    })
+        };
+    });
 }

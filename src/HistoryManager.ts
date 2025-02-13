@@ -1,4 +1,4 @@
-import { UrlHelper } from "./utils/UrlHelper";
+import { UrlHelper } from './utils/UrlHelper';
 
 /**
  * null makes sure the previous URL is used for this route
@@ -19,8 +19,8 @@ type HistoryState = {
     invalid: boolean;
 
     /// Action to execute when the user navigates back to the previous state using the browser's back button.
-    undoAction: ((animate: boolean) => void|Promise<void>)|null;
-}
+    undoAction: ((animate: boolean) => void | Promise<void>) | null;
+};
 
 class HistoryManagerStatic {
     static debug = false;
@@ -37,31 +37,31 @@ class HistoryManagerStatic {
     manualStateAction = false;
 
     // Manipulating the history is async and can cause issues when fast calls happen without awaiting the previous one
-    historyQueue: (() => Promise<void>|void)[] = [];
+    historyQueue: (() => Promise<void> | void)[] = [];
     isQueueRunning = false;
     changeUrlTimeout: NodeJS.Timeout | null = null;
     titleSuffix = '';
 
     pageLoadedAt = Date.now();
 
-    listeners: Map<unknown, () => void> = new Map()
+    listeners: Map<unknown, () => void> = new Map();
 
     addListener(owner: unknown, handler: () => void) {
-        this.listeners.set(owner, handler)
+        this.listeners.set(owner, handler);
     }
 
     removeListener(owner: unknown) {
-        this.listeners.delete(owner)
+        this.listeners.delete(owner);
     }
 
     callListeners() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         for (const [_, handler] of this.listeners) {
-            handler()
+            handler();
         }
     }
 
-    private addToQueue(action: () => Promise<void>|void) {
+    private addToQueue(action: () => Promise<void> | void) {
         this.historyQueue.push(action);
         if (!this.isQueueRunning) {
             this.runQueue();
@@ -76,10 +76,12 @@ class HistoryManagerStatic {
             const p = action();
             if (p) {
                 p.finally(() => this.runQueue()).catch(console.error);
-            } else {
+            }
+            else {
                 this.runQueue();
             }
-        } else {
+        }
+        else {
             // console.log('History queue done');
             this.isQueueRunning = false;
             this.callListeners();
@@ -91,14 +93,14 @@ class HistoryManagerStatic {
             return new Promise<void>((resolve) => {
                 this.manualStateAction = true;
                 history.go(delta); // should be negative
-                let timer: NodeJS.Timeout | undefined = undefined
+                let timer: NodeJS.Timeout | undefined = undefined;
                 let called = false;
-                
+
                 const listener = () => {
                     if (called) return;
                     called = true;
                     clearTimeout(timer);
-                    window.removeEventListener("popstate", listener);
+                    window.removeEventListener('popstate', listener);
 
                     // Best to wait until we are sure the other listener was also called
                     setTimeout(() => {
@@ -107,11 +109,11 @@ class HistoryManagerStatic {
                     }, 0);
                 };
 
-                window.addEventListener("popstate", listener);
+                window.addEventListener('popstate', listener);
 
                 // Timeout
                 timer = setTimeout(() => {
-                    console.warn("Timeout while waiting for history.go");
+                    console.warn('Timeout while waiting for history.go');
                     listener();
                 }, 200);
             });
@@ -144,11 +146,11 @@ class HistoryManagerStatic {
         }
 
         if (HistoryManagerStatic.debug) {
-            console.log("Set url: " + url+", for index "+index+" with current counter: "+this.counter, title);
+            console.log('Set url: ' + url + ', for index ' + index + ' with current counter: ' + this.counter, title);
         }
 
         if (index === undefined || index === this.counter) {
-            const state = this.states[this.states.length - 1]
+            const state = this.states[this.states.length - 1];
             const count = state.index;
 
             // We throttle to prevent changing the url so many times
@@ -166,35 +168,36 @@ class HistoryManagerStatic {
                         return;
                     }
                     if (HistoryManagerStatic.debug) {
-                        console.log('history.replaceState', count, url)
+                        console.log('history.replaceState', count, url);
                     }
-                    const formattedUrl = this.resolveUrl(count)
-                    history.replaceState({ counter: count }, "", formattedUrl);
+                    const formattedUrl = this.resolveUrl(count);
+                    history.replaceState({ counter: count }, '', formattedUrl);
                     if (state.title) {
                         window.document.title = this.formatTitle(state.title); // use state title here, because could have changed already
                     }
                 });
-            }, didJustLoadPage ? 1000 : 20)
+            }, didJustLoadPage ? 1000 : 20);
 
             state.url = url;
             if (title) {
                 state.title = title;
             }
-        } else {
+        }
+        else {
             const state = this.states[index];
             if (!state) {
-                console.error('Search state with index ', index, 'but no such state found')
+                console.error('Search state with index ', index, 'but no such state found');
                 return;
             }
 
             if (state.index !== index) {
-                console.error('Search state with index ', index, 'but received state with index', state.index)
+                console.error('Search state with index ', index, 'but received state with index', state.index);
                 return;
             }
 
             if (state.url !== url) {
                 if (HistoryManagerStatic.debug) {
-                    console.info("Changed url for old state: " + state.index + " to " + url);
+                    console.info('Changed url for old state: ' + state.index + ' to ' + url);
                 }
             }
             state.url = url;
@@ -215,11 +218,11 @@ class HistoryManagerStatic {
         }
         this.addToQueue(() => {
             if (HistoryManagerStatic.debug) {
-                console.log('history.replaceState - updateUrl')
+                console.log('history.replaceState - updateUrl');
             }
-            const lastState = this.states[this.states.length - 1]
-            const formattedUrl = this.resolveUrl(lastState.index)
-            history.replaceState({ counter: this.counter }, "", formattedUrl);
+            const lastState = this.states[this.states.length - 1];
+            const formattedUrl = this.resolveUrl(lastState.index);
+            history.replaceState({ counter: this.counter }, '', formattedUrl);
             // if (state.title) {
             //     window.document.title = this.formatTitle(state.title);
             // }
@@ -230,7 +233,6 @@ class HistoryManagerStatic {
         return title + (this.titleSuffix ? (' | ' + this.titleSuffix) : '');
     }
 
-
     /**
      * Set the saved title for a given state. If that state is the current one, it will also get set immediately
      */
@@ -240,13 +242,14 @@ class HistoryManagerStatic {
         }
 
         if (index === undefined || index === this.counter) {
-            const state = this.states[this.states.length - 1]
+            const state = this.states[this.states.length - 1];
             window.document.title = this.formatTitle(title);
             state.title = title;
-        } else {
+        }
+        else {
             const state = this.states[index];
             if (state.index !== index) {
-                console.error('Search state with index ', index, 'but received state with index', state.index)
+                console.error('Search state with index ', index, 'but received state with index', state.index);
                 return;
             }
             state.title = title;
@@ -269,14 +272,14 @@ class HistoryManagerStatic {
         return this.getState(index - 1);
     }
 
-    pushState(url: string | undefined, undoAction: ((animate: boolean) => void|Promise<void>)|null, options?: Partial<HistoryState>) {
+    pushState(url: string | undefined, undoAction: ((animate: boolean) => void | Promise<void>) | null, options?: Partial<HistoryState>) {
         if (!this.active) {
             return;
         }
         this.counter++;
 
         if (this.counter !== this.states.length) {
-            console.error('Invalid initial history item when pushing state')
+            console.error('Invalid initial history item when pushing state');
         }
 
         const state = {
@@ -285,32 +288,33 @@ class HistoryManagerStatic {
             adjustHistory: true,
             undoAction,
             invalid: false,
-            ...options
+            ...options,
         };
-        this.states.push(state)
+        this.states.push(state);
         const c = this.counter;
 
         if (state.adjustHistory) {
             this.addToQueue(() => {
                 if (HistoryManagerStatic.debug) {
-                    console.log('history.pushState', c, url)
+                    console.log('history.pushState', c, url);
                 }
-                const formattedUrl = url === undefined ? undefined : '/' + UrlHelper.trim(UrlHelper.transformUrl(url))
-                history.pushState({ counter: c }, "", formattedUrl);
+                const formattedUrl = url === undefined ? undefined : '/' + UrlHelper.trim(UrlHelper.transformUrl(url));
+                history.pushState({ counter: c }, '', formattedUrl);
             });
-        } else {
+        }
+        else {
             this.addToQueue(() => {
                 if (HistoryManagerStatic.debug) {
-                    console.log('history.replaceState', c)
+                    console.log('history.replaceState', c);
                 }
 
                 // We don't set the url here because it resets the url if we push a lot of states
-                history.replaceState({ counter: c }, "", undefined);
+                history.replaceState({ counter: c }, '', undefined);
             });
         }
 
         if (HistoryManagerStatic.debug) {
-            console.log("Push new state " , this.states[this.states.length - 1]);
+            console.log('Push new state ', this.states[this.states.length - 1]);
         }
     }
 
@@ -319,7 +323,7 @@ class HistoryManagerStatic {
      */
     invalidateHistory() {
         if (HistoryManagerStatic.debug) {
-            console.log('HistoryManger.invalidateHistory')
+            console.log('HistoryManger.invalidateHistory');
         }
 
         for (const state of this.states) {
@@ -334,17 +338,17 @@ class HistoryManagerStatic {
     returnToHistoryIndex(counter: number) {
         // We'll keep this for debugging and remove it if everything is stable
         if (HistoryManagerStatic.debug) {
-            console.log("Did return to history index " + counter + ", coming from " + this.counter);
+            console.log('Did return to history index ' + counter + ', coming from ' + this.counter);
         }
 
         if (counter > this.counter) {
-            console.warn('Performed non-compatible navigation. Probably because side-by-side views navigating')
+            console.warn('Performed non-compatible navigation. Probably because side-by-side views navigating');
             this.invalidateHistory();
-            
+
             // Append invalid history items
             for (let i = this.counter + 1; i <= counter; i++) {
                 if (i !== this.states.length) {
-                    console.error('Invalid history item at index', i, 'when returning to history index')
+                    console.error('Invalid history item at index', i, 'when returning to history index');
                 }
                 this.states.push({
                     index: i,
@@ -352,8 +356,8 @@ class HistoryManagerStatic {
                     url: null,
                     title: undefined,
                     invalid: true,
-                    undoAction: null
-                })
+                    undoAction: null,
+                });
             }
 
             this.counter = counter;
@@ -364,7 +368,7 @@ class HistoryManagerStatic {
 
             // Delete all future states
             const deletedStates = this.states.splice(this.counter + 1);
-            console.log('Deleted states', deletedStates.length)
+            console.log('Deleted states', deletedStates.length);
 
             // Count how many states we have to delete from the history
             const adjustHistoryCount = deletedStates.filter(state => state.adjustHistory).length;
@@ -373,7 +377,7 @@ class HistoryManagerStatic {
             if (adjustHistoryCount > 0) {
                 // Note: history.go is async, so all replaceState methods stop working until finished!
                 if (HistoryManagerStatic.debug) {
-                    console.log("Adjusting browser history state: popping " + adjustHistoryCount + " items");
+                    console.log('Adjusting browser history state: popping ' + adjustHistoryCount + ' items');
                 }
                 this.go(-adjustHistoryCount);
             }
@@ -381,7 +385,7 @@ class HistoryManagerStatic {
 
         if (this.states[this.counter].url) {
             if (HistoryManagerStatic.debug) {
-                console.log("Setting manual url without history api: " + this.states[this.counter].url);
+                console.log('Setting manual url without history api: ' + this.states[this.counter].url);
             }
 
             // Set new url manually again
@@ -393,15 +397,15 @@ class HistoryManagerStatic {
 
     activate() {
         // We'll handle the scroll stuff
-        history.scrollRestoration = "manual";
+        history.scrollRestoration = 'manual';
 
         async function onPopState(this: HistoryManagerStatic, event: any) {
             if (HistoryManagerStatic.debug) {
-                console.log("HistoryManager popstate");
+                console.log('HistoryManager popstate');
             }
 
             if (this.isAdjustingState) {
-                console.warn("Duplicate popstate");
+                console.warn('Duplicate popstate');
                 return;
             }
             if (this.manualStateAction) {
@@ -418,21 +422,22 @@ class HistoryManagerStatic {
                     this.go(-amount);
 
                     if (HistoryManagerStatic.debug) {
-                        console.log("Not allowed to go forward, going back " + amount + " steps");
+                        console.log('Not allowed to go forward, going back ' + amount + ' steps');
                     }
-                } else {
+                }
+                else {
                     // Only animate if we only have one undo action and if animations are enabled
                     const animate = (this.counter - newCounter) == 1 && this.animateHistoryPop;
-                    
+
                     // Set new counter position
-                    this.counter = newCounter
-                    
+                    this.counter = newCounter;
+
                     // Delete all future states
                     const deletedStates = this.states.splice(this.counter + 1).reverse();
 
                     const newState = this.states[this.counter];
                     if (newState.invalid) {
-                        console.warn('Reloading page bacause of invalid history', newState)
+                        console.warn('Reloading page bacause of invalid history', newState);
                         window.location.reload();
                         return;
                     }
@@ -440,7 +445,7 @@ class HistoryManagerStatic {
                     // Execute undo actions in right order
                     for (const state of deletedStates) {
                         if (state.invalid) {
-                            console.warn('Reloading page bacause of invalid history', state)
+                            console.warn('Reloading page bacause of invalid history', state);
                             window.location.reload();
                             return;
                         }
@@ -450,10 +455,11 @@ class HistoryManagerStatic {
                     for (const state of deletedStates) {
                         if (state.undoAction) {
                             if (HistoryManagerStatic.debug) {
-                                console.log("Executing undoAction...");
+                                console.log('Executing undoAction...');
                             }
                             await state.undoAction(animate);
-                        } else {
+                        }
+                        else {
                             if (state.adjustHistory) {
                                 // If one undoAction is missing, the state is unreliable
                                 // It would be better not to rely on the browser back behaviour
@@ -465,24 +471,24 @@ class HistoryManagerStatic {
             }
             this.isAdjustingState = false;
         }
-        
+
         // Create push pop listener that will execute undo actions
-        window.addEventListener("popstate", (event) => {
-            onPopState.call(this, event).catch(console.error)
+        window.addEventListener('popstate', (event) => {
+            onPopState.call(this, event).catch(console.error);
         });
 
         const clickHandler = () => {
             this.pageLoadedAt = 0; // All url changes should be instant now
         };
-        document.addEventListener("pointerdown", clickHandler, {once: true, passive: true});
+        document.addEventListener('pointerdown', clickHandler, { once: true, passive: true });
 
         this.active = true;
 
-        if (history.state && history.state.counter !== undefined && typeof history.state.counter === "number") {
+        if (history.state && history.state.counter !== undefined && typeof history.state.counter === 'number') {
             // Push invalid items to the states
             for (let i = 0; i < history.state.counter; i++) {
                 if (i !== this.states.length) {
-                    console.error('Invalid history item at index', i, 'when activating history manager')
+                    console.error('Invalid history item at index', i, 'when activating history manager');
                 }
                 this.states.push({
                     index: i,
@@ -490,17 +496,17 @@ class HistoryManagerStatic {
                     url: null,
                     title: undefined,
                     invalid: true,
-                    undoAction: null
-                })
+                    undoAction: null,
+                });
             }
             this.counter = history.state.counter;
         }
 
         // Set counter of initial history
-        history.replaceState({ counter: this.counter }, "");
+        history.replaceState({ counter: this.counter }, '');
 
         if (this.counter !== this.states.length) {
-            console.error('Invalid initial history item when activating history manager')
+            console.error('Invalid initial history item when activating history manager');
         }
 
         this.states.push({
@@ -509,8 +515,8 @@ class HistoryManagerStatic {
             url: null,
             title: undefined,
             invalid: false,
-            undoAction: null
-        })
+            undoAction: null,
+        });
     }
 }
 

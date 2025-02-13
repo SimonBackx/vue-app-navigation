@@ -1,4 +1,4 @@
-import type { ComponentCustomProperties } from "vue";
+import type { ComponentCustomProperties } from 'vue';
 
 export class VueComponent implements ComponentCustomProperties {
     // This will allow us to pass the vue proxy inside the component
@@ -6,11 +6,11 @@ export class VueComponent implements ComponentCustomProperties {
         return new Proxy(this, {
             get: (object, key, proxy) => {
                 return this.__getter(object, key, proxy);
-            }
+            },
         });
     }
 
-    __getter(object: any, key: string|symbol, _proxy: any) {
+    __getter(object: any, key: string | symbol, _proxy: any) {
         // Default behaviour
         return object[key];
     }

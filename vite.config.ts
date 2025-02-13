@@ -1,13 +1,13 @@
-import vue from '@vitejs/plugin-vue'
+import vue from '@vitejs/plugin-vue';
 import path from 'path';
-import { defineConfig } from 'vite'
-import dts from 'vite-plugin-dts'
+import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
 
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         vue(),
-        dts()
+        dts(),
     ],
     build: {
         minify: false,
@@ -33,8 +33,8 @@ export default defineConfig({
                 assetFileNames: (assetInfo) => {
                     if (assetInfo.name === 'style.css') return 'main.css';
                     return assetInfo.name ?? '';
-                }
+                },
             },
         },
-    }
-})
+    },
+});

@@ -1,7 +1,7 @@
-import { defineComponent } from "vue";
+import { defineComponent } from 'vue';
 
-import { ModalStackComponentFinderMixin } from "./ModalStackComponentFinderMixin";
-import { type PopOptions } from "./PopOptions";
+import { ModalStackComponentFinderMixin } from './ModalStackComponentFinderMixin';
+import { type PopOptions } from './PopOptions';
 
 // You can declare mixins as the same style as components.
 export const ModalMixin = defineComponent({
@@ -12,12 +12,14 @@ export const ModalMixin = defineComponent({
             if (nav) {
                 // Sometimes we need to call the pop event instead (because this adds custom data to the event)
                 if (nav.props.onPop) {
-                    nav.emit("pop", options);
-                } else {
+                    nav.emit('pop', options);
+                }
+                else {
                     console.error("Couldn't pop. Failed");
                 }
-            } else {
-                console.warn("No navigation controller to pop");
+            }
+            else {
+                console.warn('No navigation controller to pop');
             }
         },
         getPoppableParent() {
@@ -27,11 +29,11 @@ export const ModalMixin = defineComponent({
                 if (prev.props.onPop) {
                     return prev;
                 }
-    
+
                 prev = start;
                 start = start.parent;
             }
             return null;
-        }
-    }
-})
+        },
+    },
+});

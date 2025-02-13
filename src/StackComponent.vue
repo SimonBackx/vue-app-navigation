@@ -13,15 +13,15 @@
 
 <script lang="ts" setup>
 
-import { onBeforeUnmount, type Ref,ref } from "vue";
+import { onBeforeUnmount, type Ref, ref } from 'vue';
 
-import { ComponentWithProperties } from "./ComponentWithProperties";
+import { ComponentWithProperties } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
-import { useFocused } from "./utils/navigationHooks.ts";
+import { useFocused } from './utils/navigationHooks.ts';
 
 const children = ref([]) as Ref<ComponentWithProperties[]>;
 const parentIsFocused = useFocused();
-const emit = defineEmits(["returnToHistoryIndex"]);
+const emit = defineEmits(['returnToHistoryIndex']);
 
 function getCustomProvide(index: number, key: number) {
     return {
@@ -30,7 +30,7 @@ function getCustomProvide(index: number, key: number) {
         },
         reactive_navigation_can_pop: true,
         reactive_navigation_dismiss: () => {
-            console.warn('Avoid calling dismiss in components on the StackComponent, since options are not supported here')
+            console.warn('Avoid calling dismiss in components on the StackComponent, since options are not supported here');
             removeAt(index, key);
         },
         reactive_navigation_can_dismiss: false,
@@ -43,27 +43,29 @@ function removeAt(index: number, key: number) {
         // Manually search for the key (timing conditions with slow events in vue)
         for (const [i, comp] of children.value.entries()) {
             if (comp.key === key) {
-                console.warn("Corrected index from "+index+" to "+i)
+                console.warn('Corrected index from ' + index + ' to ' + i);
                 index = i;
                 break;
             }
         }
     }
     if (children.value[index] !== undefined && children.value[index].key === key) {
-        const hadFocus = children.value[index].hasHistoryIndex() // need to check for history index otherwise well falsely return the history index to a possible wrong view
+        const hadFocus = children.value[index].hasHistoryIndex(); // need to check for history index otherwise well falsely return the history index to a possible wrong view
         children.value.splice(index, 1);
 
         if (hadFocus) {
-            const newFocused = getComponentWithHistory();                    
+            const newFocused = getComponentWithHistory();
             if (!newFocused) {
                 // The normalModalStackComponent is visible again
-                emit("returnToHistoryIndex");
-            } else {
-                newFocused.returnToHistoryIndex()
+                emit('returnToHistoryIndex');
+            }
+            else {
+                newFocused.returnToHistoryIndex();
             }
         }
-    } else {
-        console.warn("Expected component with key " + key + " at index " + index);
+    }
+    else {
+        console.warn('Expected component with key ' + key + ' at index ' + index);
     }
 }
 
@@ -98,6 +100,6 @@ defineExpose({
     show,
     getFocusedComponent,
     removeAt,
-    children
+    children,
 });
 </script>

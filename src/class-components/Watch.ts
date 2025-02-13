@@ -1,6 +1,6 @@
-import { type WatchOptions } from 'vue'
+import { type WatchOptions } from 'vue';
 
-import { createDecorator } from './Component'
+import { createDecorator } from './Component';
 
 /**
  * decorator of a watch function
@@ -9,14 +9,15 @@ import { createDecorator } from './Component'
  */
 export function Watch(path: string, watchOptions: WatchOptions = {}) {
     return createDecorator((componentOptions, handler) => {
-        componentOptions.watch ||= Object.create(null)
-        const watch: any = componentOptions.watch
+        componentOptions.watch ||= Object.create(null);
+        const watch: any = componentOptions.watch;
         if (typeof watch[path] === 'object' && !Array.isArray(watch[path])) {
-            watch[path] = [watch[path]]
-        } else if (typeof watch[path] === 'undefined') {
-            watch[path] = []
+            watch[path] = [watch[path]];
+        }
+        else if (typeof watch[path] === 'undefined') {
+            watch[path] = [];
         }
 
-        watch[path].push({ handler, ...watchOptions })
-    })
+        watch[path].push({ handler, ...watchOptions });
+    });
 }

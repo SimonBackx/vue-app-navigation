@@ -1,6 +1,6 @@
-import { defineComponent } from "vue";
+import { defineComponent } from 'vue';
 
-import ModalStackComponent from "./ModalStackComponent.vue";
+import ModalStackComponent from './ModalStackComponent.vue';
 
 // You can declare mixins as the same style as components.
 export const ModalStackComponentFinderMixin = defineComponent({
@@ -15,6 +15,6 @@ export const ModalStackComponentFinderMixin = defineComponent({
                 start = start.$parent;
             }
             return null;
-        }
-    }
-})
+        },
+    },
+});
