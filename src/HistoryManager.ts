@@ -68,6 +68,14 @@ class HistoryManagerStatic {
         }
     }
 
+    private waitForQueue() {
+        return new Promise<void>((resolve) => {
+            this.addToQueue(() => {
+                resolve();
+            });
+        });
+    }
+
     private runQueue() {
         this.isQueueRunning = true;
         const action = this.historyQueue.shift();
@@ -160,6 +168,7 @@ class HistoryManagerStatic {
 
             const didJustLoadPage = Date.now() - this.pageLoadedAt < 1000 * 5;
             this.changeUrlTimeout = setTimeout(() => {
+                this.changeUrlTimeout = null;
                 if (this.counter !== count || (state.url !== url)) {
                     return;
                 }
@@ -208,25 +217,31 @@ class HistoryManagerStatic {
     }
 
     // Call this when url formatting or prefix has changed
-    updateUrl() {
+    async updateUrl() {
         if (!this.active) {
             return;
         }
         if (this.changeUrlTimeout) {
             // No need to update: still waiting
+            await this.waitForQueue();
             return;
         }
+
+        const state = this.states[this.states.length - 1];
+        const count = state.index;
+
         this.addToQueue(() => {
+            if (this.counter !== count) {
+                return;
+            }
+
             if (HistoryManagerStatic.debug) {
                 console.log('history.replaceState - updateUrl');
             }
-            const lastState = this.states[this.states.length - 1];
-            const formattedUrl = this.resolveUrl(lastState.index);
-            history.replaceState({ counter: this.counter }, '', formattedUrl);
-            // if (state.title) {
-            //     window.document.title = this.formatTitle(state.title);
-            // }
+            const formattedUrl = this.resolveUrl(count);
+            history.replaceState({ counter: count }, '', formattedUrl);
         });
+        await this.waitForQueue();
     }
 
     formatTitle(title: string) {
