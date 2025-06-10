@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref, shallowRef, unref } from 'vue';
+import { computed, defineComponent, unref, type PropType } from 'vue';
 
 import { ComponentWithProperties, type ComponentWithPropertiesType } from './ComponentWithProperties';
 import FramedComponent from './FramedComponent.vue';
@@ -30,12 +30,7 @@ import { HistoryManager } from './HistoryManager';
 import { type PopOptions } from './PopOptions';
 import { type PushOptions } from './PushOptions';
 
-export function useNavigationController(): Ref<InstanceType<typeof NavigationController>> {
-    const c = inject('reactive_navigationController') as InstanceType<typeof NavigationController> | Ref<InstanceType<typeof NavigationController>>;
-    return shallowRef(c);
-}
-
-const NavigationController = defineComponent({
+export default defineComponent({
     name: 'NavigationController',
     components: {
         FramedComponent,
@@ -91,7 +86,7 @@ const NavigationController = defineComponent({
             default: null,
         },
     },
-    emits: ['didPush', 'didPop', 'showDetail', 'present'],
+    emits: ['didPush', 'didPop', 'showDetail', 'present'] as unknown as undefined,
     data() {
         const savedInternalScrollPositions: number[] = [];
         const savedScrollPositions: number[] = [];
@@ -520,7 +515,7 @@ const NavigationController = defineComponent({
             }
         },
         enter(element: any, done: () => void) {
-            if (this.transitionName == 'none') {
+            if (this.transitionName === 'none') {
                 this.getScrollElement().scrollTop = this.nextScrollPosition;
 
                 const internal = this.getInternalScrollElement(element);
@@ -767,8 +762,6 @@ const NavigationController = defineComponent({
         },
     },
 });
-
-export default NavigationController;
 
 </script>
 

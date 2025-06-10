@@ -1,18 +1,18 @@
-import { type ComponentOptions, computed, customRef, getCurrentInstance, inject, onActivated, onMounted, onScopeDispose, provide, type Ref, ref, unref } from 'vue';
+import { computed, customRef, getCurrentInstance, inject, onActivated, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
 
 import { ComponentWithProperties, useCurrentComponent } from '../ComponentWithProperties';
 import { HistoryManager, type HistoryUrl } from '../HistoryManager';
 import NavigationController from '../NavigationController.vue';
 import type { PopOptions } from '../PopOptions';
 import type { PushOptions } from '../PushOptions';
-import { templateToUrl, UrlHelper, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
+import { UrlHelper, templateToUrl, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
 
-export type Route<Params, T> = {
+export type Route<Params> = {
     name?: string;
     url: string;
     params?: UrlParamsConstructors<Params>;
     query?: UrlParamsConstructors<unknown>;
-    component: ComponentOptions | (() => Promise<ComponentOptions>) | 'self';
+    component: Component | (() => Promise<Component>) | 'self';
     present?: 'popup' | 'sheet' | true;
     show?: true | 'detail';
     isDefault?: RouteNavigationOptions<Params>; // Only used in splitViewController for now, in combination with show: detail
@@ -46,11 +46,11 @@ export type Route<Params, T> = {
 
 export type RouteNavigationOptions<Params> = { params?: Params; properties?: Record<string, unknown>; query?: URLSearchParams; animated?: boolean; adjustHistory?: boolean; checkRoutes?: boolean };
 
-export type RouteIdentification<Params> = { name: string } | { url: string } | { route: Route<Params, any> };
+export type RouteIdentification<Params> = { name: string } | { url: string } | { route: Route<Params> };
 
 export type NavigationOptions<T> = {
     title: string | ((this: T) => string);
-    routes?: Route<{}, T>[];
+    routes?: Route<any>[];
 };
 
 export function usePop() {
@@ -72,7 +72,7 @@ export function useNavigate() {
     const show = useShow();
     const showDetail = useShowDetail();
 
-    const toRoute = async function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, options?: RouteNavigationOptions<Params>) {
+    const toRoute = async function<Params extends Record<string, unknown>> (route: Route<Params>, options?: RouteNavigationOptions<Params>) {
         let componentProperties: Record<string, unknown> | Promise<Record<string, unknown>> = options?.properties ?? options?.params ?? {};
         let params = options?.params ?? {} as Params;
 
@@ -103,22 +103,23 @@ export function useNavigate() {
             return;
         }
 
-        let component: ComponentOptions;
+        let component: Component;
 
         // If component is a method, or if componentProperties is a promise, we'll need to wrap it in a loading component
-        if (typeof route.component === 'function' || (componentProperties as Promise<Record<string, unknown>>).then) {
-            const method = typeof route.component === 'function' ? route.component : () => route.component;
+        const isComponentFunction = typeof route.component === 'function' && !(!!route.component.prototype && route.component.prototype.constructor === route.component);
+        if (isComponentFunction || (componentProperties as Promise<Record<string, unknown>>).then) {
+            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : () => route.component;
             const originalProperties = componentProperties;
 
             if (!('PromiseComponent' in window)) {
                 throw new Error('Required PromiseComponent window variable to make async components work in routes');
             }
 
-            component = window.PromiseComponent as ComponentOptions;
+            component = window.PromiseComponent as Component;
             componentProperties = {
                 promise: async () => {
                     const realComponent = await method();
-                    return new ComponentWithProperties(realComponent, await originalProperties);
+                    return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, await originalProperties);
                 },
             };
         }
@@ -182,7 +183,7 @@ export function useNavigate() {
         return await toRoute(route, options);
     };
 
-    return async function<Params extends Record<string, unknown>>(prop1: string | Route<Params, unknown>, prop2?: RouteNavigationOptions<Params>) {
+    return async function<Params extends Record<string, unknown>>(prop1: string | Route<Params>, prop2?: RouteNavigationOptions<Params>) {
         if (typeof prop1 === 'string') {
             return await toId(prop1, prop2);
         }
@@ -201,9 +202,9 @@ function getCurrentRoutes() {
         return {
             get() {
                 // Do not track
-                return (instance._navigationRoutes ?? []) as Route<{}, undefined>[];
+                return (instance._navigationRoutes ?? []) as Route<any>[];
             },
-            set(newValue: Route<{}, undefined>[]) {
+            set(newValue: Route<any>[]) {
                 instance._navigationRoutes = newValue;
             },
         };
@@ -265,7 +266,7 @@ function addCheckRoutesMountedHandler() {
     });
 }
 
-export function defineRoutes(routes: (Route<any, undefined>[]) | (() => Promise<boolean|(Route<any, undefined>[])>)) {
+export function defineRoutes(routes: (Route<any>[]) | (() => Promise<boolean|(Route<any>[])>)) {
     const urlhelpers = useUrl();
     const navigate = useNavigate();
     const currentRoutes = getCurrentRoutes();
@@ -278,7 +279,7 @@ export function defineRoutes(routes: (Route<any, undefined>[]) | (() => Promise<
 
     currentRoutes.value = Array.isArray(routes) ? routes : [];
 
-    async function handleRoutes(routes: Route<any, undefined>[]) {
+    async function handleRoutes(routes: Route<any>[]) {
         // Handle automatically
         for (const route of routes) {
             const result = urlhelpers.match(route.url, route.params) as UrlMatchResult<any> | undefined;
@@ -389,7 +390,7 @@ export function defineRoutes(routes: (Route<any, undefined>[]) | (() => Promise<
 
 const checkRouteCache: {
     lastUrl: null | string;
-    results: Map<string, { result: UrlMatchResult<any> | null | undefined; route: Route<any, unknown> }>;
+    results: Map<string, { result: UrlMatchResult<any> | null | undefined; route: Route<any> }>;
 } = {
     lastUrl: null,
     results: new Map(),
@@ -416,7 +417,7 @@ export function useCheckRoute() {
     const instance = getCurrentInstance();
     const currentPath = useCurrentHref();
 
-    const checkMatchResult = function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, result: UrlMatchResult<Params> | undefined | null, options?: RouteNavigationOptions<Params>) {
+    const checkMatchResult = function<Params extends Record<string, unknown>> (route: Route<Params>, result: UrlMatchResult<Params> | undefined | null, options?: RouteNavigationOptions<Params>) {
         if (!result) {
             return false;
         }
@@ -463,7 +464,7 @@ export function useCheckRoute() {
         }
     };
 
-    const checkRoute = function<Params extends Record<string, unknown>> (route: Route<Params, unknown>, options?: RouteNavigationOptions<Params>) {
+    const checkRoute = function<Params extends Record<string, unknown>> (route: Route<Params>, options?: RouteNavigationOptions<Params>) {
         const result = urlhelpers.matchCurrent(route.url, route.params) as UrlMatchResult<Params> | undefined;
         checkRouteCache.results.set(route.url, { result, route });
         if (route.name) {
@@ -486,7 +487,7 @@ export function useCheckRoute() {
         return checkRoute(route, options);
     };
 
-    return function<Params extends Record<string, unknown>> (prop1: string | Route<Params, unknown>, prop2?: RouteNavigationOptions<Params>) {
+    return function<Params extends Record<string, unknown>> (prop1: string | Route<Params>, prop2?: RouteNavigationOptions<Params>) {
         if (typeof prop1 === 'string') {
             return checkId(prop1, prop2);
         }

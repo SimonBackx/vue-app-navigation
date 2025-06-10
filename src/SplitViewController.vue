@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, inject, type PropType, type Ref, shallowRef } from 'vue';
+import { computed, defineComponent, type PropType } from 'vue';
 
 import { ComponentWithProperties, type ComponentWithPropertiesType } from './ComponentWithProperties';
 import FramedComponent from './FramedComponent.vue';
@@ -18,7 +18,7 @@ import { HistoryManager } from './HistoryManager';
 import NavigationController from './NavigationController.vue';
 import { type PushOptions } from './PushOptions';
 import { injectHooks } from './utils/injectHooks';
-import { type DefaultRouteHandler, useUrl } from './utils/navigationHooks';
+import { useUrl, type DefaultRouteHandler } from './utils/navigationHooks';
 
 // Credits https://codeburst.io/throttling-and-debouncing-in-javascript-b01cad5c8edf
 const throttle = (func: any, limit: any) => {
@@ -44,12 +44,7 @@ const throttle = (func: any, limit: any) => {
     };
 };
 
-export function useSplitViewController(): Ref<InstanceType<typeof SplitViewController>> {
-    const c = inject('reactive_splitViewController') as InstanceType<typeof SplitViewController> | Ref<InstanceType<typeof SplitViewController>>;
-    return shallowRef(c);
-}
-
-const SplitViewController = defineComponent({
+export default defineComponent({
     name: 'SplitViewController',
     components: {
         NavigationController,
@@ -337,8 +332,6 @@ const SplitViewController = defineComponent({
         },
     },
 });
-
-export default SplitViewController;
 
 </script>
 
