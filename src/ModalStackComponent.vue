@@ -38,10 +38,10 @@ const instance = getCurrentInstance();
 provide('reactive_modalStackComponent', computed(() => getExposeProxy(instance)));
 provide('reactive_navigation_present', present);
 
-onMounted(() => {
+onMounted(async () => {
     if (props.initialPresents) {
         for (const p of props.initialPresents) {
-            navigationController.value?.push(p);
+            await present(p);
         }
     }
 });
