@@ -216,7 +216,7 @@ export type OnCheckRoutesHandler = () => Promise<void> | void;
 
 export function onCheckRoutes(handler: OnCheckRoutesHandler) {
     const instance = getCurrentInstance() as any;
-    instance._navigationCheckRoutesHandlers = [...(instance._navigationCheckRoutes ?? []), handler];
+    instance._navigationCheckRoutesHandlers = [...(instance._navigationCheckRoutesHandlers ?? []), handler];
     addCheckRoutesMountedHandler();
 }
 
