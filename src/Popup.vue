@@ -116,7 +116,7 @@ const dismiss = async (options?: PopOptions) => {
 
 const onClick = (event: MouseEvent) => {
     // Check click is inside mainContent
-    if (mainContent.value && event.target && !mainContent.value.contains(event.target as any) && ((event.target as any).isConnected && document.body.contains(event.target as any))) {
+    if (mainContent.value && event.target && !mainContent.value.contains(event.target as any) && ((event.target as any).isConnected || document.body.contains(event.target as any))) {
         dismiss().catch(console.error);
         event.preventDefault();
     }
