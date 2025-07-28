@@ -6,6 +6,7 @@
                 <ComponentWithPropertiesInstance :key="root.key" :component="root" />
             </div>
         </div>
+        <div class="background" />
     </div>
 </template>
 
