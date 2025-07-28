@@ -58,6 +58,10 @@ export interface PushOptions {
      */
     reverse?: boolean;
 
+    /**
+     * Ignore client width checks, always display as modal, also on mobile devices.
+     */
+    forceModalDisplay?: boolean;
     modalDisplayStyle?: ModalDisplayStyle;
     modalClass?: string;
     modalCssStyle?: string;

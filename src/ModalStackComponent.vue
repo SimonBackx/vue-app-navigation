@@ -70,7 +70,14 @@ async function present(options: PushOptions) {
     const style = options.modalDisplayStyle ?? component.modalDisplayStyle ?? 'cover';
     component.setDisplayStyle(style);
 
-    if ((style === 'popup' || style === 'sheet' || style === 'side-view') && (stackComponent.value?.$el as HTMLElement).offsetWidth > 800 || (style === 'sheet' && (stackComponent.value?.$el as HTMLElement).offsetWidth > 700)) {
+    if (
+        (style === 'popup' || style === 'sheet' || style === 'side-view')
+        && (
+            options.forceModalDisplay === true
+            || (stackComponent.value?.$el as HTMLElement).offsetWidth > 800
+            || (style === 'sheet' && (stackComponent.value?.$el as HTMLElement).offsetWidth > 700)
+        )
+    ) {
         const c = new ComponentWithProperties(Popup, {
             root: component,
             className: options.modalClass ?? style,

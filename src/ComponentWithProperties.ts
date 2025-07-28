@@ -346,11 +346,17 @@ export class ComponentWithProperties {
         }
     }
 
+    /**
+     * @deprecated
+     */
     setDisplayStyle(style: ModalDisplayStyle): ComponentWithProperties {
         this.modalDisplayStyle = style;
         return this;
     }
 
+    /**
+     * @deprecated
+     */
     setAnimated(animated: boolean): ComponentWithProperties {
         this.animated = animated;
         return this;
