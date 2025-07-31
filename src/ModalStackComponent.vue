@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="modal-stack-component">
         <NavigationController
             ref="navigationController"
             animation-type="modal"
