@@ -263,7 +263,7 @@ class HistoryManagerStatic {
         }
         else {
             const state = this.states[index];
-            if (state.index !== index) {
+            if (!state || state.index !== index) {
                 console.error('Search state with index ', index, 'but received state with index', state.index);
                 return;
             }
