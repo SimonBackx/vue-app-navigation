@@ -89,16 +89,12 @@ export default defineComponent({
     emits: ['didPush', 'didPop', 'showDetail', 'present'] as unknown as undefined,
     data() {
         const savedInternalScrollPositions: number[] = [];
-        const savedScrollPositions: number[] = [];
         const components: ComponentWithPropertiesType[] = [];
 
         return {
             components,
             mainComponent: null as ComponentWithPropertiesType | null,
             transitionName: 'none',
-            savedScrollPositions,
-            nextScrollPosition: 0,
-            previousScrollPosition: 0,
             nextInternalScrollPosition: 0,
             savedInternalScrollPositions,
 
@@ -248,7 +244,7 @@ export default defineComponent({
         },
         async push(options: PushOptions) {
             return await this.runQueue(async () => {
-                if (options.components.length == 0) {
+                if (options.components.length === 0) {
                     console.error('Missing component when pushing');
                     return;
                 }
@@ -286,29 +282,16 @@ export default defineComponent({
                     this.transitionName = 'none';
                 }
                 else {
-                    this.transitionName = this.animationType == 'modal' ? 'modal-push' : options.reverse ? 'pop' : 'push';
+                    this.transitionName = this.animationType === 'modal' ? 'modal-push' : options.reverse ? 'pop' : 'push';
                 }
 
                 // Add the client height from the saved height (check pop method for information)
-
                 // Check if we have an internal scroll position
                 const internalScrollElement = this.getInternalScrollElement();
-
-                // The scroll element can also be located inside the component, and should be marked as the main element
-                const w = window as any;
-
-                let clientHeight = document.documentElement.clientHeight;
-                if (w.visualViewport) {
-                    clientHeight = w.visualViewport.height;
-                }
-
                 const internalClientHeight = internalScrollElement?.clientHeight;
 
                 // Save scroll position
-                this.previousScrollPosition = 0; // scrollElement.scrollTop;
-                this.savedScrollPositions.push(this.previousScrollPosition + clientHeight);
                 this.savedInternalScrollPositions.push((internalScrollElement?.scrollTop ?? 0) + (internalClientHeight ?? 0));
-                this.nextScrollPosition = 0;
                 this.nextInternalScrollPosition = 0;
 
                 // Save width and height
@@ -447,16 +430,13 @@ export default defineComponent({
                     }
                 }
 
-                this.previousScrollPosition = 0; // this.getScrollElement().scrollTop;
-
                 if (!animated) {
                     this.transitionName = 'none';
                 }
                 else {
-                    this.transitionName = this.animationType == 'modal' ? 'modal-pop' : 'pop';
+                    this.transitionName = this.animationType === 'modal' ? 'modal-pop' : 'pop';
                     this.freezeSize();
                 }
-                // console.log("Prepared previous scroll positoin: " + this.previousScrollPosition);
 
                 const popped = this.components.splice(this.components.length - count, count);
 
@@ -469,7 +449,6 @@ export default defineComponent({
 
                 // Remove the client height from the saved height (since this includes the client height so we can correct any changes in client heigth ahead of time)
                 // We need this because when we set the height of the incoming view, we cannot reliably detect the maximum scroll height due some mobile browser glitches
-                this.nextScrollPosition = 0; // Math.max(0, (this.savedScrollPositions.pop() ?? 0));
                 this.nextInternalScrollPosition = Math.max(0, (this.savedInternalScrollPositions.pop() ?? 0));
 
                 this.mainComponent = this.components[this.components.length - 1];
@@ -516,8 +495,6 @@ export default defineComponent({
         },
         enter(element: any, done: () => void) {
             if (this.transitionName === 'none') {
-                this.getScrollElement().scrollTop = this.nextScrollPosition;
-
                 const internal = this.getInternalScrollElement(element);
                 if (internal) {
                     internal.scrollTop = Math.max(0, this.nextInternalScrollPosition - internal.clientHeight);
@@ -541,30 +518,6 @@ export default defineComponent({
 
                 const w = ((element.firstElementChild as HTMLElement).firstElementChild as HTMLElement).offsetWidth;
                 const h = (element.firstElementChild as HTMLElement).offsetHeight;
-
-                // Request a frame, to avoid forced synchronous layout by fetching element sizes
-
-                // const scrollElement = this.getScrollElement();
-                //
-
-                //
-                // const scrollOuterHeight = this.getScrollOuterHeight(scrollElement);
-                //
-                // // Limit
-                //
-                // let next = this.nextScrollPosition;
-                //
-                // //console.log("Entering element ", h, next, scrollOuterHeight)
-                //
-                // if (next > h - scrollOuterHeight) {
-                //     // To much scrolled!
-                //     //console.log("Corrected maximum scroll position")
-                //     next = Math.max(0, h - scrollOuterHeight);
-                //
-                //     // Also propagate this change to the .leave handler
-                //     this.nextScrollPosition = next
-                //     //console.log("corrected! ", h, next, scrollOuterHeight)
-                // }
 
                 const internal = this.getInternalScrollElement(element);
                 let nextInternal = this.nextInternalScrollPosition;
@@ -610,66 +563,28 @@ export default defineComponent({
                     if (internal) {
                         internal.scrollTop = nextInternal;
                     }
-                    // element.className = this.transitionName + "-enter-active " + this.transitionName + "-enter-to";
 
-                    // Allow scrollTop override in a specified handler
-                    // Call before
-                    // if (this.mainComponent) {
-                    //     const instance: any = this.mainComponent.componentInstance()
-                    //     if (instance && instance.beforeEnterAnimation) {
-                    //         instance.beforeEnterAnimation()
-                    //     }
-                    // }
-
-                    // Start animation in the next frame
-                    // requestAnimationFrame(() => {
                     // We've reached our initial positioning and can start our animation
                     element.className = this.transitionName + '-enter-active ' + this.transitionName + '-enter-to';
 
-                    // Call start
-                    // if (this.mainComponent) {
-                    //     const instance: any = this.mainComponent.componentInstance()
-                    //     if (instance && instance.beginEnterAnimation) {
-                    //         instance.beginEnterAnimation()
-                    //     }
-                    // }
-
                     setTimeout(() => {
-                        // scrollElement.style.overflow = "";
                         element.style.willChange = '';
                         childElement.style.willChange = '';
-                        // scrollElement.style.willChange = ""
                         if (internal) {
                             internal.style.willChange = '';
                         }
 
-                        // Call finished
-                        // if (this.mainComponent) {
-                        //     const instance: any = this.mainComponent.componentInstance()
-                        //     if (instance && instance.finishedEnterAnimation) {
-                        //         instance.finishedEnterAnimation()
-                        //     }
-                        // }
                         done();
                     }, transitionDuration + 25);
-                    // });
                 });
             });
         },
         getScrollOuterHeight(scrollElement: HTMLElement) {
-            // we add some extra padding below to fix iOS bug that reports wront clientHeight
-            // We need to show some extra area below of the leaving frame, but to do this, we also need
-            // to check if there is still content left below the visible client height. So we calculate the area underneath the client height
-            // and limit to 300px maximum extra padding
-            // const fixPadding = Math.min(300, Math.max(0, element.offsetHeight - current - scrollElement.clientHeight));
-            // console.log("Fix padding: " + fixPadding);
-            // This fixPadding thing doesn't work on other browsers. Need to recheck when it reappears on iOS
-            let h = scrollElement.clientHeight; // + fixPadding;
+            let h = scrollElement.clientHeight;
             if (scrollElement === document.documentElement) {
                 // Fix viewport glitch
                 const w = window as any;
                 if (w.visualViewport) {
-                    // console.log("Used height " + w.visualViewport.height + " instead of " + h);
                     h = w.visualViewport.height;
                 }
             }
@@ -697,15 +612,10 @@ export default defineComponent({
             requestAnimationFrame(() => {
                 // Prevent blinking due to slow rerender after scrollTop changes
                 // Create a clone and offset the clone first. After that, adjust the scroll position
-                // const current = this.previousScrollPosition;
-                // const next = this.nextScrollPosition;
-
                 const h = (this.$el as HTMLElement).offsetHeight;
                 const w = (this.$el as HTMLElement).offsetWidth;
                 const height = h + 'px';
                 const width = w + 'px';
-
-                // console.log("height", height);
 
                 // Setting the class has to happen in one go.
                 // First we need to make our element fixed / absolute positioned, and pinned to all the edges
