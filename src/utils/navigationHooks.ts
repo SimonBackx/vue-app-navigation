@@ -1,4 +1,4 @@
-import { computed, customRef, getCurrentInstance, inject, onActivated, onBeforeUnmount, onDeactivated, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
+import { computed, customRef, getCurrentInstance, inject, onActivated, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
 
 import { ComponentWithProperties, useCurrentComponent } from '../ComponentWithProperties';
 import { HistoryManager, type HistoryUrl } from '../HistoryManager';
