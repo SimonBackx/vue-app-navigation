@@ -1,4 +1,4 @@
-import { computed, customRef, getCurrentInstance, inject, onActivated, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
+import { computed, customRef, getCurrentInstance, inject, onActivated, onBeforeUnmount, onDeactivated, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
 
 import { ComponentWithProperties, useCurrentComponent } from '../ComponentWithProperties';
 import { HistoryManager, type HistoryUrl } from '../HistoryManager';
@@ -212,7 +212,11 @@ function getCurrentRoutes() {
 }
 
 export type DefaultRouteHandler = () => Promise<boolean>;
-export type OnCheckRoutesHandler = () => Promise<void> | void;
+
+/**
+ * Return true when the route has been handled and other route checks should not be executed.
+ */
+export type OnCheckRoutesHandler = () => Promise<void | boolean> | void | boolean;
 
 export function onCheckRoutes(handler: OnCheckRoutesHandler) {
     const instance = getCurrentInstance() as any;
@@ -236,14 +240,27 @@ function addCheckRoutesMountedHandler() {
 
     instance._didAddCheckRoutesMountedHandler = true;
 
+    let doDeactivate = false;
+
+    onBeforeUnmount(() => {
+        if (component && doDeactivate) {
+            // We only disable checking routes here to allow all child components
+            // to execute their route checking methods
+            component.checkRoutes = false;
+        }
+    });
+
     onMounted(async () => {
         if (component && component.checkRoutes) {
-            component.checkRoutes = false;
+            doDeactivate = true;
 
             if ('_navigationCheckRoutesHandlers' in instance && Array.isArray(instance._navigationCheckRoutesHandlers)) {
                 for (const handler of instance._navigationCheckRoutesHandlers as OnCheckRoutesHandler[]) {
                     if (typeof handler === 'function') {
-                        await handler();
+                        if (await handler() === true) {
+                            // Stop if we got a true value
+                            return;
+                        }
                     }
                     else {
                         console.error('Invalid checkRoutes handler', handler);
@@ -255,7 +272,10 @@ function addCheckRoutesMountedHandler() {
             if ('_navigationNotCheckRoutesHandlers' in instance && Array.isArray(instance._navigationNotCheckRoutesHandlers)) {
                 for (const handler of instance._navigationNotCheckRoutesHandlers as OnCheckRoutesHandler[]) {
                     if (typeof handler === 'function') {
-                        await handler();
+                        if (await handler() === true) {
+                            // Stop if we got a true value
+                            return;
+                        }
                     }
                     else {
                         console.error('Invalid not checkRoutes handler', handler);
