@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            <ComponentWithPropertiesInstance :component="root" />
+            <ComponentWithPropertiesInstance :component="root" v-bind="$attrs" />
         </div>
     </div>
 </template>

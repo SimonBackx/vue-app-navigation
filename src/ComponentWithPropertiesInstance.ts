@@ -1,6 +1,6 @@
 // eslint-disable-next-line vue/prefer-import-from-vue
 import { invokeArrayFns, ShapeFlags } from '@vue/shared';
-import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode, warn } from 'vue';
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode, warn, defineComponent } from 'vue';
 
 import { ComponentWithProperties } from './ComponentWithProperties';
 
@@ -101,7 +101,7 @@ function makeProvidesParentReactive(instance: ComponentInternalInstance) {
     return reactiveInstance;
 }
 
-export default {
+export default defineComponent({
     name: 'ComponentWithPropertiesInstance',
     props: {
         component: {
@@ -115,7 +115,7 @@ export default {
         },
     },
     __isKeepAlive: true,
-    setup(props: { component: ComponentWithProperties; customProvide?: Record<string, unknown> }) {
+    setup(props: { component: ComponentWithProperties; customProvide?: Record<string, unknown> }, context) {
         const instance = getCurrentInstance()! as any;
         const sharedContext = (instance as any).ctx as KeepAliveContext;
 
@@ -331,7 +331,7 @@ export default {
 
             props.component.component.inheritAttrs = false;
 
-            const vnode = h(props.component.component, props.component.properties);
+            const vnode = h(props.component.component, { ...props.component.properties, ...context.attrs });
             const comp = vnode.type;
             const key = vnode.key == null ? comp : vnode.key;
             pendingCacheKey = key;
@@ -370,4 +370,4 @@ export default {
             return vnode;
         };
     },
-} as unknown as ComponentOptions; // required when using this component in 'components' property
+}) as unknown as ComponentOptions; // required when using this component in 'components' property
