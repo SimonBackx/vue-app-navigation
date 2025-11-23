@@ -256,6 +256,10 @@ class HistoryManagerStatic {
             return;
         }
 
+        if (this.debug) {
+            console.log('Set title: ' + title + ', for index ' + (index ?? this.counter) + ' with current counter: ' + this.counter);
+        }
+
         if (index === undefined || index === this.counter) {
             const state = this.states[this.states.length - 1];
             window.document.title = this.formatTitle(title);
@@ -436,13 +440,19 @@ class HistoryManagerStatic {
             if (newCounter !== undefined) {
                 // Foward or backwards?
                 if (newCounter > this.counter) {
+                    if (this.debug) {
+                        console.log('Reloading page because going forward is not supported');
+                    }
+                    window.location.reload();
+                    return;
+
                     // Not allowed
-                    const amount = newCounter - this.counter;
+                    /* const amount = newCounter - this.counter;
                     this.go(-amount);
 
                     if (this.debug) {
                         console.log('Not allowed to go forward, going back ' + amount + ' steps');
-                    }
+                    } */
                 }
                 else {
                     // Only animate if we only have one undo action and if animations are enabled

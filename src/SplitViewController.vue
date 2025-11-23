@@ -204,10 +204,10 @@ export default defineComponent({
 
                     HistoryManager.pushState(undefined, null, {
                         adjustHistory: options.adjustHistory ?? true,
-                        invalid: options.invalidHistory ?? (!!this.detail),
+                        invalid: !!options.invalidHistory || (!!this.detail),
                     });
+                    component.assignHistoryIndex();
                     this.detail = component;
-                    this.detail.assignHistoryIndex();
                 }
             }
             finally {
@@ -236,13 +236,15 @@ export default defineComponent({
                 return;
             }
 
+            console.log('Collapse SplitViewController');
+
             this.isChangingComponents = true;
             try {
                 this.detail.keepAlive = true;
                 const detail = this.detail;
                 this.detail = null;
                 await this.navigationController.push({ components: [detail], animated: false });
-                HistoryManager.invalidateHistory();
+                // HistoryManager.invalidateHistory();
             }
             finally {
                 this.isChangingComponents = false;
@@ -279,13 +281,14 @@ export default defineComponent({
                 console.error('Cannot expand while already isChangingComponents');
                 return false;
             }
+            console.log('Expand SplitViewController');
             if (!this.lastIsDetail) {
                 // Expand with rootDetail
                 if (!this.defaultHandler) {
                     console.error('Cannot expand when there is no defaultHandler');
                     return;
                 }
-                HistoryManager.invalidateHistory();
+                // HistoryManager.invalidateHistory();
 
                 this.isChangingComponents = false;
                 try {

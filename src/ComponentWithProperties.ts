@@ -272,9 +272,6 @@ export class ComponentWithProperties {
             return false;
         }
 
-        ComponentWithProperties.historyIndexOwners.set(this.historyIndex, this);
-        if (ComponentWithProperties.debug) console.log('New owner of history index ', this.historyIndex, this.component.name);
-
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
     }
@@ -342,6 +339,7 @@ export class ComponentWithProperties {
             else {
                 console.error('No unmount function for component ' + this.vnode);
             }
+            this.deleteHistoryIndex();
             this.vnode = null;
         }
     }

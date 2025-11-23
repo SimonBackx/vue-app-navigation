@@ -300,8 +300,11 @@ export default defineComponent({
                 }
 
                 // Make sure the transition name changed, so wait for a rerender
+                let popped: ComponentWithPropertiesType[] = [];
+                const adjustHistory = options?.adjustHistory ?? true;
+
                 if (replace > 0) {
-                    const popped = this.components.splice(this.components.length - replace, replace, ...components);
+                    popped = this.components.splice(this.components.length - replace, replace, ...components);
 
                     if (!destroy) {
                         // Stop destroy
@@ -311,8 +314,27 @@ export default defineComponent({
                     }
 
                     // Back/forward buttons won't work anymore in a reliable/predicable way
-                    if (this.components.length !== components.length) {
-                        HistoryManager.invalidateHistory();
+                    if (this.components.length <= components.length) {
+                        const lastComponent = popped[0];
+                        if (HistoryManager.active) {
+                            if (lastComponent && lastComponent.hasHistoryIndex()) {
+                                HistoryManager.returnToHistoryIndex(lastComponent.historyIndex! - 1);
+                            }
+                            else {
+                                console.log('Last removed component has no history index', popped);
+                                HistoryManager.invalidateHistory();
+                            }
+                        }
+                    }
+                    else {
+                        const lastComponent = this.components[this.components.length - components.length - 1];
+                        if (lastComponent && lastComponent.hasHistoryIndex()) {
+                            lastComponent.returnToHistoryIndex();
+                        }
+                        else {
+                            console.log('Last visible component has no history index', lastComponent);
+                            HistoryManager.invalidateHistory();
+                        }
                     }
                 }
                 else {
@@ -321,40 +343,63 @@ export default defineComponent({
 
                 if (this.mainComponent) {
                     // Keep the component alive while it is removed from the DOM, unless it is being replaced
-                    this.mainComponent.keepAlive = !replace;
+                    this.mainComponent.keepAlive = !replace || !destroy;
                 }
-
-                const adjustHistory = options?.adjustHistory ?? true;
 
                 if (adjustHistory) {
                     // We can provide a back action
 
-                    for (const component of components) {
-                        HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
-                            if (!this.mainComponent) {
-                                console.error('Tried to pop NavigationController, but it was already unmounted');
-                                return;
-                            }
+                    for (const [index, component] of components.entries()) {
+                        if (index === 0 && popped.length) {
+                            HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
+                                if (!this.mainComponent) {
+                                    console.error('Tried to pop NavigationController, but it was already unmounted');
+                                    return;
+                                }
 
-                            // todo: fix reference to this and memory handling here!!
-                            await this.pop({ animated: animated && canAnimate });
-                        }, {
-                            adjustHistory,
-                            invalid: options.invalidHistory ?? (!!replace),
-                        });
+                                await this.push({
+                                    animated: animated && canAnimate,
+                                    replace: 1,
+                                    components: popped,
+                                    reverse: !(options.reverse ?? false),
+                                    adjustHistory: false,
+                                });
+                            }, {
+                                adjustHistory,
+                                invalid: options.invalidHistory ?? false,
+                            });
+                        }
+                        else {
+                            HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
+                                if (!this.mainComponent) {
+                                    console.error('Tried to pop NavigationController, but it was already unmounted');
+                                    return;
+                                }
+
+                                await this.pop({ animated: animated && canAnimate });
+                            }, {
+                                adjustHistory,
+                                invalid: options.invalidHistory ?? false,
+                            });
+                        }
 
                         component.assignHistoryIndex();
                     }
                 }
                 else {
                     // Todo: implement back behaviour
-                    for (const component of components) {
-                        if (!replace || this.components.length !== components.length) {
-                            HistoryManager.pushState(undefined, null, {
-                                adjustHistory,
-                                invalid: options.invalidHistory ?? (!!replace),
-                            });
-                        }
+                    for (const [index, component] of components.entries()) {
+                        // if (!replace || this.components.length !== components.length) {
+                        HistoryManager.pushState(undefined, (!!replace && index === 0)
+                            ? async (animated: boolean) => {
+                                // Simply pop
+                                await this.pop({ animated, count: components.length });
+                            }
+                            : null, {
+                            adjustHistory: (!!replace && index === 0), // for the first one we need to adjust the history because we returned earlier
+                            invalid: options.invalidHistory ?? false,
+                        });
+                        // }
                         // Assign history index
                         component.assignHistoryIndex();
                     }
