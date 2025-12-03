@@ -359,6 +359,9 @@ class HistoryManagerStatic {
      * Return to a given history point in time, if needed
      */
     returnToHistoryIndex(counter: number) {
+        if (counter < 0) {
+            counter = 0;
+        }
         // We'll keep this for debugging and remove it if everything is stable
         if (this.debug) {
             console.log('Did return to history index ' + counter + ', coming from ' + this.counter);
