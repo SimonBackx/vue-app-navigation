@@ -406,7 +406,10 @@ class HistoryManagerStatic {
             }
         }
 
-        if (this.states[this.counter].url) {
+        if (!this.states[this.counter]) {
+            console.error('Unexpected missing state', this.counter, this.states);
+        }
+        else if (this.states[this.counter].url) {
             if (this.debug) {
                 console.log('Setting manual url without history api: ' + this.states[this.counter].url);
             }
