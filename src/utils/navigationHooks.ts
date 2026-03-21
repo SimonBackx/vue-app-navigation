@@ -1,6 +1,6 @@
 import { computed, customRef, getCurrentInstance, inject, onActivated, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
 
-import { ComponentWithProperties, useCurrentComponent } from '../ComponentWithProperties';
+import { ComponentWithProperties, useCurrentComponent, type ModalDisplayStyle } from '../ComponentWithProperties';
 import { HistoryManager, type HistoryUrl } from '../HistoryManager';
 import NavigationController from '../NavigationController.vue';
 import type { PopOptions } from '../PopOptions';
@@ -13,7 +13,7 @@ export type Route<Params> = {
     params?: UrlParamsConstructors<Params>;
     query?: UrlParamsConstructors<unknown>;
     component: Component | (() => Promise<Component>) | 'self';
-    present?: 'popup' | 'sheet' | true;
+    present?: ModalDisplayStyle | true;
     show?: true | 'detail';
     isDefault?: RouteNavigationOptions<Params>; // Only used in splitViewController for now, in combination with show: detail
     paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>;
@@ -27,11 +27,12 @@ export type Route<Params> = {
     url: string;
     params?: UrlParamsConstructors<Params>;
     query?: UrlParamsConstructors<unknown>;
+    present?: ModalDisplayStyle | true;
     handler: (options: {
         url: string;
         adjustHistory: boolean;
         animated: boolean;
-        modalDisplayStyle: string | undefined;
+        modalDisplayStyle: ModalDisplayStyle | undefined;
         checkRoutes: boolean;
         componentProperties: Record<string, unknown>;
     }) => Promise<void>; // replaces component + present + show
@@ -96,7 +97,7 @@ export function useNavigate() {
                 url,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
-                modalDisplayStyle: 'present' in route && typeof route.present === 'string' ? route.present : undefined,
+                modalDisplayStyle: route.present && typeof route.present === 'string' ? route.present : undefined,
                 checkRoutes: options?.checkRoutes ?? false,
                 componentProperties: await componentProperties,
             });
