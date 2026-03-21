@@ -90,11 +90,12 @@ function makeProvidesParentReactive(instance: ComponentInternalInstance) {
             });
         },
         // Vue valides keys using 'a' in obj, so we need to handle this correctly
-        has(target, key) {
+        has() {
             // All keys are accessible because we are reactive and can add them at any time later
             return true;
         },
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     instance.provides = Object.create(proxyProvider);
 
     // Returns reactive property to change instance (which happens every time the parent changes)

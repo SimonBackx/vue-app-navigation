@@ -1,7 +1,7 @@
 import type { App } from 'vue';
 
 export const VueAppNavigationPlugin = {
-    install(app: App) {
+    install(_: App) {
         // todo
     },
 };

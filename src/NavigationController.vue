@@ -228,7 +228,7 @@ export default defineComponent({
             const mightBe = (element ?? this.$el as HTMLElement)?.querySelector('main');
             return mightBe ? mightBe : null;
         },
-        getScrollElement(element: HTMLElement | null = null): HTMLElement {
+        getScrollElement(_: HTMLElement | null = null): HTMLElement {
             // Deprecated
             return document.documentElement;
         },
