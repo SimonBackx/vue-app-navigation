@@ -80,6 +80,10 @@ class HistoryManagerStatic {
         this.isQueueRunning = true;
         const action = this.historyQueue.shift();
         if (action) {
+            if (this.debug) {
+                console.log('Running history queue action');
+            }
+
             // console.log('Running history queue action');
             const p = action();
             if (p) {
@@ -90,7 +94,9 @@ class HistoryManagerStatic {
             }
         }
         else {
-            // console.log('History queue done');
+            if (this.debug) {
+                console.log('History queue done');
+            }
             this.isQueueRunning = false;
             this.callListeners();
         }
@@ -103,12 +109,20 @@ class HistoryManagerStatic {
                 history.go(delta); // should be negative
                 let timer: NodeJS.Timeout | undefined = undefined;
                 let called = false;
+                const startTime = new Date();
 
                 const listener = () => {
                     if (called) return;
                     called = true;
                     clearTimeout(timer);
                     window.removeEventListener('popstate', listener);
+
+                    const end = new Date();
+
+                    if (this.debug) {
+                        const ms = end.getTime() - startTime.getTime();
+                        console.log('Waiting for popstate event took ' + ms + 'ms');
+                    }
 
                     // Best to wait until we are sure the other listener was also called
                     setTimeout(() => {
@@ -123,7 +137,7 @@ class HistoryManagerStatic {
                 timer = setTimeout(() => {
                     console.warn('Timeout while waiting for history.go');
                     listener();
-                }, 200);
+                }, 400); // On Firefox it seems to take 200 - 300ms
             });
         });
     }
@@ -428,9 +442,9 @@ class HistoryManagerStatic {
         // We'll handle the scroll stuff
         history.scrollRestoration = 'manual';
 
-        async function onPopState(this: HistoryManagerStatic, event: any) {
+        async function onPopState(this: HistoryManagerStatic, event: { state?: any }) {
             if (this.debug) {
-                console.log('HistoryManager popstate');
+                console.log('HistoryManager popstate', event.state?.counter);
             }
 
             if (this.isAdjustingState) {
@@ -440,8 +454,9 @@ class HistoryManagerStatic {
             if (this.manualStateAction) {
                 return;
             }
-            this.isAdjustingState = true;
             const newCounter: number | undefined = event.state?.counter;
+
+            this.isAdjustingState = true;
 
             if (newCounter !== undefined) {
                 // Foward or backwards?
@@ -507,10 +522,31 @@ class HistoryManagerStatic {
             this.isAdjustingState = false;
         }
 
+        // if (window.navigation) {
+        //    // this is experimantal.
+        //    // there is a bug in Firefox where userInitiated always seems to be set to 0
+        //    // + state between navigation api and history api is not synced / the same
+        //    navigation.addEventListener('navigate', (event) => {
+        //        if (!event.userInitiated) {
+        //            if (this.debug) {
+        //                console.log('HistoryManager navigate ignored', event);
+        //            }
+        //            // Ignored
+        //            return;
+        //        }
+        //        const state = event.destination.getState();
+        //        if (this.debug) {
+        //            console.log('HistoryManager navigate', event, state);
+        //        }
+        //        onPopState.call(this, { state }).catch(console.error);
+        //    });
+        // }
+        // else {
         // Create push pop listener that will execute undo actions
         window.addEventListener('popstate', (event) => {
             onPopState.call(this, event).catch(console.error);
         });
+        // }
 
         const clickHandler = () => {
             this.pageLoadedAt = 0; // All url changes should be instant now
