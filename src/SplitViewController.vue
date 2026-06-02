@@ -136,6 +136,9 @@ export default defineComponent({
             return this.navigationController.returnToHistoryIndex();
         },
         onResize() {
+            // Skip if not in DOM (fixes issues where split view would collapse when deactivated)
+            if (this.$el.isConnected === false) return false;
+
             if (this.shouldCollapse()) {
                 if (this.detail) {
                     this.collapse().catch(console.error);
