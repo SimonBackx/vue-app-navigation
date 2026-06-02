@@ -197,6 +197,17 @@ export class UrlHelper {
     }
 }
 
+type ConstructorToType<C> =
+    C extends NumberConstructor ? number :
+        C extends StringConstructor ? string :
+            C extends BooleanConstructor ? boolean :
+                never;
+
+// Inverse of UrlParamsConstructors
+export type ParamsFromConstructors<C> = {
+    [K in keyof C]: ConstructorToType<C[K]>;
+};
+
 export type UrlParamsConstructors<Params> = {
     [Key in keyof Params]: Params[Key] extends number ? NumberConstructor : StringConstructor
 };

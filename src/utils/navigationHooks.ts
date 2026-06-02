@@ -5,49 +5,69 @@ import { HistoryManager, type HistoryUrl } from '../HistoryManager';
 import NavigationController from '../NavigationController.vue';
 import type { PopOptions } from '../PopOptions';
 import type { PushOptions } from '../PushOptions';
-import { UrlHelper, templateToUrl, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
+import { UrlHelper, templateToUrl, type ParamsFromConstructors, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
 
-export type Route<Params> = {
-    name?: string;
-    url: string;
-    params?: UrlParamsConstructors<Params>;
-    query?: UrlParamsConstructors<unknown>;
-    component: Component | ((props: Record<string, unknown>) => Promise<Component | ComponentWithProperties>) | 'self';
-    present?: ModalDisplayStyle | true;
-    show?: true | 'detail' | { getCustomShow: () => (options: PushOptions) => Promise<void> };
-    isDefault?: RouteNavigationOptions<Params>; // Only used in splitViewController for now, in combination with show: detail
-    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>;
+type DistributiveOmit<T, K extends PropertyKey> =
+    T extends unknown ? Omit<T, K> : never;
 
-    /**
-     * Used for building back the URL if only properties are provided
-     */
-    propsToParams?: (props: Record<string, unknown>) => { params: Params; query?: URLSearchParams };
-} | {
-    name?: string;
-    url: string;
-    params?: UrlParamsConstructors<Params>;
-    query?: UrlParamsConstructors<unknown>;
-    present?: ModalDisplayStyle | true;
-    handler: (options: {
-        url: string;
-        adjustHistory: boolean;
-        animated: boolean;
-        modalDisplayStyle: ModalDisplayStyle | undefined;
-        checkRoutes: boolean;
-        componentProperties: Record<string, unknown>;
-    }) => Promise<void>; // replaces component + present + show
-    isDefault?: RouteNavigationOptions<Params>; // Only used in splitViewController for now, in combination with show: detail
-    paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>;
+export function typeRoute<
+    const C extends Record<string, StringConstructor | NumberConstructor>,
+    Props = unknown,
+>(
+    route: DistributiveOmit<RouteWithParams<Props, ParamsFromConstructors<C>>, 'params'>
+        & { params: C },
+): RouteWithParams<Props, ParamsFromConstructors<C>>;
 
-    /**
-     * Used for building back the URL if only properties are provided
-     */
-    propsToParams?: (props: Record<string, unknown>) => { params: Params; query?: URLSearchParams };
+export function typeRoute<Props = unknown>(
+    route: RouteWithoutParams<Props>,
+): RouteWithoutParams<Props>;
+
+export function typeRoute(route: unknown): unknown {
+    return route;
+}
+
+export const defineRoute: typeof typeRoute = (route: any) => {
+    defineRoutes([route]);
+    return route;
 };
 
-export type RouteNavigationOptions<Params> = { params?: Params; properties?: Record<string, unknown>; query?: URLSearchParams; animated?: boolean; adjustHistory?: boolean; checkRoutes?: boolean };
+type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+type NotFunction<T> = T extends Function ? never : T;
+type RouteComponent<Props>
+    = {
+        present?: ModalDisplayStyle | true;
+        show?: true | 'detail' | { getCustomShow: () => (options: PushOptions) => Promise<void> };
+        component: NotFunction<Component> | 'self' | ((props: Record<string, unknown>) => Promise<Component | ComponentWithProperties> | Component | ComponentWithProperties);
+    } | {
+        handler: (options: {
+            url: string;
+            adjustHistory: boolean;
+            animated: boolean;
+            modalDisplayStyle: ModalDisplayStyle | undefined;
+            checkRoutes: boolean;
+            componentProperties: Props;
+        }) => Promise<void>;
+    };
 
-export type RouteIdentification<Params> = { name: string } | { url: string } | { route: Route<Params> };
+export type RouteWithParams<Props, Params> = {
+    name?: string;
+    url: string;
+    params: UrlParamsConstructors<Params>;
+    isDefault?: RouteNavigationOptions<Props, Params> & ({ params: Params } | { properties: Props });
+    paramsToProps: (params: Params, query?: URLSearchParams) => Promise<Props> | Props;
+    propsToParams: (props: Props) => { params: Params; query?: URLSearchParams };
+} & RouteComponent<Props>;
+
+export type RouteWithoutParams<Props> = {
+    name?: string;
+    url: string;
+    isDefault?: RouteNavigationOptions<Props>;
+    defaultProperties?: (query?: URLSearchParams) => Promise<Props> | Props;
+} & RouteComponent<Props>;
+
+export type Route<Props = Record<string, unknown>, Params = Record<string, unknown>> = RouteWithParams<Props, Params> | RouteWithoutParams<Props>;
+export type RouteNavigationOptions<Props = Record<string, unknown>, Params = Record<string, never>> = { params?: Params; properties?: Props; query?: URLSearchParams; animated?: boolean; adjustHistory?: boolean; checkRoutes?: boolean };
 
 export type NavigationOptions<T> = {
     title: string | ((this: T) => string);
@@ -73,16 +93,22 @@ export function useNavigate() {
     const show = useShow();
     const showDetail = useShowDetail();
 
-    const toRoute = async function<Params extends Record<string, unknown>> (route: Route<Params>, options?: RouteNavigationOptions<Params>) {
-        let componentProperties: Record<string, unknown> | Promise<Record<string, unknown>> = options?.properties ?? options?.params ?? {};
+    const toRoute = async function<Props extends Record<string, unknown>, Params> (route: Route<Props, Params>, options?: RouteNavigationOptions<Props, Params>) {
+        let componentProperties: Props | Promise<Props> | undefined = options?.properties ?? ({} as Props);
         let params = options?.params ?? {} as Params;
 
-        if (!options?.properties && route.paramsToProps) {
-            // Do not await here yet
-            componentProperties = route.paramsToProps(params, options?.query);
+        if (!options?.properties) {
+            if ('paramsToProps' in route) {
+                componentProperties = route.paramsToProps(options?.params ?? {} as Params, options?.query);
+            }
+            else {
+                if (options?.params) {
+                    throw new Error('Using route to a route that only has properties, no parameters. Use properties instead of params in navigate() for this route: ' + route.url);
+                }
+            }
         }
 
-        if (!options?.params && route.propsToParams && componentProperties) {
+        if (!options?.params && 'propsToParams' in route) {
             // Note that this will never await because componentProperties is already resolved
             const { params: p } = route.propsToParams(await componentProperties);
             // todo: building back query won't really work for now
@@ -97,7 +123,8 @@ export function useNavigate() {
                 url,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
-                modalDisplayStyle: route.present && typeof route.present === 'string' ? route.present : undefined,
+                modalDisplayStyle: undefined,
+                // modalDisplayStyle: route.present && typeof route.present === 'string' ? route.present : undefined,
                 checkRoutes: options?.checkRoutes ?? false,
                 componentProperties: await componentProperties,
             });
@@ -108,7 +135,7 @@ export function useNavigate() {
         // If component is a method, or if componentProperties is a promise, we'll need to wrap it in a loading component
         const isComponentFunction = typeof route.component === 'function' && !(!!route.component.prototype && route.component.prototype.constructor === route.component);
         if (isComponentFunction || (componentProperties as Promise<Record<string, unknown>>).then) {
-            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : (_: Record<string, unknown>) => route.component;
+            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : (_: Props) => route.component;
             const originalProperties = componentProperties;
 
             if (!('PromiseComponent' in window)) {
@@ -118,14 +145,14 @@ export function useNavigate() {
             component = window.PromiseComponent as Component;
             componentProperties = {
                 promise: async () => {
-                    const properties = await originalProperties;
+                    const properties: Props = await originalProperties;
                     const realComponent = await method(properties);
                     if (realComponent instanceof ComponentWithProperties) {
                         return realComponent;
                     }
                     return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, properties);
                 },
-            };
+            } as any; // some magic here
         }
         else {
             component = route.component === 'self' ? (instance?.type as ComponentOptions) : route.component;
@@ -177,7 +204,7 @@ export function useNavigate() {
 
     const currentRoutes = getCurrentRoutes();
 
-    const toId = async function<Params extends Record<string, unknown>>(urlOrName: string, options?: RouteNavigationOptions<Params>) {
+    const toId = async function<Props extends Record<string, unknown>, Params extends Record<string, unknown>>(urlOrName: string, options?: RouteNavigationOptions<Props, Params>) {
         const route = currentRoutes.value.find(r => r.name === urlOrName || r.url === urlOrName);
         if (!route) {
             throw new Error('Route ' + urlOrName + ' not found in ' + instance?.type.name);
@@ -187,7 +214,7 @@ export function useNavigate() {
         return await toRoute(route, options);
     };
 
-    return async function<Params extends Record<string, unknown>>(prop1: string | Route<Params>, prop2?: RouteNavigationOptions<Params>) {
+    return async function<Props extends Record<string, unknown>, Params extends Record<string, unknown>>(prop1: string | Route<Props, Params>, prop2?: RouteNavigationOptions<Props, Params>) {
         if (typeof prop1 === 'string') {
             return await toId(prop1, prop2);
         }
@@ -290,23 +317,29 @@ function addCheckRoutesMountedHandler() {
     });
 }
 
-export function defineRoutes(routes: (Route<any>[]) | (() => Promise<boolean|(Route<any>[])>)) {
+export function defineRoutes(routes: Route<any, any>[]) {
     const urlhelpers = useUrl();
     const navigate = useNavigate();
     const currentRoutes = getCurrentRoutes();
     const provideDefaultHandler = inject('reactive_provide_default_handler', null) as Ref<((handler: DefaultRouteHandler) => void) | undefined> | null;
 
     // Store routes somewhere so they can get used
+    let hadRoutes = false;
     if (currentRoutes.value.length) {
-        console.error('Multiple calls to defineRoutes: routes will get overwritten');
+        hadRoutes = true;
+        routes = [...currentRoutes.value, ...(Array.isArray(routes) ? routes : [])];
     }
 
     currentRoutes.value = Array.isArray(routes) ? routes : [];
 
-    async function handleRoutes(routes: Route<any>[]) {
+    if (hadRoutes) {
+        return;
+    }
+
+    async function handleRoutes(routes: Route[]) {
         // Handle automatically
         for (const route of routes) {
-            const result = urlhelpers.match(route.url, route.params) as UrlMatchResult<any> | undefined;
+            const result = urlhelpers.match(route.url, 'params' in route ? route.params : {}) as UrlMatchResult<any> | undefined;
             if (result) {
                 try {
                     await navigate(route, {
@@ -341,11 +374,11 @@ export function defineRoutes(routes: (Route<any>[]) | (() => Promise<boolean|(Ro
         return false;
     }
 
-    const getDefaultRoute = ({ allowDetail }: { allowDetail?: boolean } = { allowDetail: true }) => {
+    const getDefaultRoute = ({ allowDetail }: { allowDetail?: boolean } = { allowDetail: true }): WithRequired<Route<Record<string, unknown>, Record<string, unknown>>, 'isDefault'> | null => {
         if (!Array.isArray(routes)) {
             return null;
         }
-        return routes.find(route => route.isDefault && (allowDetail || !('show' in route) || route.show !== 'detail')) ?? null;
+        return (routes.find(route => route.isDefault && (allowDetail || !('show' in route) || route.show !== 'detail')) as WithRequired<Route<Record<string, unknown>, Record<string, unknown>>, 'isDefault'>) ?? null;
     };
 
     const defaultHandler = async ({ allowDetail }: { allowDetail?: boolean } = { allowDetail: true }) => {
@@ -377,29 +410,14 @@ export function defineRoutes(routes: (Route<any>[]) | (() => Promise<boolean|(Ro
     };
 
     onCheckRoutes(async () => {
+        const routes = currentRoutes.value;
+
         // Check routes
         if (Array.isArray(routes)) {
             if (await handleRoutes(routes)) {
                 // Handled a route: do not show the default
                 setDefaultHandler();
                 return;
-            }
-        }
-        else {
-            const extraRoutes = await routes();
-            if (Array.isArray(extraRoutes)) {
-                if (await handleRoutes(extraRoutes)) {
-                    // Handled a route: do not show the default
-                    setDefaultHandler();
-                    return;
-                }
-            }
-            else {
-                if (extraRoutes) {
-                    // Handled a route: do not show the default
-                    setDefaultHandler();
-                    return;
-                }
             }
         }
         setDefaultHandler();
@@ -459,7 +477,7 @@ export function useCheckRoute() {
                 }
             }
 
-            if (!options?.params && route.propsToParams && options.properties) {
+            if (!options?.params && 'propsToParams' in route && options.properties) {
                 const { params } = route.propsToParams(options.properties);
 
                 // todo: building back query won't really work for now
@@ -489,7 +507,7 @@ export function useCheckRoute() {
     };
 
     const checkRoute = function<Params extends Record<string, unknown>> (route: Route<Params>, options?: RouteNavigationOptions<Params>) {
-        const result = urlhelpers.matchCurrent(route.url, route.params) as UrlMatchResult<Params> | undefined;
+        const result = urlhelpers.matchCurrent(route.url, 'params' in route ? route.params : {}) as UrlMatchResult<Params> | undefined;
         checkRouteCache.results.set(route.url, { result, route });
         if (route.name) {
             checkRouteCache.results.set(route.name, { result, route });
