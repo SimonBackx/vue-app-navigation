@@ -4,7 +4,7 @@
             <NavigationController ref="navigationController" :root="root" :custom-provide="masterProvide" />
         </div>
         <div v-if="detail" class="detail">
-            <FramedComponent :key="detail.key" :root="detail" />
+            <FramedComponent :key="detail.key" :root="detail" :custom-provide="detailProvide" />
         </div>
     </div>
 </template>
@@ -84,6 +84,13 @@ export default defineComponent({
                     this.defaultHandler = defaultHandler;
                     this.onResize();
                 },
+            };
+        },
+        detailProvide() {
+            return {
+                // Detail can not alter the navigation of the parent of split view controller.
+                reactive_navigation_can_pop: false,
+                reactive_navigation_can_dismiss: false,
             };
         },
         lastIsDetail() {
