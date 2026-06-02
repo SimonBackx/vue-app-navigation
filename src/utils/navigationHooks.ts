@@ -565,11 +565,11 @@ export function useManualPresent() {
 
 export function useShow() {
     const currentComponent = useCurrentComponent();
-    const rawShow = inject('reactive_navigation_show', null) as Ref<(options: PushOptions | ComponentWithProperties) => Promise<void>> | null;
+    const rawShow = inject('reactive_navigation_show', null) as Ref<(options: PushOptions) => Promise<void>> | null;
     const urlHelpers = useUrl();
 
-    return (options: PushOptions | ComponentWithProperties) => {
-        const show = unref(rawShow); // not always reactive
+    return (options: PushOptions | ComponentWithProperties, customShow?: (options: PushOptions) => Promise<void>) => {
+        const show = customShow ?? unref(rawShow); // not always reactive
 
         if (!show) {
             console.warn('Failed to perform show');
