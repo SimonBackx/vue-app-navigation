@@ -30,7 +30,7 @@ import { HistoryManager } from './HistoryManager';
 import { type PopOptions } from './PopOptions';
 import { type PushOptions } from './PushOptions';
 
-export default defineComponent({
+const NavigationController = defineComponent({
     name: 'NavigationController',
     components: {
         FramedComponent,
@@ -44,6 +44,9 @@ export default defineComponent({
         },
         reactive_navigation_can_dismiss: {
             default: false,
+        },
+        reactive_navigationController: {
+            default: null,
         },
     },
     provide() {
@@ -104,6 +107,11 @@ export default defineComponent({
             asyncQueueRunning: false,
             cachedProvides: new Map<number, any>(),
         };
+    },
+    computed: {
+        navigationController() {
+            return unref(this.reactive_navigationController) as InstanceType<typeof NavigationController> | null;
+        },
     },
     watch: {
         // whenever question changes, this function will run
@@ -717,6 +725,7 @@ export default defineComponent({
         },
     },
 });
+export default NavigationController;
 
 </script>
 
