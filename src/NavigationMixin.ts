@@ -2,11 +2,11 @@ import { type DefineComponent, inject, type Ref } from 'vue';
 
 import NavigationController from './NavigationController.vue';
 import type Popup from './Popup.vue';
+import { useNavigationController } from './useNavigationController';
 import { useSplitViewController } from './useSplitViewController';
 import { injectHooks } from './utils/injectHooks';
-import { defineRoutes, type NavigationOptions, useCanDismiss, useCanPop, useDismiss, useFocused, useNavigate, usePop, usePresent, useShow, useShowDetail, useUrl } from './utils/navigationHooks';
+import { type NavigationOptions, useCanDismiss, useCanPop, useDismiss, useFocused, useNavigate, usePop, usePresent, useShow, useShowDetail, useUrl } from './utils/navigationHooks';
 import { useModalStackComponent } from './utils/useModalStackComponent';
-import { useNavigationController } from './useNavigationController';
 
 // WARNING: do not add this mixin as a dependency in components that the navigationMixin also depens on -> circular dependency
 // Inject the navigation hooks into the component manually in that case
@@ -65,11 +65,6 @@ export const NavigationMixin = {
             $url: useUrl(),
             $navigate: useNavigate(),
         };
-
-        const navigationOptions = this.$options?.navigation as NavigationOptions<any> | undefined;
-        if (navigationOptions || this.customRoutes) {
-            defineRoutes(navigationOptions?.routes ?? (this.customRoutes ? this.customRoutes.bind(this) : null) ?? []);
-        }
 
         injectHooks(this, definitions);
     },
