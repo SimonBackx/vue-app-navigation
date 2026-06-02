@@ -409,14 +409,6 @@ export function defineRoutes(routes: (Route<any>[]) | (() => Promise<boolean|(Ro
     });
 }
 
-const checkRouteCache: {
-    lastUrl: null | string;
-    results: Map<string, { result: UrlMatchResult<any> | null | undefined; route: Route<any> }>;
-} = {
-    lastUrl: null,
-    results: new Map(),
-};
-
 export function useCurrentHref() {
     const state = ref(window.location.href);
     const owner = {};
@@ -437,6 +429,14 @@ export function useCheckRoute() {
     const currentRoutes = getCurrentRoutes();
     const instance = getCurrentInstance();
     const currentPath = useCurrentHref();
+
+    const checkRouteCache: {
+        lastUrl: null | string;
+        results: Map<string, { result: UrlMatchResult<any> | null | undefined; route: Route<any> }>;
+    } = {
+        lastUrl: null,
+        results: new Map(),
+    };
 
     const checkMatchResult = function<Params extends Record<string, unknown>> (route: Route<Params>, result: UrlMatchResult<Params> | undefined | null, options?: RouteNavigationOptions<Params>) {
         if (!result) {
