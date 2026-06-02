@@ -103,7 +103,7 @@ export function useNavigate() {
             }
             else {
                 if (options?.params) {
-                    throw new Error('Using route to a route that only has properties, no parameters. Use properties instead of params in navigate() for this route: ' + route.url);
+                    console.error('Using route to a route that only has properties, no parameters. Use properties instead of params in navigate() for this route: ' + route.url, route, options);
                 }
             }
         }
@@ -317,7 +317,7 @@ function addCheckRoutesMountedHandler() {
     });
 }
 
-export function defineRoutes(routes: Route<any, any>[]) {
+export function defineRoutes(tmpRoutes: Route<any>[]) {
     const urlhelpers = useUrl();
     const navigate = useNavigate();
     const currentRoutes = getCurrentRoutes();
@@ -327,16 +327,16 @@ export function defineRoutes(routes: Route<any, any>[]) {
     let hadRoutes = false;
     if (currentRoutes.value.length) {
         hadRoutes = true;
-        routes = [...currentRoutes.value, ...(Array.isArray(routes) ? routes : [])];
+        tmpRoutes = [...currentRoutes.value, ...tmpRoutes];
     }
 
-    currentRoutes.value = Array.isArray(routes) ? routes : [];
+    currentRoutes.value = tmpRoutes;
 
-    if (hadRoutes) {
+    if (hadRoutes || tmpRoutes.length === 0) {
         return;
     }
 
-    async function handleRoutes(routes: Route[]) {
+    async function handleRoutes(routes: Route<any>[]) {
         // Handle automatically
         for (const route of routes) {
             const result = urlhelpers.match(route.url, 'params' in route ? route.params : {}) as UrlMatchResult<any> | undefined;
@@ -375,6 +375,7 @@ export function defineRoutes(routes: Route<any, any>[]) {
     }
 
     const getDefaultRoute = ({ allowDetail }: { allowDetail?: boolean } = { allowDetail: true }): WithRequired<Route<Record<string, unknown>, Record<string, unknown>>, 'isDefault'> | null => {
+        const routes = currentRoutes.value;
         if (!Array.isArray(routes)) {
             return null;
         }
@@ -411,14 +412,11 @@ export function defineRoutes(routes: Route<any, any>[]) {
 
     onCheckRoutes(async () => {
         const routes = currentRoutes.value;
-
         // Check routes
-        if (Array.isArray(routes)) {
-            if (await handleRoutes(routes)) {
-                // Handled a route: do not show the default
-                setDefaultHandler();
-                return;
-            }
+        if (await handleRoutes(routes)) {
+            // Handled a route: do not show the default
+            setDefaultHandler();
+            return;
         }
         setDefaultHandler();
     });
