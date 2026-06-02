@@ -190,9 +190,10 @@ export class ComponentWithProperties {
             this.returnToHistoryIndex();
             return;
         }
-
         const state = HistoryManager.getCurrentState();
         this.historyIndex = state.index;
+
+        if (ComponentWithProperties.debug) console.warn('Assigned index to component', this.component.name ?? this, state.index);
         ComponentWithProperties.historyIndexOwners.set(state.index, this);
     }
 
@@ -272,6 +273,7 @@ export class ComponentWithProperties {
             return false;
         }
 
+        if (ComponentWithProperties.debug) console.warn('Returned to component', this.component.name ?? this);
         HistoryManager.returnToHistoryIndex(this.historyIndex);
         return true;
     }
