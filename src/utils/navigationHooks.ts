@@ -12,9 +12,9 @@ export type Route<Params> = {
     url: string;
     params?: UrlParamsConstructors<Params>;
     query?: UrlParamsConstructors<unknown>;
-    component: Component | (() => Promise<Component>) | 'self';
+    component: Component | ((props: Record<string, unknown>) => Promise<Component | ComponentWithProperties>) | 'self';
     present?: ModalDisplayStyle | true;
-    show?: true | 'detail';
+    show?: true | 'detail' | { getCustomShow: () => (options: PushOptions) => Promise<void> };
     isDefault?: RouteNavigationOptions<Params>; // Only used in splitViewController for now, in combination with show: detail
     paramsToProps?: (params: Params, query?: URLSearchParams) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
@@ -103,13 +103,12 @@ export function useNavigate() {
             });
             return;
         }
-
         let component: Component;
 
         // If component is a method, or if componentProperties is a promise, we'll need to wrap it in a loading component
         const isComponentFunction = typeof route.component === 'function' && !(!!route.component.prototype && route.component.prototype.constructor === route.component);
         if (isComponentFunction || (componentProperties as Promise<Record<string, unknown>>).then) {
-            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : () => route.component;
+            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : (_: Record<string, unknown>) => route.component;
             const originalProperties = componentProperties;
 
             if (!('PromiseComponent' in window)) {
@@ -119,8 +118,12 @@ export function useNavigate() {
             component = window.PromiseComponent as Component;
             componentProperties = {
                 promise: async () => {
-                    const realComponent = await method();
-                    return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, await originalProperties);
+                    const properties = await originalProperties;
+                    const realComponent = await method(properties);
+                    if (realComponent instanceof ComponentWithProperties) {
+                        return realComponent;
+                    }
+                    return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, properties);
                 },
             };
         }
@@ -168,7 +171,7 @@ export function useNavigate() {
                     new ComponentWithProperties(component, componentProperties),
                 ],
                 checkRoutes: options?.checkRoutes ?? false,
-            });
+            }, typeof route.show === 'object' && route.show !== null && 'getCustomShow' in route.show ? route.show.getCustomShow() : undefined);
         }
     };
 
