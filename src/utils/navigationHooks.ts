@@ -93,8 +93,8 @@ export function useNavigate() {
     const show = useShow();
     const showDetail = useShowDetail();
 
-    const toRoute = async function<Props extends Record<string, unknown>, Params> (route: Route<Props, Params>, options?: RouteNavigationOptions<Props, Params>) {
-        let componentProperties: Props | Promise<Props> | undefined = options?.properties ?? ({} as Props);
+    const toRoute = async function<Props, Params> (route: Route<Props, Params>, options?: RouteNavigationOptions<Props, Params>) {
+        let componentProperties: Props | Promise<Props> | undefined = options?.properties ?? ('defaultProperties' in route && route.defaultProperties ? route.defaultProperties() : null) ?? ({} as Props);
         let params = options?.params ?? {} as Params;
 
         if (!options?.properties) {
@@ -150,7 +150,7 @@ export function useNavigate() {
                     if (realComponent instanceof ComponentWithProperties) {
                         return realComponent;
                     }
-                    return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, properties);
+                    return new ComponentWithProperties(realComponent === 'self' ? (instance?.type as ComponentOptions) : realComponent, properties as Record<string, unknown>);
                 },
             } as any; // some magic here
         }
@@ -169,7 +169,7 @@ export function useNavigate() {
                 animated: options?.animated ?? true,
                 components: [
                     new ComponentWithProperties(NavigationController, {
-                        root: new ComponentWithProperties(component, componentProperties),
+                        root: new ComponentWithProperties(component, componentProperties as Record<string, unknown>),
                     }),
                 ],
                 modalDisplayStyle: typeof route.present === 'string' ? route.present : undefined,
@@ -183,7 +183,7 @@ export function useNavigate() {
                 animated: options?.animated ?? true,
                 components: [
                     new ComponentWithProperties(NavigationController, {
-                        root: new ComponentWithProperties(component, componentProperties),
+                        root: new ComponentWithProperties(component, componentProperties as Record<string, unknown>),
                     }),
                 ],
                 checkRoutes: options?.checkRoutes ?? false,
@@ -195,7 +195,7 @@ export function useNavigate() {
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
-                    new ComponentWithProperties(component, componentProperties),
+                    new ComponentWithProperties(component, componentProperties as Record<string, unknown>),
                 ],
                 checkRoutes: options?.checkRoutes ?? false,
             }, typeof route.show === 'object' && route.show !== null && 'getCustomShow' in route.show ? route.show.getCustomShow() : undefined);
@@ -204,17 +204,17 @@ export function useNavigate() {
 
     const currentRoutes = getCurrentRoutes();
 
-    const toId = async function<Props extends Record<string, unknown>, Params extends Record<string, unknown>>(urlOrName: string, options?: RouteNavigationOptions<Props, Params>) {
+    const toId = async function<Props, Params>(urlOrName: string, options?: RouteNavigationOptions<Props, Params>) {
         const route = currentRoutes.value.find(r => r.name === urlOrName || r.url === urlOrName);
         if (!route) {
             throw new Error('Route ' + urlOrName + ' not found in ' + instance?.type.name);
             return;
         }
 
-        return await toRoute(route, options);
+        return await toRoute<Props, Params>(route as Route<Props, Params>, options);
     };
 
-    return async function<Props extends Record<string, unknown>, Params extends Record<string, unknown>>(prop1: string | Route<Props, Params>, prop2?: RouteNavigationOptions<Props, Params>) {
+    return async function<Props, Params>(prop1: string | Route<Props, Params>, prop2?: RouteNavigationOptions<Props, Params>) {
         if (typeof prop1 === 'string') {
             return await toId(prop1, prop2);
         }
@@ -233,9 +233,9 @@ function getCurrentRoutes() {
         return {
             get() {
                 // Do not track
-                return (instance._navigationRoutes ?? []) as Route<any>[];
+                return (instance._navigationRoutes ?? []) as Route[];
             },
-            set(newValue: Route<any>[]) {
+            set(newValue: Route[]) {
                 instance._navigationRoutes = newValue;
             },
         };
@@ -343,7 +343,7 @@ export function defineRoutes(tmpRoutes: Route<any>[]) {
             if (result) {
                 try {
                     await navigate(route, {
-                        params: result.params,
+                        params: 'params' in route ? result.params : undefined,
                         animated: false,
                         adjustHistory: false,
                         query: result.query,
