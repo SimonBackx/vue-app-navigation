@@ -226,7 +226,7 @@ export function useNavigate() {
  * Internal helper method, should not get used
  */
 function getCurrentRoutes() {
-    const instance = getCurrentInstance() as any;
+    const instance = useCurrentComponent() as any;
 
     // A not tracked getter is returned
     return customRef(() => {
