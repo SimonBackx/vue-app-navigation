@@ -180,7 +180,7 @@ class HistoryManagerStatic {
                 clearTimeout(this.changeUrlTimeout);
             }
 
-            const didJustLoadPage = Date.now() - this.pageLoadedAt < 1000 * 5;
+            const didJustLoadPage = Date.now() - this.pageLoadedAt < 2_000;
             this.changeUrlTimeout = setTimeout(() => {
                 this.changeUrlTimeout = null;
                 if (this.counter !== count || (state.url !== url)) {
@@ -199,7 +199,7 @@ class HistoryManagerStatic {
                         window.document.title = this.formatTitle(state.title); // use state title here, because could have changed already
                     }
                 });
-            }, didJustLoadPage ? 1000 : 20);
+            }, didJustLoadPage ? 200 : 20);
 
             state.url = url;
             if (title) {
