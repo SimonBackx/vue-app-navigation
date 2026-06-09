@@ -217,6 +217,14 @@ export type UrlQueryConstructors<Query> = {
 export type UrlMatchResult<Params> = { params: Params; url: string; query: URLSearchParams };
 
 export function matchPath<Params>(path: string | string[], query: URLSearchParams, template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
+    if (template === '') {
+        return {
+            params: {} as any,
+            url: '',
+            query,
+        };
+    }
+
     const parts = Array.isArray(path) ? path : UrlHelper.trim(path).split('/');
     const templateParts = UrlHelper.trim(template).split('/');
 
