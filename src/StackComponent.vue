@@ -16,8 +16,8 @@
 import { onBeforeUnmount, type Ref, ref } from 'vue';
 
 import { ComponentWithProperties } from './ComponentWithProperties';
-import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
-import { useFocused } from './utils/navigationHooks.ts';
+import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.js';
+import { useFocused } from './utils/navigationHooks.js';
 
 const children = ref([]) as Ref<ComponentWithProperties[]>;
 const parentIsFocused = useFocused();

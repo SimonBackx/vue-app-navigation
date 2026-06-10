@@ -216,6 +216,29 @@ export type UrlQueryConstructors<Query> = {
 };
 export type UrlMatchResult<Params> = { params: Params; url: string; query: URLSearchParams };
 
+export function mergeSearchParams(
+    a: URLSearchParams | null,
+    b: URLSearchParams | null,
+): URLSearchParams | null {
+    if (a === null && b === null) {
+        return null;
+    }
+    if (a === null) {
+        return new URLSearchParams(b!);
+    }
+    if (b === null) {
+        return new URLSearchParams(a!);
+    }
+
+    const merged = new URLSearchParams(a);
+
+    for (const [key, value] of b.entries()) {
+        merged.append(key, value);
+    }
+
+    return merged;
+}
+
 export function matchPath<Params>(path: string | string[], query: URLSearchParams, template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
     if (template === '') {
         return {

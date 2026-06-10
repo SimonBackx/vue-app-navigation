@@ -9,7 +9,7 @@
 <script lang="ts">
 
 import { ComponentWithProperties } from './ComponentWithProperties';
-import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
+import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.js';
 
 export default {
     name: 'FramedComponent',

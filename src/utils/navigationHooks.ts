@@ -5,7 +5,18 @@ import { HistoryManager, type HistoryUrl } from '../HistoryManager';
 import NavigationController from '../NavigationController.vue';
 import type { PopOptions } from '../PopOptions';
 import type { PushOptions } from '../PushOptions';
-import { UrlHelper, templateToUrl, type ParamsFromConstructors, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
+import { UrlHelper, mergeSearchParams, templateToUrl, type ParamsFromConstructors, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
+import { createTrackedSearchParams } from './createTrackedSearchParams.js';
+
+function isPromiseLike<T = unknown>(
+    value: unknown,
+): value is PromiseLike<T> {
+    return (
+        value !== null
+        && (typeof value === 'object' || typeof value === 'function')
+        && typeof (value as any).then === 'function'
+    );
+}
 
 type DistributiveOmit<T, K extends PropertyKey> =
     T extends unknown ? Omit<T, K> : never;
@@ -41,7 +52,8 @@ type RouteComponent<Props>
         component: NotFunction<Component> | 'self' | ((props: Record<string, unknown>) => Promise<Component | ComponentWithProperties> | Component | ComponentWithProperties);
     } | {
         handler: (options: {
-            url: string;
+            query: URLSearchParams | null | Ref<URLSearchParams | null>;
+            url: string | Ref<string | null> | null;
             adjustHistory: boolean;
             animated: boolean;
             modalDisplayStyle: ModalDisplayStyle | undefined;
@@ -55,15 +67,16 @@ export type RouteWithParams<Props, Params> = {
     url: string;
     params: UrlParamsConstructors<Params>;
     isDefault?: RouteNavigationOptions<Props, Params> & ({ params: Params } | { properties: Props });
-    paramsToProps: (params: Params, query?: URLSearchParams) => Promise<Props> | Props;
-    propsToParams: (props: Props) => { params: Params; query?: URLSearchParams };
+    paramsToProps: (params: Params, query?: URLSearchParams | null) => Promise<Props> | Props;
+    propsToParams: (props: Props) => { params: Params; query?: URLSearchParams | null };
 } & RouteComponent<Props>;
 
 export type RouteWithoutParams<Props> = {
     name?: string;
     url: string;
     isDefault?: RouteNavigationOptions<Props>;
-    defaultProperties?: (query?: URLSearchParams) => Promise<Props> | Props;
+    defaultProperties?: (query: URLSearchParams | null) => Promise<Props> | Props;
+    propsToParams?: (props: Props) => { params?: undefined; query?: URLSearchParams | null };
 } & RouteComponent<Props>;
 
 export type Route<Props = Record<string, unknown>, Params = Record<string, unknown>> = RouteWithParams<Props, Params> | RouteWithoutParams<Props>;
@@ -94,25 +107,56 @@ export function useNavigate() {
     const showDetail = useShowDetail();
 
     const toRoute = async function<Props, Params> (route: Route<Props, Params>, options?: RouteNavigationOptions<Props, Params>) {
-        let componentProperties: Props | Promise<Props> | undefined = options?.properties ?? ('defaultProperties' in route && route.defaultProperties ? route.defaultProperties() : null) ?? ({} as Props);
+        let componentProperties: Props | Promise<Props> | undefined = options?.properties ?? ('defaultProperties' in route && route.defaultProperties ? route.defaultProperties(options?.query ?? null) : null) ?? ({} as Props);
         let params = options?.params ?? {} as Params;
+        let query: URLSearchParams | null | Ref<URLSearchParams | null> = options?.query ?? null;
 
         if (!options?.properties) {
             if ('paramsToProps' in route) {
-                componentProperties = route.paramsToProps(options?.params ?? {} as Params, options?.query);
+                // paramsToProps can be a promise, so we need a reactive query
+                const reactiveQuery = ref<URLSearchParams | null>(null);
+                query = reactiveQuery;
+                const trackedQuery = options?.query ? createTrackedSearchParams(options.query) : null;
+
+                function onResolve<T>(r: T) {
+                    if (trackedQuery) {
+                        // Only store the keys that were actually used
+                        const keys = trackedQuery.getReadKeys();
+                        if (keys.length) {
+                            const query = new URLSearchParams();
+                            for (const key of keys) {
+                                query.set(key, options!.query!.get(key) ?? '');
+                            }
+                            reactiveQuery.value = query;
+                        }
+                        else {
+                            reactiveQuery.value = null;
+                        }
+                    }
+                    return r;
+                }
+                componentProperties = route.paramsToProps(options?.params ?? {} as Params, trackedQuery?.params ?? null);
+
+                if (isPromiseLike(componentProperties)) {
+                    componentProperties = componentProperties.then(onResolve);
+                }
+                else {
+                    onResolve(undefined);
+                }
             }
             else {
+                query = null;
                 if (options?.params) {
                     console.error('Using route to a route that only has properties, no parameters. Use properties instead of params in navigate() for this route: ' + route.url, route, options);
                 }
             }
         }
 
-        if (!options?.params && 'propsToParams' in route) {
+        if (!options?.params && 'propsToParams' in route && route.propsToParams) {
             // Note that this will never await because componentProperties is already resolved
-            const { params: p } = route.propsToParams(await componentProperties);
-            // todo: building back query won't really work for now
-            params = p;
+            const { params: p, query: q } = route.propsToParams(await componentProperties);
+            params = p ?? {} as Params;
+            query = q ?? null;
         }
 
         // Build url
@@ -121,6 +165,7 @@ export function useNavigate() {
         if ('handler' in route) {
             await route.handler({
                 url,
+                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 modalDisplayStyle: undefined,
@@ -165,6 +210,7 @@ export function useNavigate() {
         if (route.present) {
             await present({
                 url,
+                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -179,6 +225,7 @@ export function useNavigate() {
         else if (route.show === 'detail') {
             await showDetail({
                 url,
+                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -192,6 +239,7 @@ export function useNavigate() {
         else {
             await show({
                 url,
+                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -475,13 +523,20 @@ export function useCheckRoute() {
                 }
             }
 
-            if (!options?.params && 'propsToParams' in route && options.properties) {
-                const { params } = route.propsToParams(options.properties);
+            if (!options?.params && 'propsToParams' in route && options.properties && route.propsToParams) {
+                const { params, query } = route.propsToParams(options.properties);
 
-                // todo: building back query won't really work for now
                 for (const key in params) {
                     if (result.params[key] !== params[key]) {
                         return false;
+                    }
+                }
+
+                if (query) {
+                    for (const key in query) {
+                        if (result.query.get(key) !== query.get(key)) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -566,7 +621,21 @@ export function normalizePushOptions(o: PushOptions | ComponentWithProperties, c
         const url = options.url;
 
         for (const component of options.components) {
-            component.provide.reactive_navigation_url = computed(() => url === null ? null : urlHelpers.extendUrl(url, { returnHistory: options.replace ?? 0 }));
+            component.provide.reactive_navigation_url = computed(() => {
+                const u = unref(url);
+                return u === null ? null : urlHelpers.extendUrl(u, { returnHistory: options.replace ?? 0 });
+            });
+        }
+    }
+
+    if (options.query !== undefined) {
+        const query = options.query;
+
+        for (const component of options.components) {
+            component.provide.reactive_navigation_query = computed(() => {
+                const q = unref(query);
+                return q === null ? null : urlHelpers.extendQuery(q, { returnHistory: options.replace ?? 0 });
+            });
         }
     }
 
@@ -689,23 +758,28 @@ export function setTitle(title: string) {
     });
 }
 
-export function setUrl(url: HistoryUrl, title?: string) {
+export function setUrl(url: HistoryUrl, query: URLSearchParams | null = null, title?: string) {
     const urlHelpers = useUrl();
 
     onMounted(() => {
-        urlHelpers.overrideUrl(url, title);
+        urlHelpers.overrideUrl(url, query, title);
     });
 }
 
 export function useUrl() {
     const currentComponent = useCurrentComponent();
     const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null;
+    const navigationQuery = inject('reactive_navigation_query', null) as Ref<URLSearchParams | undefined> | null;
     const disableUrl = inject('reactive_navigation_disable_url', null) as Ref<boolean | undefined> | null;
     const historyIndex = inject('navigation_historyIndex', null) as Ref<number | undefined> | null;
 
     return {
         getUrl() {
             return unref(navigationUrl) ?? '';
+        },
+
+        getQuery() {
+            return unref(navigationQuery) ?? null;
         },
 
         /**
@@ -743,6 +817,22 @@ export function useUrl() {
             return UrlHelper.trim(url);
         },
 
+        extendQuery(query: URLSearchParams | null, options: { returnHistory?: number } = {}): URLSearchParams | null {
+            let baseQuery = this.getQuery();
+
+            if (options.returnHistory) {
+                const index = unref(historyIndex);
+                if (index !== null && index !== undefined) {
+                    baseQuery = HistoryManager.getStateQuery(index - options.returnHistory);
+                }
+                else {
+                    console.error('Failed to get history index');
+                }
+            }
+
+            return mergeSearchParams(baseQuery, query);
+        },
+
         match<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
             const shared = UrlHelper.shared;
             const helper = new UrlHelper(shared.url, this.getUrl());
@@ -754,7 +844,7 @@ export function useUrl() {
             return helper.match(template, params);
         },
 
-        overrideUrl(url: HistoryUrl, title?: string) {
+        overrideUrl(url: HistoryUrl, query: URLSearchParams | null = null, title?: string) {
             if (!currentComponent) {
                 console.error('No current component while setting title', title);
                 return;
@@ -762,7 +852,7 @@ export function useUrl() {
             if (unref(disableUrl)) {
                 return;
             }
-            currentComponent?.overrideUrl(url, title);
+            currentComponent?.overrideUrl(url, query, title);
         },
     };
 }

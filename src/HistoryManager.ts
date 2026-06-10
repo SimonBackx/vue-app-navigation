@@ -8,6 +8,7 @@ export type HistoryUrl = string | null;
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
     url: HistoryUrl;
+    query?: URLSearchParams | null;
     title?: string;
 
     /// Counter at which the state was added.
@@ -157,12 +158,28 @@ class HistoryManagerStatic {
         return this.getStateUrl(index - 1);
     }
 
+    getStateQuery(index: number): URLSearchParams | null {
+        if (index < 0) {
+            return null;
+        }
+        if (!this.states[index]) {
+            return this.getStateQuery(index - 1);
+        }
+
+        if (this.states[index].url !== null) {
+            return this.states[index].query ?? null;
+        }
+
+        return this.getStateQuery(index - 1);
+    }
+
     resolveUrl(index: number): string {
-        return '/' + UrlHelper.trim(UrlHelper.transformUrl(this.getStateUrl(index)));
+        const q = this.getStateQuery(index);
+        return '/' + UrlHelper.trim(UrlHelper.transformUrl(this.getStateUrl(index))) + (q && q.size > 0 ? '?' + q.toString() : '');
     }
 
     /// Set the current URL without modifying states
-    setUrl(url: HistoryUrl, title?: string, index?: number) {
+    setUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string, index?: number) {
         if (!this.active) {
             return;
         }
@@ -202,6 +219,7 @@ class HistoryManagerStatic {
             }, didJustLoadPage ? 200 : 20);
 
             state.url = url;
+            state.query = query;
             if (title) {
                 state.title = title;
             }
@@ -224,6 +242,7 @@ class HistoryManagerStatic {
                 }
             }
             state.url = url;
+            state.query = query;
             if (title) {
                 state.title = title;
             }
@@ -321,6 +340,7 @@ class HistoryManagerStatic {
 
         const state = {
             url: url ?? null,
+            query: null,
             index: this.counter,
             adjustHistory: true,
             undoAction,
@@ -394,6 +414,7 @@ class HistoryManagerStatic {
                     index: i,
                     adjustHistory: false,
                     url: null,
+                    query: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null,
@@ -432,7 +453,7 @@ class HistoryManagerStatic {
             }
 
             // Set new url manually again
-            this.setUrl(this.states[this.counter].url!, this.states[this.counter].title);
+            this.setUrl(this.states[this.counter].url!, this.states[this.counter].query ?? null, this.states[this.counter].title);
         }
 
         return this.counter;
@@ -565,6 +586,7 @@ class HistoryManagerStatic {
                     index: i,
                     adjustHistory: false,
                     url: null,
+                    query: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null,
@@ -584,6 +606,7 @@ class HistoryManagerStatic {
             index: this.counter,
             adjustHistory: false,
             url: null,
+            query: null,
             title: undefined,
             invalid: false,
             undoAction: null,

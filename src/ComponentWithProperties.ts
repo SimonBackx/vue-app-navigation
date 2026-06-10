@@ -208,12 +208,13 @@ export class ComponentWithProperties {
         return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this;
     }
 
-    overrideUrl(url: HistoryUrl, title?: string) {
+    overrideUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string) {
         this.provide.reactive_navigation_url = url;
-        this.setUrl(url, title);
+        this.provide.reactive_navigation_query = query;
+        this.setUrl(url, query, title);
     }
 
-    setUrl(url: HistoryUrl, title?: string) {
+    setUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string) {
         if (this.historyIndex === null) {
             if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present');
             return;
@@ -227,7 +228,7 @@ export class ComponentWithProperties {
             return;
         }
 
-        HistoryManager.setUrl(url, title, this.historyIndex);
+        HistoryManager.setUrl(url, query, title, this.historyIndex);
     }
 
     setTitle(title: string) {

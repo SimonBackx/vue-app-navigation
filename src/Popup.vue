@@ -14,10 +14,10 @@
 import { computed, getCurrentInstance, onActivated, onDeactivated, provide, ref, shallowRef } from 'vue';
 
 import { type ComponentWithProperties, getExposeProxy, useCurrentComponent } from './ComponentWithProperties';
-import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.ts';
+import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.js';
 import type { PopOptions } from './PopOptions';
 import { useFocused, usePop } from './utils/navigationHooks';
-import { useModalStackComponent } from './utils/useModalStackComponent.ts';
+import { useModalStackComponent } from './utils/useModalStackComponent.js';
 
 // Self reference
 const instance = getCurrentInstance();
