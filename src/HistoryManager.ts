@@ -138,7 +138,7 @@ class HistoryManagerStatic {
                 timer = setTimeout(() => {
                     console.warn('Timeout while waiting for history.go');
                     listener();
-                }, 400); // On Firefox it seems to take 200 - 300ms
+                }, 1_000); // On Firefox it seems to take 200 - 300ms. In CI it even takes longer ± 600ms.
             });
         });
     }

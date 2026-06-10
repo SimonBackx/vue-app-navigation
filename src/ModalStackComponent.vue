@@ -109,7 +109,11 @@ async function present(options: PushOptions) {
 
 function replace(component: ComponentWithPropertiesType, animated = true) {
     const nav = navigationController.value;
-    nav?.push({ components: [component], animated, replace: nav?.components?.length ?? 0 }); // error here is caused by typescript - thinks 'components' is a built in property of vue instead of the data property
+    nav?.push({
+        components: [component],
+        animated,
+        replace: nav?.components?.length ?? 0,
+    }); // error here is caused by typescript - thinks 'components' is a built in property of vue instead of the data property
 }
 
 defineExpose({
