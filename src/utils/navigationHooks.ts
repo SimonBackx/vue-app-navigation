@@ -45,11 +45,16 @@ export const defineRoute: typeof typeRoute = (route: any) => {
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type NotFunction<T> = T extends Function ? never : T;
+type RouteLoadComponentResponse = Promise<Component | ComponentWithProperties> | Component | ComponentWithProperties;
+type RouteLoadComponent<Props> = (props: Props) => RouteLoadComponentResponse;
+type RouteDirectComponent = NotFunction<Component> | 'self';
 type RouteComponent<Props>
     = {
+        replace?: number;
+        force?: boolean;
         present?: ModalDisplayStyle | true;
         show?: true | 'detail' | { getCustomShow: () => (options: PushOptions) => Promise<void> };
-        component: NotFunction<Component> | 'self' | ((props: Record<string, unknown>) => Promise<Component | ComponentWithProperties> | Component | ComponentWithProperties);
+        component: RouteDirectComponent | RouteLoadComponent<Props>;
     } | {
         handler: (options: {
             query: URLSearchParams | null | Ref<URLSearchParams | null>;
@@ -99,6 +104,11 @@ export function usePop() {
         return pop(options);
     };
 }
+
+export type ImportRetryMethod = <Args extends unknown[], T>(
+    loader: (...args: Args) => Promise<T> | T,
+    args: Args,
+) => Promise<T> | T;
 
 export function useNavigate() {
     const instance = getCurrentInstance();
@@ -180,7 +190,7 @@ export function useNavigate() {
         // If component is a method, or if componentProperties is a promise, we'll need to wrap it in a loading component
         const isComponentFunction = typeof route.component === 'function' && !(!!route.component.prototype && route.component.prototype.constructor === route.component);
         if (isComponentFunction || (componentProperties as Promise<Record<string, unknown>>).then) {
-            const method = isComponentFunction ? (route.component as (() => Promise<Component>)) : (_: Props) => route.component;
+            const method: (args: Props) => RouteDirectComponent | RouteLoadComponentResponse = isComponentFunction ? (route.component as RouteLoadComponent<Props>) : () => Promise.resolve(route.component as RouteDirectComponent);
             const originalProperties = componentProperties;
 
             if (!('PromiseComponent' in window)) {
@@ -188,10 +198,13 @@ export function useNavigate() {
             }
 
             component = window.PromiseComponent as Component;
+            const importWithRetry: ImportRetryMethod = '_importWithRetry' in window
+                ? (window._importWithRetry as ImportRetryMethod)
+                : (a, args) => a(...args);
             componentProperties = {
                 promise: async () => {
                     const properties: Props = await originalProperties;
-                    const realComponent = await method(properties);
+                    const realComponent = await importWithRetry(method, [properties]);
                     if (realComponent instanceof ComponentWithProperties) {
                         return realComponent;
                     }
@@ -220,6 +233,8 @@ export function useNavigate() {
                 ],
                 modalDisplayStyle: typeof route.present === 'string' ? route.present : undefined,
                 checkRoutes: options?.checkRoutes ?? false,
+                replace: route.replace,
+                force: route.force,
             });
         }
         else if (route.show === 'detail') {
@@ -234,6 +249,8 @@ export function useNavigate() {
                     }),
                 ],
                 checkRoutes: options?.checkRoutes ?? false,
+                replace: route.replace,
+                force: route.force,
             });
         }
         else {
@@ -246,6 +263,8 @@ export function useNavigate() {
                     new ComponentWithProperties(component, componentProperties as Record<string, unknown>),
                 ],
                 checkRoutes: options?.checkRoutes ?? false,
+                replace: route.replace,
+                force: route.force,
             }, typeof route.show === 'object' && route.show !== null && 'getCustomShow' in route.show ? route.show.getCustomShow() : undefined);
         }
     };
