@@ -14,6 +14,7 @@ export default defineConfig({
         watch: false,
         globals: true,
         root: 'src',
+        exclude: ['**/*.browser.test.ts'],
     },
     build: {
         minify: false,

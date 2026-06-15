@@ -38,6 +38,7 @@ export function typeRoute(route: unknown): unknown {
 }
 
 export const defineRoute: typeof typeRoute = (route: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     defineRoutes([route]);
     return route;
 };
@@ -751,6 +752,45 @@ export function useCanDismiss(): Ref<boolean> {
 export function useFocused() {
     const rawFocused = inject('reactive_navigation_focused', true) as Ref<boolean> | boolean;
     return computed(() => !!unref(rawFocused));
+}
+
+/**
+ * Returns a setter that lets the current component signal to its nearest navigation controller
+ * whether it currently renders content. This uses an opt-out model: components are assumed to
+ * have content unless they call the setter with `false`.
+ *
+ * This is useful for placeholder/loading components (e.g. an async component that is still
+ * loading): while they have no content, the navigation controller keeps its frozen height during
+ * navigation animations instead of collapsing to the height of the empty placeholder. Once the
+ * real content arrives, calling the setter with `true` animates the controller to the real height.
+ */
+export function useContentState() {
+    const component = useCurrentComponent();
+    const controller = inject('reactive_navigationController', null) as Ref<{ setContentState?: (component: ComponentWithProperties, hasContent: boolean) => void } | null> | { setContentState?: (component: ComponentWithProperties, hasContent: boolean) => void } | null;
+
+    return (hasContent: boolean) => {
+        const c = unref(controller);
+        if (c && component && typeof c.setContentState === 'function') {
+            c.setContentState(component, hasContent);
+        }
+    };
+}
+
+/**
+ * Returns a function that animates the nearest navigation controller around an in-place content
+ * change. Outside a navigation controller, the change is still applied without animation.
+ */
+export function useAnimateHeightChange() {
+    const controller = inject('reactive_navigationController', null) as Ref<{ animateHeightChange?: (applyChange: () => void | Promise<void>) => Promise<void> } | null> | { animateHeightChange?: (applyChange: () => void | Promise<void>) => Promise<void> } | null;
+
+    return async (applyChange: () => void | Promise<void>) => {
+        const c = unref(controller);
+        if (c && typeof c.animateHeightChange === 'function') {
+            await c.animateHeightChange(applyChange);
+            return;
+        }
+        await applyChange();
+    };
 }
 
 /**

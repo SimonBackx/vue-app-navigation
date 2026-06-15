@@ -57,6 +57,7 @@ scripts/request-pr-review.js
 scripts/*.js.map
 scripts/typings/
 coverage/
+test-results/
 internal/
 **/.DS_Store
 .settings
