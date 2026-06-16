@@ -1,6 +1,7 @@
 import { type ComponentInternalInstance, type ComponentPublicInstance, inject, markRaw, proxyRefs, type Raw, reactive, ref, type VNode } from 'vue';
 
 import { HistoryManager, type HistoryUrl } from './HistoryManager';
+import type { Route } from './utils/navigationHooks';
 
 export type ModalDisplayStyle = 'cover' | 'popup' | 'overlay' | 'sheet' | 'side-view';
 
@@ -87,6 +88,7 @@ export class ComponentWithProperties {
     // If the display animation should be animated
     public animated = true;
     public checkRoutes = false; // Setting this will allow the component to check the routes on the next activation
+    public navigationRoutes: Route[] = [];
     public isDismissing = ref(false); // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
@@ -160,6 +162,10 @@ export class ComponentWithProperties {
                 this.destroy(this.vnode);
             }
         }
+    }
+
+    onUnmounted() {
+        this.navigationRoutes = [];
     }
 
     getHistoryIndex() {

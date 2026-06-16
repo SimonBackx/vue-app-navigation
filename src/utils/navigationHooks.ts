@@ -294,17 +294,22 @@ export function useNavigate() {
  * Internal helper method, should not get used
  */
 function getCurrentRoutes() {
-    const instance = useCurrentComponent() as any;
+    const component = useCurrentComponent();
 
     // A not tracked getter is returned
     return customRef(() => {
         return {
             get() {
                 // Do not track
-                return (instance._navigationRoutes ?? []) as Route[];
+                return (component?.navigationRoutes ?? []) as Route[];
             },
             set(newValue: Route[]) {
-                instance._navigationRoutes = newValue;
+                if (component) {
+                    component.navigationRoutes = newValue;
+                }
+                else {
+                    console.error('Missing component when setting routes');
+                }
             },
         };
     });

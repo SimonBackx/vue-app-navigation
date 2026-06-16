@@ -1,7 +1,6 @@
 // eslint-disable-next-line vue/prefer-import-from-vue
 import { invokeArrayFns, ShapeFlags } from '@vue/shared';
-import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode, warn, defineComponent } from 'vue';
-
+import { callWithAsyncErrorHandling, type ComponentInternalInstance, type ComponentOptions, computed, defineComponent, type ElementNamespace, ErrorCodes, getCurrentInstance, h, inject, onActivated, onBeforeMount, onBeforeUnmount, onMounted, onUnmounted, onUpdated, provide, queuePostFlushCb, type RendererElement, type RendererNode, setTransitionHooks, shallowRef, unref, type VNode, warn } from 'vue';
 import { ComponentWithProperties } from './ComponentWithProperties';
 
 export function invokeVNodeHook(
@@ -302,6 +301,9 @@ export default defineComponent({
 
         onBeforeMount(() => {
             props.component.beforeMount();
+        });
+        onUnmounted(() => {
+            props.component.onUnmounted();
         });
 
         let pendingCacheKey: any | null = null;
