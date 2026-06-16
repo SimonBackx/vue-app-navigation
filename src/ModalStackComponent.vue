@@ -17,7 +17,7 @@ import { computed, getCurrentInstance, onMounted, provide, ref, shallowRef } fro
 import { getExposeProxy, Popup } from '.';
 import { ComponentWithProperties, type ComponentWithPropertiesType } from './ComponentWithProperties';
 import { HistoryManager } from './HistoryManager';
-import NavigationController from './NavigationController.vue';
+import NavigationController, { wrapWithNavigationController } from './NavigationController.vue';
 import type { PushOptions } from './PushOptions';
 import StackComponent from './StackComponent.vue';
 import { useFocused } from './utils/navigationHooks';
@@ -79,7 +79,7 @@ async function present(options: PushOptions) {
         )
     ) {
         const c = new ComponentWithProperties(Popup, {
-            root: component,
+            root: wrapWithNavigationController(component), // Fixes animation issues because navigation controller animates width and height changes
             className: options.modalClass ?? style,
             style: options.modalCssStyle ?? undefined,
         });

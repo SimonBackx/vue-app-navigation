@@ -140,9 +140,12 @@ const NavigationController = defineComponent({
     },
     watch: {
         // whenever question changes, this function will run
-        mainComponent(newComponent: ComponentWithPropertiesType | null) {
+        mainComponent(newComponent: ComponentWithPropertiesType | null, oldComponent: ComponentWithProperties) {
             // Reset the content state: the new main component is assumed to have content unless
             // it signals otherwise (which it does while mounting, before the enter animation runs).
+            if (newComponent === this.root || oldComponent === null) {
+                return;
+            }
             this.resetContentState();
 
             if (!newComponent) {
@@ -174,6 +177,12 @@ const NavigationController = defineComponent({
                 HistoryManager.pushState(undefined, null, { adjustHistory: false });
             }
             component.assignHistoryIndex();
+        }
+    },
+    mounted() {
+        if (this.contentlessMainKey === this.mainComponent?.key) {
+            // We received a setContent event before we could process it correctly (no element)
+            this.setContentState(this.mainComponent, false);
         }
     },
     beforeUnmount() {
@@ -245,6 +254,10 @@ const NavigationController = defineComponent({
         freezeSize() {
             const el = this.$el as HTMLElement;
 
+            if (!el) {
+                return;
+            }
+
             // A new sizing operation starts: cancel any pending content-height animation so it can
             // no longer overwrite the size or unfreeze us.
             this.cancelContentAnimation();
@@ -256,6 +269,13 @@ const NavigationController = defineComponent({
             el.style.width = w + 'px';
             el.style.height = h + 'px';
             this.setFrozenHeightVariable(h);
+
+            setTimeout(() => {
+                if (this.isSizeFrozen()) {
+                    console.error('Navigation controller size still frozen!', this);
+                    this.unfreezeSize();
+                }
+            }, 1_000);
         },
         growSize(width: number, height: number) {
             const el = this.$el as HTMLElement;
@@ -286,8 +306,8 @@ const NavigationController = defineComponent({
             const el = this.$el as HTMLElement | undefined;
             return !!el && el.style.height !== '';
         },
-        isContentlessMain() {
-            return this.mainComponent !== null && this.contentlessMainKey === this.mainComponent.key;
+        hasContent() {
+            return !(this.mainComponent !== null && this.contentlessMainKey === this.mainComponent.key);
         },
         cancelContentAnimation() {
             this.contentAnimationToken++;
@@ -303,21 +323,44 @@ const NavigationController = defineComponent({
          * empty placeholder. Once the content arrives, the controller animates to the real height.
          */
         setContentState(component: ComponentWithProperties, hasContent: boolean) {
-            const wasContentless = this.isContentlessMain();
+            const hadContent = this.hasContent();
 
-            if (!this.mainComponent || this.mainComponent.key !== component.key) {
+            let isMain = true;
+
+            // If mainComponent is not set = called before navigationController is fully created, so we can assume we received it from the future main component
+            // if (this.mainComponent && this.mainComponent.key !== component.key) {
+            //    // Child if child
+            //    if (component.vnode?.el && this.$el && (this.$el as HTMLElement).contains(component.vnode.el as HTMLElement)) {
+            //        // Child: okay
+            //    }
+            //    else {
+            //        isMain = false;
+            //    }
+            // }
+
+            if (!isMain) {
+                console.info('Component is not main where we received it from lol');
+
                 // A component that is no longer the main one finally got content: just forget it.
                 if (hasContent && this.contentlessMainKey === component.key) {
                     this.contentlessMainKey = null;
                 }
             }
             else if (!hasContent) {
-                // Content disappeared again before a pending resize completed. Revoke ownership
-                // immediately so that resize cannot measure or unfreeze the loading placeholder.
-                this.cancelContentAnimation();
-                this.contentlessMainKey = component.key;
+                if (!hadContent && this.isSizeFrozen()) {
+                    // Already handled
+                }
+                else {
+                    // Content disappeared again before a pending resize completed. Revoke ownership
+                    // immediately so that resize cannot measure or unfreeze the loading placeholder.
+                    this.contentlessMainKey = component.key;
+
+                    if (!this.isSizeFrozen()) {
+                        this.freezeSize();
+                    }
+                }
             }
-            else if (this.contentlessMainKey === component.key) {
+            else if (!hadContent) {
                 this.contentlessMainKey = null;
                 // Content arrived for the current main component: animate to its real height.
                 this.animateToContentHeight();
@@ -327,9 +370,9 @@ const NavigationController = defineComponent({
             // controller (if any). This way a controller that was pushed onto another controller's
             // stack while its content is still loading also keeps the outer size frozen, instead
             // of letting the outer controller collapse to the height of the empty placeholder.
-            const isContentless = this.isContentlessMain();
-            if (wasContentless !== isContentless) {
-                this.propagateContentState(!isContentless);
+            const hasContentNow = this.hasContent();
+            if (hadContent !== hasContentNow) {
+                this.propagateContentState(hasContentNow);
             }
         },
         propagateContentState(hasContent: boolean) {
@@ -384,16 +427,18 @@ const NavigationController = defineComponent({
 
                 this.waitForSizeTransition(token, () => {
                     if (token !== this.contentAnimationToken) {
+                        console.info('Animation interrupted, not unfreezing size');
                         return;
                     }
                     this.animatingContent = false;
-                    if (!this.isContentlessMain()) {
+                    if (this.hasContent()) {
                         this.unfreezeSize();
                     }
                 });
 
                 const w = (inner.firstElementChild as HTMLElement | null)?.offsetWidth ?? inner.offsetWidth;
                 const h = inner.offsetHeight;
+                console.info('Grow size towards element', inner);
                 this.growSize(w, h);
             });
         },
@@ -864,7 +909,7 @@ const NavigationController = defineComponent({
                 // async component that is still loading), we keep the previous (frozen) size
                 // instead of collapsing to the height of the empty placeholder. The size will be
                 // animated to the real height once the content arrives (see setContentState).
-                if (!this.isContentlessMain()) {
+                if (this.hasContent()) {
                     this.growSize(w, h);
                 }
 
@@ -979,7 +1024,7 @@ const NavigationController = defineComponent({
             // Keep the size frozen while the main component has no content yet, or while a
             // content-height animation is still running. unfreezeSize will be called once the
             // content arrives (see setContentState / animateToContentHeight).
-            if (this.isContentlessMain() || this.animatingContent) {
+            if (!this.hasContent() || this.animatingContent) {
                 return;
             }
             this.unfreezeSize();
@@ -988,7 +1033,7 @@ const NavigationController = defineComponent({
             // Mirror afterEnter: keep the size frozen while the main component has no content yet,
             // or while a content-height animation is running, so a cancelled enter (e.g. during
             // rapid push/pop) does not collapse the loading view mid-transition.
-            if (this.isContentlessMain() || this.animatingContent) {
+            if (!this.hasContent() || this.animatingContent) {
                 return;
             }
             this.unfreezeSize();
@@ -997,6 +1042,14 @@ const NavigationController = defineComponent({
 });
 export default NavigationController;
 
+export function wrapWithNavigationController(component: ComponentWithProperties) {
+    if (component.component === NavigationController) {
+        return component;
+    }
+    return new ComponentWithProperties(NavigationController, {
+        root: component,
+    });
+}
 </script>
 
 <style lang="scss">
@@ -1004,6 +1057,11 @@ export default NavigationController;
     // Scrolling should happen inside the children!
     overflow: visible;
     position: relative;
+
+    > div {
+        //width: fit-content;
+        //height: fit-content;
+    }
 
     > .modal {
         &-push {

@@ -89,6 +89,7 @@ export class ComponentWithProperties {
     public animated = true;
     public checkRoutes = false; // Setting this will allow the component to check the routes on the next activation
     public navigationRoutes: Route[] = [];
+    public keepNavigationRoutes = false;
     public isDismissing = ref(false); // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
@@ -107,7 +108,7 @@ export class ComponentWithProperties {
         return this;
     }
 
-    constructor(component: any, properties: Record<string, any> = {}, options?: { forceCanHaveFocus?: boolean; provide?: Record<string, any>; inheritedDisplayerProvide?: Record<string, any>; inheritedParentProvide?: Record<string, any> }) {
+    constructor(component: any, properties: Record<string, any> = {}, options?: { keepNavigationRoutes?: boolean; forceCanHaveFocus?: boolean; provide?: Record<string, any>; inheritedDisplayerProvide?: Record<string, any>; inheritedParentProvide?: Record<string, any> }) {
         this.component = component;
         this.key = ComponentWithProperties.keyCounter++;
         this.properties = reactive(properties);
@@ -115,6 +116,7 @@ export class ComponentWithProperties {
         this.inheritedDisplayerProvide = options?.inheritedDisplayerProvide || {};
         this.inheritedParentProvide = options?.inheritedParentProvide || {};
         this.forceCanHaveFocus = options?.forceCanHaveFocus || false;
+        this.keepNavigationRoutes = options?.keepNavigationRoutes ?? false;
 
         // Prevent becoming reactive in any way
         markRaw(this);
@@ -165,7 +167,7 @@ export class ComponentWithProperties {
     }
 
     onUnmounted() {
-        this.navigationRoutes = [];
+        // this.navigationRoutes = [];
     }
 
     getHistoryIndex() {
@@ -350,6 +352,10 @@ export class ComponentWithProperties {
             }
             this.deleteHistoryIndex();
             this.vnode = null;
+
+            if (!this.keepNavigationRoutes) {
+                this.navigationRoutes = [];
+            }
         }
     }
 
