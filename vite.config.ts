@@ -22,7 +22,6 @@ export default defineConfig({
         lib: { // tell the build process to treat this project as library
             entry: {
                 index: path.resolve(__dirname, './index.ts'),
-                classes: path.resolve(__dirname, './src/classes.ts'),
             },
             name: 'vue-app-navigation',
             fileName: (_, entryName) => `${entryName}.js`,
