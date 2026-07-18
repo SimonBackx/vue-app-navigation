@@ -1,4 +1,4 @@
-import { type ComponentInternalInstance, type ComponentPublicInstance, inject, markRaw, proxyRefs, type Raw, reactive, ref, type VNode } from 'vue';
+import { type ComponentInternalInstance, type ComponentPublicInstance, inject, markRaw, proxyRefs, type Raw, reactive, type Ref, ref, unref, type VNode } from 'vue';
 
 import { HistoryManager, type HistoryUrl } from './HistoryManager';
 import type { Route } from './utils/navigationHooks';
@@ -7,6 +7,9 @@ export type ModalDisplayStyle = 'cover' | 'popup' | 'overlay' | 'sheet' | 'side-
 
 export function useCurrentComponent(): ComponentWithPropertiesType | null {
     return inject('navigation_currentComponent', null) as ComponentWithPropertiesType | null;
+}
+export function useParentComponent(): ComponentWithPropertiesType | null {
+    return inject('navigation_parentComponent', null) as ComponentWithPropertiesType | null;
 }
 
 // Sadly getExposeProxy is not exposed from Vue so we have to mimic it
@@ -34,6 +37,40 @@ export function getExposeProxy(instance: ComponentInternalInstance | null | unde
         },
     });
     return instance.exposeProxy as ComponentPublicInstance;
+}
+
+export class HistoryIndex {
+    index: number;
+
+    constructor(index: number) {
+        this.index = index;
+    }
+}
+
+function deepClone(root: ComponentWithProperties, alreadyProcessed?: Map<ComponentWithPropertiesType, ComponentWithPropertiesType>) {
+    const handled = alreadyProcessed ?? new Map<ComponentWithPropertiesType, ComponentWithPropertiesType>(); // to avoid recursive calling
+    const replaced = root.clone();
+    replaced.properties = { ...replaced.properties };
+    handled.set(root, replaced);
+
+    for (const key in replaced.properties) {
+        let v = replaced.properties[key];
+        if (v instanceof ComponentWithProperties) {
+            replaced.properties[key] = deepClone(v, handled);
+        }
+        if (Array.isArray(v) && v.length) {
+            replaced.properties[key] = [...v];
+            v = replaced.properties[key];
+
+            for (let index = 0; index < v.length; index++) {
+                const element = v[index];
+                if (element instanceof ComponentWithProperties) {
+                    v[index] = deepClone(element, handled);
+                }
+            }
+        }
+    }
+    return replaced;
 }
 
 export function forAllRoots(root: ComponentWithProperties, handler: (root: ComponentWithPropertiesType) => void, alreadyProcessed?: Set<ComponentWithPropertiesType>) {
@@ -93,11 +130,11 @@ export class ComponentWithProperties {
     public isDismissing = ref(false); // Custom state for stack items that need to navigate way without being removed from the dom
 
     // Hisotry index
-    public historyIndex: number | null = null;
+    public historyIndex: HistoryIndex | null = null;
 
     static historyIndexOwners = new Map<number, ComponentWithProperties>();
 
-    public forceCanHaveFocus = false; // Automatically true if it has a history state
+    public forceCanHaveFocus: Ref<boolean> = ref(false); // Automatically true if it has a history state
 
     // private static ignoreActivate: ComponentWithProperties | null = null
 
@@ -115,7 +152,7 @@ export class ComponentWithProperties {
         this.provide = options?.provide || {};
         this.inheritedDisplayerProvide = options?.inheritedDisplayerProvide || {};
         this.inheritedParentProvide = options?.inheritedParentProvide || {};
-        this.forceCanHaveFocus = options?.forceCanHaveFocus || false;
+        this.forceCanHaveFocus = ref(options?.forceCanHaveFocus || false);
         this.keepNavigationRoutes = options?.keepNavigationRoutes ?? false;
 
         // Prevent becoming reactive in any way
@@ -148,6 +185,10 @@ export class ComponentWithProperties {
 
     clone() {
         return new ComponentWithProperties(this.component, this.properties, { provide: this.provide, inheritedParentProvide: this.inheritedParentProvide, inheritedDisplayerProvide: this.inheritedDisplayerProvide });
+    }
+
+    deepClone() {
+        return deepClone(this);
     }
 
     beforeMount() {
@@ -183,7 +224,7 @@ export class ComponentWithProperties {
     }
 
     canHaveFocus() {
-        return this.hasHistoryIndex() || this.forceCanHaveFocus;
+        return this.hasHistoryIndex() || unref(this.forceCanHaveFocus);
     }
 
     /**
@@ -193,19 +234,19 @@ export class ComponentWithProperties {
         if (!HistoryManager.active) {
             return;
         }
+        const state = HistoryManager.getCurrentState();
 
         if (this.historyIndex !== null) {
             this.returnToHistoryIndex();
             return;
         }
-        const state = HistoryManager.getCurrentState();
-        this.historyIndex = state.index;
+        this.historyIndex = new HistoryIndex(state.index);
 
         if (ComponentWithProperties.debug) console.warn('Assigned index to component', this.component.name ?? this, state.index);
         ComponentWithProperties.historyIndexOwners.set(state.index, this);
     }
 
-    inheritHistoryIndex(index: number) {
+    inheritHistoryIndex(index: HistoryIndex) {
         // This sets the default history index
         if (this.historyIndex === null) {
             this.historyIndex = index;
@@ -213,16 +254,15 @@ export class ComponentWithProperties {
     }
 
     ownsHistoryIndex() {
-        return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex) === this;
+        return this.historyIndex !== null && ComponentWithProperties.historyIndexOwners.get(this.historyIndex.index) === this;
     }
 
-    overrideUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string) {
+    overrideUrl(url: HistoryUrl, title?: string) {
         this.provide.reactive_navigation_url = url;
-        this.provide.reactive_navigation_query = query;
-        this.setUrl(url, query, title);
+        this.setUrl(url, title);
     }
 
-    setUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string) {
+    setUrl(url: HistoryUrl, title?: string) {
         if (this.historyIndex === null) {
             if (ComponentWithProperties.debug) console.warn('Tried calling .setUrl on a component that was never assigned a history index. Check if you displayed this component using .show or .present');
             return;
@@ -236,7 +276,7 @@ export class ComponentWithProperties {
             return;
         }
 
-        HistoryManager.setUrl(url, query, title, this.historyIndex);
+        HistoryManager.setUrl(url, title, this.historyIndex.index);
     }
 
     setTitle(title: string) {
@@ -256,7 +296,7 @@ export class ComponentWithProperties {
         // This does not need to own the history index
         // a decendant of a view can set the title
 
-        HistoryManager.setTitle(title, this.historyIndex);
+        HistoryManager.setTitle(title, this.historyIndex.index);
     }
 
     /**
@@ -283,7 +323,7 @@ export class ComponentWithProperties {
         }
 
         if (ComponentWithProperties.debug) console.warn('Returned to component', this.component.name ?? this);
-        HistoryManager.returnToHistoryIndex(this.historyIndex);
+        HistoryManager.returnToHistoryIndex(this.historyIndex.index);
         return true;
     }
 

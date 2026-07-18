@@ -13,7 +13,7 @@
 
 <script lang="ts" setup>
 
-import { onBeforeUnmount, type Ref, ref } from 'vue';
+import { onBeforeUnmount, provide, type Ref, ref } from 'vue';
 
 import { ComponentWithProperties } from './ComponentWithProperties';
 import ComponentWithPropertiesInstance from './ComponentWithPropertiesInstance.js';
@@ -22,6 +22,12 @@ import { useFocused } from './utils/navigationHooks.js';
 const children = ref([]) as Ref<ComponentWithProperties[]>;
 const parentIsFocused = useFocused();
 const emit = defineEmits(['returnToHistoryIndex']);
+
+// Disable inheriting history index from parents (not related since it is overlayed - unless explicitly assigned a history index)
+provide('navigation_historyIndex', null);
+provide('navigation_parent', null);
+provide('reactive_navigation_url', null);
+provide('reactive_navigation_disable_url', null);
 
 function getCustomProvide(index: number, key: number) {
     return {

@@ -1,12 +1,56 @@
-import { computed, customRef, getCurrentInstance, inject, onActivated, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
+import { computed, customRef, getCurrentInstance, inject, isRef, onActivated, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, unref, type Component, type ComponentOptions, type Ref } from 'vue';
 
-import { ComponentWithProperties, useCurrentComponent, type ModalDisplayStyle } from '../ComponentWithProperties';
+import { ComponentWithProperties, HistoryIndex, useCurrentComponent, useParentComponent, type ModalDisplayStyle } from '../ComponentWithProperties';
 import { HistoryManager, type HistoryUrl } from '../HistoryManager';
 import NavigationController from '../NavigationController.vue';
 import type { PopOptions } from '../PopOptions';
 import type { PushOptions } from '../PushOptions';
 import { UrlHelper, mergeSearchParams, templateToUrl, type ParamsFromConstructors, type UrlMatchResult, type UrlParamsConstructors } from './UrlHelper';
 import { createTrackedSearchParams } from './createTrackedSearchParams.js';
+
+/**
+ * reactive_navigation_url
+ */
+export class ReactiveUrl {
+    url: string;
+    query: URLSearchParams | null;
+
+    /**
+     * The url that actually matched vs the url that will be shown. This is used to support alternative urls
+     *
+     * E.g.
+     * matched:
+     * /members/all
+     *
+     * url:
+     * /leden/allemaal
+     *
+     * When checking further the url, we need to know what we matched earlier
+     */
+    matched: string;
+
+    constructor({ url, matched, query }: { url: string; matched?: string; query?: URLSearchParams | null }) {
+        this.url = url;
+        this.matched = matched ?? url;
+        this.query = query ?? null;
+    }
+
+    extend(url: ReactiveUrl) {
+        return new ReactiveUrl({
+            url: this.url && this.url !== '/' ? (this.url + '/' + UrlHelper.trim(url.url)) : UrlHelper.trim(url.url),
+            matched: this.matched && this.matched !== '/' ? (this.matched + '/' + UrlHelper.trim(url.matched)) : UrlHelper.trim(url.matched),
+            query: mergeSearchParams(this.query, url.query),
+        });
+    }
+
+    toString() {
+        return this.transformedHref;
+    }
+
+    get transformedHref() {
+        return '/' + UrlHelper.trim(UrlHelper.transformUrl(this.url)) + (this.query && this.query.size > 0 ? '?' + this.query.toString() : '');
+    }
+}
 
 function isPromiseLike<T = unknown>(
     value: unknown,
@@ -58,8 +102,7 @@ type RouteComponent<Props>
         component: RouteDirectComponent | RouteLoadComponent<Props>;
     } | {
         handler: (options: {
-            query: URLSearchParams | null | Ref<URLSearchParams | null>;
-            url: string | Ref<string | null> | null;
+            url: ReactiveUrl | string | Ref<ReactiveUrl | string | null> | null;
             adjustHistory: boolean;
             animated: boolean;
             modalDisplayStyle: ModalDisplayStyle | undefined;
@@ -71,6 +114,12 @@ type RouteComponent<Props>
 export type RouteWithParams<Props, Params> = {
     name?: string;
     url: string;
+    ignoreUrls?: string[];
+
+    /**
+     * Used for legacy names or migrations when changing urls
+     */
+    alternativeUrls?: string[];
     params: UrlParamsConstructors<Params>;
     isDefault?: RouteNavigationOptions<Props, Params> & ({ params: Params } | { properties: Props });
     paramsToProps: (params: Params, query?: URLSearchParams | null) => Promise<Props> | Props;
@@ -80,13 +129,33 @@ export type RouteWithParams<Props, Params> = {
 export type RouteWithoutParams<Props> = {
     name?: string;
     url: string;
+
+    ignoreUrls?: string[];
+
+    /**
+     * Used for legacy names or migrations when changing urls
+     */
+    alternativeUrls?: string[];
     isDefault?: RouteNavigationOptions<Props>;
     defaultProperties?: (query: URLSearchParams | null) => Promise<Props> | Props;
     propsToParams?: (props: Props) => { params?: undefined; query?: URLSearchParams | null };
 } & RouteComponent<Props>;
 
 export type Route<Props = Record<string, unknown>, Params = Record<string, unknown>> = RouteWithParams<Props, Params> | RouteWithoutParams<Props>;
-export type RouteNavigationOptions<Props = Record<string, unknown>, Params = Record<string, never>> = { params?: Params; properties?: Props; query?: URLSearchParams; animated?: boolean; adjustHistory?: boolean; checkRoutes?: boolean };
+export type RouteNavigationOptions<Props = Record<string, unknown>, Params = Record<string, never>> = {
+    /**
+     * The url that actually matched, not the url that will be used in the address bar
+     *
+     * E.g. matched 'members' (alternative url of a route), but will actually show 'leden' (url of the route)
+     */
+    url?: string;
+    params?: Params;
+    properties?: Props;
+    query?: URLSearchParams;
+    animated?: boolean;
+    adjustHistory?: boolean;
+    checkRoutes?: boolean;
+};
 
 export type NavigationOptions<T> = {
     title: string | ((this: T) => string);
@@ -171,12 +240,23 @@ export function useNavigate() {
         }
 
         // Build url
-        const url = templateToUrl(route.url, params ?? {});
+        const url = isRef(query)
+            ? computed(() => {
+                    return new ReactiveUrl({
+                        url: templateToUrl(route.url, params ?? {}),
+                        matched: options?.url ? templateToUrl(options?.url, params ?? {}) : options?.url,
+                        query: unref(query),
+                    });
+                })
+            : new ReactiveUrl({
+                url: templateToUrl(route.url, params ?? {}),
+                matched: options?.url ? templateToUrl(options?.url, params ?? {}) : options?.url,
+                query,
+            });
 
         if ('handler' in route) {
             await route.handler({
                 url,
-                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 modalDisplayStyle: undefined,
@@ -224,7 +304,6 @@ export function useNavigate() {
         if (route.present) {
             await present({
                 url,
-                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -241,7 +320,6 @@ export function useNavigate() {
         else if (route.show === 'detail') {
             await showDetail({
                 url,
-                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -257,7 +335,6 @@ export function useNavigate() {
         else {
             await show({
                 url,
-                query,
                 adjustHistory: options?.adjustHistory ?? true,
                 animated: options?.animated ?? true,
                 components: [
@@ -291,6 +368,20 @@ export function useNavigate() {
 }
 
 /**
+ * Make sure this component does not have routes on its own but works together with a parent componentWithPeroperties
+ */
+export function useInheritCheckRoutes() {
+    const component = useCurrentComponent();
+    const parent = useParentComponent();
+
+    if (component && parent) {
+        if (parent.checkRoutes) {
+            component.setCheckRoutes();
+        }
+    }
+}
+
+/**
  * Internal helper method, should not get used
  */
 function getCurrentRoutes() {
@@ -305,7 +396,7 @@ function getCurrentRoutes() {
             },
             set(newValue: Route[]) {
                 if (component) {
-                    component.navigationRoutes = newValue;
+                    component.navigationRoutes.splice(0, component.navigationRoutes.length, ...newValue);
                 }
                 else {
                     console.error('Missing component when setting routes');
@@ -412,10 +503,29 @@ export function defineRoutes(tmpRoutes: Route<any>[]) {
     async function handleRoutes(routes: Route<any>[]) {
         // Handle automatically
         for (const route of routes) {
-            const result = urlhelpers.match(route.url, 'params' in route ? route.params : {}) as UrlMatchResult<any> | undefined;
+            let result: UrlMatchResult<any> | undefined;
+            for (const url of [route.url, ...route.alternativeUrls ?? []]) {
+                result = urlhelpers.match(url, 'params' in route ? route.params : {}) as UrlMatchResult<any> | undefined;
+                if (result) {
+                    break;
+                }
+            }
+
             if (result) {
+                let ignore = false;
+                for (const ignoreUrl of route.ignoreUrls ?? []) {
+                    const doesMatchIgnore = urlhelpers.match(ignoreUrl, 'params' in route ? route.params : {}) as UrlMatchResult<any> | undefined;
+                    if (doesMatchIgnore) {
+                        ignore = true;
+                        break;
+                    }
+                }
+                if (ignore) {
+                    continue;
+                }
                 try {
                     await navigate(route, {
+                        url: result.url,
                         params: 'params' in route ? result.params : undefined,
                         animated: false,
                         adjustHistory: false,
@@ -648,18 +758,10 @@ export function normalizePushOptions(o: PushOptions | ComponentWithProperties, c
         for (const component of options.components) {
             component.provide.reactive_navigation_url = computed(() => {
                 const u = unref(url);
-                return u === null ? null : urlHelpers.extendUrl(u, { returnHistory: options.replace ?? 0 });
-            });
-        }
-    }
 
-    if (options.query !== undefined) {
-        const query = options.query;
-
-        for (const component of options.components) {
-            component.provide.reactive_navigation_query = computed(() => {
-                const q = unref(query);
-                return q === null ? null : urlHelpers.extendQuery(q, { returnHistory: options.replace ?? 0 });
+                return u === null
+                    ? null
+                    : urlHelpers.extendUrl(typeof u === 'string' ? new ReactiveUrl({ url: u }) : u, { returnHistory: options.replace ?? 0 });
             });
         }
     }
@@ -801,10 +903,11 @@ export function useAnimateHeightChange() {
 /**
  * Add a url 'prefix' to the current url and all its children
  */
-export function extendUrl(url: string | Ref<string>) {
+export function extendUrl(url: ReactiveUrl | string | Ref<ReactiveUrl | string>) {
     const urlHelpers = useUrl();
     provide('reactive_navigation_url', computed(() => {
-        return urlHelpers.extendUrl(unref(url));
+        const u = unref(url);
+        return urlHelpers.extendUrl(typeof u === 'string' ? new ReactiveUrl({ url: u }) : u);
     }));
 }
 
@@ -822,24 +925,24 @@ export function setTitle(title: string) {
     });
 }
 
-export function setUrl(url: HistoryUrl, query: URLSearchParams | null = null, title?: string) {
+export function setUrl(url: HistoryUrl, title?: string) {
     const urlHelpers = useUrl();
 
     onMounted(() => {
-        urlHelpers.overrideUrl(url, query, title);
+        urlHelpers.overrideUrl(url, title);
     });
 }
 
 export function useUrl() {
     const currentComponent = useCurrentComponent();
-    const navigationUrl = inject('reactive_navigation_url', null) as Ref<string | undefined> | null;
+    const navigationUrl = inject('reactive_navigation_url', null) as Ref<ReactiveUrl | undefined> | null;
     const navigationQuery = inject('reactive_navigation_query', null) as Ref<URLSearchParams | undefined> | null;
     const disableUrl = inject('reactive_navigation_disable_url', null) as Ref<boolean | undefined> | null;
-    const historyIndex = inject('navigation_historyIndex', null) as Ref<number | undefined> | null;
+    const historyIndex = inject('navigation_historyIndex', null) as Ref<HistoryIndex | undefined> | null;
 
     return {
         getUrl() {
-            return unref(navigationUrl) ?? '';
+            return unref(navigationUrl) ?? null;
         },
 
         getQuery() {
@@ -863,52 +966,36 @@ export function useUrl() {
             }
         },
 
-        extendUrl(url: string, options: { returnHistory?: number } = {}): string {
+        extendUrl(url: ReactiveUrl, options: { returnHistory?: number } = {}): ReactiveUrl {
             let prefix = this.getUrl();
             if (options.returnHistory) {
                 const index = unref(historyIndex);
                 if (index !== null && index !== undefined) {
-                    prefix = HistoryManager.getStateUrl(index - options.returnHistory);
+                    prefix = HistoryManager.getStateUrl(index.index - options.returnHistory);
                 }
                 else {
                     console.error('Failed to get history index');
                 }
             }
 
-            if (prefix && prefix !== '/') {
-                return prefix + '/' + UrlHelper.trim(url);
+            if (prefix) {
+                return prefix.extend(url);
             }
-            return UrlHelper.trim(url);
-        },
-
-        extendQuery(query: URLSearchParams | null, options: { returnHistory?: number } = {}): URLSearchParams | null {
-            let baseQuery = this.getQuery();
-
-            if (options.returnHistory) {
-                const index = unref(historyIndex);
-                if (index !== null && index !== undefined) {
-                    baseQuery = HistoryManager.getStateQuery(index - options.returnHistory);
-                }
-                else {
-                    console.error('Failed to get history index');
-                }
-            }
-
-            return mergeSearchParams(baseQuery, query);
+            return url;
         },
 
         match<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
             const shared = UrlHelper.shared;
-            const helper = new UrlHelper(shared.url, this.getUrl());
+            const helper = new UrlHelper(shared.url, this.getUrl()?.matched);
             return helper.match(template, params);
         },
 
         matchCurrent<Params>(template: string, params?: UrlParamsConstructors<Params>): UrlMatchResult<Params> | undefined {
-            const helper = new UrlHelper(undefined, this.getUrl());
+            const helper = new UrlHelper(undefined, this.getUrl()?.url);
             return helper.match(template, params);
         },
 
-        overrideUrl(url: HistoryUrl, query: URLSearchParams | null = null, title?: string) {
+        overrideUrl(url: HistoryUrl, title?: string) {
             if (!currentComponent) {
                 console.error('No current component while setting title', title);
                 return;
@@ -916,7 +1003,7 @@ export function useUrl() {
             if (unref(disableUrl)) {
                 return;
             }
-            currentComponent?.overrideUrl(url, query, title);
+            currentComponent?.overrideUrl(url, title);
         },
     };
 }

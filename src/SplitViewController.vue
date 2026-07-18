@@ -212,7 +212,7 @@ export default defineComponent({
 
                     this.getScrollElement().scrollTop = 0;
 
-                    HistoryManager.pushState(undefined, null, {
+                    HistoryManager.pushState(null, null, {
                         adjustHistory: options.adjustHistory ?? true,
                         invalid: !!options.invalidHistory || (!!this.detail),
                     });
@@ -331,7 +331,7 @@ export default defineComponent({
 
                 // We need to wait until it is removed from the vnode
                 await this.$nextTick();
-                HistoryManager.pushState(undefined, null, {
+                HistoryManager.pushState(null, null, {
                     adjustHistory: false,
                     invalid: true,
                 });

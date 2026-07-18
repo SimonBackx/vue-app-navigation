@@ -174,7 +174,7 @@ const NavigationController = defineComponent({
             this.cacheComponentProvides(component);
 
             if (index < this.components.length - 1) {
-                HistoryManager.pushState(undefined, null, { adjustHistory: false });
+                HistoryManager.pushState(null, null, { adjustHistory: false });
             }
             component.assignHistoryIndex();
         }
@@ -628,7 +628,7 @@ const NavigationController = defineComponent({
                         const lastComponent = popped[0];
                         if (HistoryManager.active) {
                             if (lastComponent && lastComponent.hasHistoryIndex()) {
-                                HistoryManager.returnToHistoryIndex(lastComponent.historyIndex! - 1);
+                                HistoryManager.returnToHistoryIndex(lastComponent.historyIndex!.index - 1);
                             }
                             else {
                                 console.log('Last removed component has no history index', popped);
@@ -656,64 +656,63 @@ const NavigationController = defineComponent({
                     this.mainComponent.keepAlive = !replace || !destroy;
                 }
 
-                if (adjustHistory) {
-                    // We can provide a back action
+                // We can provide a back action
 
-                    for (const [index, component] of components.entries()) {
-                        if (index === 0 && popped.length) {
-                            HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
-                                if (!this.mainComponent) {
-                                    console.error('Tried to pop NavigationController, but it was already unmounted');
-                                    return;
-                                }
-
-                                await this.push({
-                                    animated: animated && canAnimate,
-                                    replace: 1,
-                                    components: popped,
-                                    reverse: !(options.reverse ?? false),
-                                    adjustHistory: false,
-                                });
-                            }, {
-                                adjustHistory,
-                                invalid: options.invalidHistory ?? false,
-                            });
-                        }
-                        else {
-                            HistoryManager.pushState(undefined, async (canAnimate: boolean) => {
-                                if (!this.mainComponent) {
-                                    console.error('Tried to pop NavigationController, but it was already unmounted');
-                                    return;
-                                }
-
-                                await this.pop({ animated: animated && canAnimate });
-                            }, {
-                                adjustHistory,
-                                invalid: options.invalidHistory ?? false,
-                            });
-                        }
-
-                        component.assignHistoryIndex();
-                    }
-                }
-                else {
-                    // Todo: implement back behaviour
-                    for (const [index, component] of components.entries()) {
-                        // if (!replace || this.components.length !== components.length) {
-                        HistoryManager.pushState(undefined, (!!replace && index === 0)
-                            ? async (animated: boolean) => {
-                                // Simply pop
-                                await this.pop({ animated, count: components.length });
+                for (const [index, component] of components.entries()) {
+                    if (index === 0 && popped.length) {
+                        HistoryManager.pushState(null, async (canAnimate: boolean) => {
+                            if (!this.mainComponent) {
+                                console.error('Tried to pop NavigationController, but it was already unmounted');
+                                return;
                             }
-                            : null, {
-                            adjustHistory: (!!replace && index === 0), // for the first one we need to adjust the history because we returned earlier
+
+                            await this.push({
+                                animated: animated && canAnimate,
+                                replace: 1,
+                                components: popped,
+                                reverse: !(options.reverse ?? false),
+                                adjustHistory: false,
+                            });
+                        }, {
+                            adjustHistory,
                             invalid: options.invalidHistory ?? false,
                         });
-                        // }
-                        // Assign history index
-                        component.assignHistoryIndex();
                     }
+                    else {
+                        HistoryManager.pushState(null, async (canAnimate: boolean) => {
+                            if (!this.mainComponent) {
+                                console.error('Tried to pop NavigationController, but it was already unmounted');
+                                return;
+                            }
+
+                            await this.pop({ animated: animated && canAnimate });
+                        }, {
+                            adjustHistory,
+                            invalid: options.invalidHistory ?? false,
+                        });
+                    }
+
+                    component.assignHistoryIndex();
                 }
+                // }
+                // else {
+                //    // Todo: implement back behaviour
+                //    for (const [index, component] of components.entries()) {
+                //        // if (!replace || this.components.length !== components.length) {
+                //        HistoryManager.pushState(undefined, (!!replace && index === 0)
+                //            ? async (animated: boolean) => {
+                //                // Simply pop
+                //                await this.pop({ animated, count: components.length });
+                //            }
+                //            : null, {
+                //            adjustHistory: (!!replace && index === 0), // for the first one we need to adjust the history because we returned earlier
+                //            invalid: options.invalidHistory ?? false,
+                //        });
+                //        // }
+                //        // Assign history index
+                //        component.assignHistoryIndex();
+                //    }
+                // }
 
                 this.mainComponent = component;
                 this.$emit('didPush');

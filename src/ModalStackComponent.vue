@@ -86,7 +86,7 @@ async function present(options: PushOptions) {
         c.inheritFromDisplayer(component); // fixes popup not inheriting from displayer (inherits wrong url)
 
         const adjustHistory = options?.adjustHistory ?? true;
-        HistoryManager.pushState(undefined, adjustHistory
+        HistoryManager.pushState(null, adjustHistory
             ? async (canAnimate: boolean) => {
                 await (c.componentInstance() as (InstanceType<typeof Popup> | undefined))?.pop({ animated: canAnimate });
             }

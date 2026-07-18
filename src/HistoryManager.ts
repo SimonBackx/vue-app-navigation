@@ -1,14 +1,14 @@
+import { ReactiveUrl } from './utils/navigationHooks';
 import { UrlHelper } from './utils/UrlHelper';
 
 /**
  * null makes sure the previous URL is used for this route
  */
-export type HistoryUrl = string | null;
+export type HistoryUrl = ReactiveUrl | null;
 
 type HistoryState = {
     /// Url of the page, used if the user returns to this page using buttons on the page
     url: HistoryUrl;
-    query?: URLSearchParams | null;
     title?: string;
 
     /// Counter at which the state was added.
@@ -22,6 +22,23 @@ type HistoryState = {
     /// Action to execute when the user navigates back to the previous state using the browser's back button.
     undoAction: ((animate: boolean) => void | Promise<void>) | null;
 };
+
+function awaitPrerenderingFinished() {
+    if (!(document as any).prerendering) {
+        return Promise.resolve();
+    }
+
+    console.info('HistoryManager: Chrome Prerendering detected (speculative navigation). Queue is paused until prerendering is navigated upon.');
+
+    return new Promise<void>((resolve) => {
+        document.addEventListener('prerenderingchange', () => {
+            console.info('HistoryManager: Chrome Prerendering ended.');
+            resolve(undefined);
+        }, {
+            once: true,
+        });
+    });
+}
 
 class HistoryManagerStatic {
     debug = false;
@@ -105,7 +122,11 @@ class HistoryManagerStatic {
 
     private go(delta: number) {
         this.addToQueue(async () => {
+            await awaitPrerenderingFinished();
             return new Promise<void>((resolve) => {
+                if (this.debug) {
+                    console.log('history.go(' + delta + ')');
+                }
                 this.manualStateAction = true;
                 history.go(delta); // should be negative
                 let timer: NodeJS.Timeout | undefined = undefined;
@@ -143,9 +164,9 @@ class HistoryManagerStatic {
         });
     }
 
-    getStateUrl(index: number): string {
+    getStateUrl(index: number): ReactiveUrl {
         if (index < 0) {
-            return '';
+            return new ReactiveUrl({ url: '' });
         }
         if (!this.states[index]) {
             return this.getStateUrl(index - 1);
@@ -158,34 +179,18 @@ class HistoryManagerStatic {
         return this.getStateUrl(index - 1);
     }
 
-    getStateQuery(index: number): URLSearchParams | null {
-        if (index < 0) {
-            return null;
-        }
-        if (!this.states[index]) {
-            return this.getStateQuery(index - 1);
-        }
-
-        if (this.states[index].url !== null) {
-            return this.states[index].query ?? null;
-        }
-
-        return this.getStateQuery(index - 1);
-    }
-
     resolveUrl(index: number): string {
-        const q = this.getStateQuery(index);
-        return '/' + UrlHelper.trim(UrlHelper.transformUrl(this.getStateUrl(index))) + (q && q.size > 0 ? '?' + q.toString() : '');
+        return this.getStateUrl(index).transformedHref;
     }
 
     /// Set the current URL without modifying states
-    setUrl(url: HistoryUrl, query: URLSearchParams | null, title?: string, index?: number) {
+    setUrl(url: HistoryUrl, title?: string, index?: number) {
         if (!this.active) {
             return;
         }
 
         if (this.debug) {
-            console.log('Set url: ' + url + ', for index ' + index + ' with current counter: ' + this.counter, title);
+            console.log('Set url: ' + url?.url + ', for index ' + index + ' with current counter: ' + this.counter, title);
         }
 
         if (index === undefined || index === this.counter) {
@@ -219,7 +224,6 @@ class HistoryManagerStatic {
             }, didJustLoadPage ? 200 : 20);
 
             state.url = url;
-            state.query = query;
             if (title) {
                 state.title = title;
             }
@@ -242,7 +246,6 @@ class HistoryManagerStatic {
                 }
             }
             state.url = url;
-            state.query = query;
             if (title) {
                 state.title = title;
             }
@@ -328,7 +331,7 @@ class HistoryManagerStatic {
         return this.getState(index - 1);
     }
 
-    pushState(url: string | undefined, undoAction: ((animate: boolean) => void | Promise<void>) | null, options?: Partial<HistoryState>) {
+    pushState(url: HistoryUrl, undoAction: ((animate: boolean) => void | Promise<void>) | null, options?: Partial<HistoryState>) {
         if (!this.active) {
             return;
         }
@@ -340,7 +343,6 @@ class HistoryManagerStatic {
 
         const state = {
             url: url ?? null,
-            query: null,
             index: this.counter,
             adjustHistory: true,
             undoAction,
@@ -350,12 +352,17 @@ class HistoryManagerStatic {
         this.states.push(state);
         const c = this.counter;
 
+        if (this.debug) {
+            console.log('HistoryManager.pushState', state);
+        }
+
         if (state.adjustHistory) {
-            this.addToQueue(() => {
+            this.addToQueue(async () => {
+                await awaitPrerenderingFinished();
                 if (this.debug) {
                     console.log('history.pushState', c, url);
                 }
-                const formattedUrl = url === undefined ? undefined : '/' + UrlHelper.trim(UrlHelper.transformUrl(url));
+                const formattedUrl = url?.transformedHref;
                 history.pushState({ counter: c }, '', formattedUrl);
             });
         }
@@ -369,10 +376,6 @@ class HistoryManagerStatic {
                 history.replaceState({ counter: c }, '', undefined);
             });
         }
-
-        if (this.debug) {
-            console.log('Push new state ', this.states[this.states.length - 1]);
-        }
     }
 
     /**
@@ -385,7 +388,7 @@ class HistoryManagerStatic {
 
         for (const state of this.states) {
             state.undoAction = null;
-            state.invalid = state.index !== this.counter;
+            state.invalid = true;
         }
     }
 
@@ -414,7 +417,6 @@ class HistoryManagerStatic {
                     index: i,
                     adjustHistory: false,
                     url: null,
-                    query: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null,
@@ -449,11 +451,11 @@ class HistoryManagerStatic {
         }
         else if (this.states[this.counter].url) {
             if (this.debug) {
-                console.log('Setting manual url without history api: ' + this.states[this.counter].url);
+                console.log('Setting manual url without history api: ' + this.states[this.counter].url?.toString());
             }
 
             // Set new url manually again
-            this.setUrl(this.states[this.counter].url!, this.states[this.counter].query ?? null, this.states[this.counter].title);
+            this.setUrl(this.states[this.counter].url!, this.states[this.counter].title);
         }
 
         return this.counter;
@@ -586,7 +588,6 @@ class HistoryManagerStatic {
                     index: i,
                     adjustHistory: false,
                     url: null,
-                    query: null,
                     title: undefined,
                     invalid: true,
                     undoAction: null,
@@ -606,7 +607,6 @@ class HistoryManagerStatic {
             index: this.counter,
             adjustHistory: false,
             url: null,
-            query: null,
             title: undefined,
             invalid: false,
             undoAction: null,

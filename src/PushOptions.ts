@@ -1,5 +1,6 @@
 import type { Ref } from 'vue';
 import type { ComponentWithProperties, ModalDisplayStyle } from './ComponentWithProperties';
+import type { ReactiveUrl } from './utils/navigationHooks';
 
 export interface PushOptions {
     /**
@@ -11,8 +12,8 @@ export interface PushOptions {
      * The url for this new route.
      * Set to null to specifically ignore or extending url (displayed view will copy the previous url - which is not the same as the url of the previous view)
      */
-    url?: string | null | undefined | Ref<string | null>;
-    query?: URLSearchParams | null | undefined | Ref<URLSearchParams | null>;
+    url?: ReactiveUrl | string | null | undefined | Ref<ReactiveUrl | string | null>;
+    // query?: URLSearchParams | null | undefined | Ref<URLSearchParams | null>;
 
     /**
      * Whether we should push a new real state in the browser history
