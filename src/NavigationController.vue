@@ -611,6 +611,7 @@ const NavigationController = defineComponent({
 
                 // Make sure the transition name changed, so wait for a rerender
                 let popped: ComponentWithPropertiesType[] = [];
+                let forceOneAdjust = false;
                 const adjustHistory = options?.adjustHistory ?? true;
 
                 if (replace > 0) {
@@ -629,6 +630,7 @@ const NavigationController = defineComponent({
                         if (HistoryManager.active) {
                             if (lastComponent && lastComponent.hasHistoryIndex()) {
                                 HistoryManager.returnToHistoryIndex(lastComponent.historyIndex!.index - 1);
+                                forceOneAdjust = true;
                             }
                             else {
                                 console.log('Last removed component has no history index', popped);
@@ -640,6 +642,7 @@ const NavigationController = defineComponent({
                         const lastComponent = this.components[this.components.length - components.length - 1];
                         if (lastComponent && lastComponent.hasHistoryIndex()) {
                             lastComponent.returnToHistoryIndex();
+                            forceOneAdjust = true;
                         }
                         else {
                             console.log('Last visible component has no history index', lastComponent);
@@ -659,7 +662,7 @@ const NavigationController = defineComponent({
                 // We can provide a back action
 
                 for (const [index, component] of components.entries()) {
-                    if (index === 0 && popped.length) {
+                    if (index === 0 && popped.length && adjustHistory) {
                         HistoryManager.pushState(null, async (canAnimate: boolean) => {
                             if (!this.mainComponent) {
                                 console.error('Tried to pop NavigationController, but it was already unmounted');
@@ -674,9 +677,10 @@ const NavigationController = defineComponent({
                                 adjustHistory: false,
                             });
                         }, {
-                            adjustHistory,
+                            adjustHistory: adjustHistory || forceOneAdjust,
                             invalid: options.invalidHistory ?? false,
                         });
+                        forceOneAdjust = false;
                     }
                     else {
                         HistoryManager.pushState(null, async (canAnimate: boolean) => {
@@ -687,11 +691,11 @@ const NavigationController = defineComponent({
 
                             await this.pop({ animated: animated && canAnimate });
                         }, {
-                            adjustHistory,
+                            adjustHistory: adjustHistory || forceOneAdjust,
                             invalid: options.invalidHistory ?? false,
                         });
                     }
-
+                    forceOneAdjust = false;
                     component.assignHistoryIndex();
                 }
                 // }

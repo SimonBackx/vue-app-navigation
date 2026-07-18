@@ -212,9 +212,13 @@ export default defineComponent({
 
                     this.getScrollElement().scrollTop = 0;
 
+                    if (this.detail) {
+                        HistoryManager.invalidateHistory();
+                    }
+
                     HistoryManager.pushState(null, null, {
                         adjustHistory: options.adjustHistory ?? true,
-                        invalid: !!options.invalidHistory || (!!this.detail),
+                        invalid: !!options.invalidHistory,
                     });
                     component.assignHistoryIndex();
                     this.detail = component;
