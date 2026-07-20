@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/require-toggle-inside-transition -->
 <template>
-    <div :class="buildClass" :style="style" :inert="!isFocused" @click="onClick">
+    <div :class="buildClass" :style="style" :inert="pushDown > 0" @click="onClick">
         <div ref="mainContent">
             <div class="scrollable-container">
                 <ComponentWithPropertiesInstance :key="root.key" :component="root" />
