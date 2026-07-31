@@ -2,6 +2,7 @@
     <div class="modal-stack-component">
         <NavigationController
             ref="navigationController"
+            animation-type="modal"
             :disable-animations="disableAnimations"
             :root="root"
             :initial-components="initialComponents"
