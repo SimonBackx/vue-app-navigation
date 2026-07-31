@@ -2,7 +2,7 @@
     <div class="modal-stack-component">
         <NavigationController
             ref="navigationController"
-            animation-type="modal"
+            :disable-animations="disableAnimations"
             :root="root"
             :initial-components="initialComponents"
             :custom-provide="customProvide"
@@ -26,9 +26,11 @@ const props = withDefaults(defineProps<{
     root: ComponentWithPropertiesType;
     initialComponents?: ComponentWithPropertiesType[] | null;
     initialPresents?: PushOptions[] | null;
+    disableAnimations?: boolean;
 }>(), {
     initialComponents: null,
     initialPresents: null,
+    disableAnimations: false,
 });
 
 const navigationController = ref<(typeof NavigationController) | null>(null);

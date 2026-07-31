@@ -88,6 +88,10 @@ const NavigationController = defineComponent({
             default: 'default',
             type: String,
         },
+        disableAnimations: {
+            default: false,
+            type: Boolean,
+        },
         customProvide: {
             type: Object,
             default: null,
@@ -525,7 +529,7 @@ const NavigationController = defineComponent({
             return document.documentElement;
         },
         shouldAnimate() {
-            return this.$el && (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            return !this.disableAnimations && this.$el && (this.$el as HTMLElement).offsetWidth <= 1000 && !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
         },
         getNavigationTransitionDuration() {
             const isPop = this.transitionName === 'pop' || this.transitionName === 'modal-pop';
