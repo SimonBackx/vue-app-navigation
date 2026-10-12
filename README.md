@@ -28,6 +28,8 @@ replacement, and leave guards.
 
 See [routes](docs/routes.md) for URL restoration, typed parameters, and lazy views.
 
+See [controllers](docs/controllers.md) for stack and responsive split composition.
+
 -   URL based navigation isn't fit for mobile applications. You should be able to keep pushing new views, and you should be able to navigate back to earlier states without having to keep in mind how to rebuild the state of earlier components. It just needs to 'work'.
 -   By allowing views to navivate to other views as they please, you don't need one place where you specify all your possible routes. The possibilities are endless. You can keep on pushing views on your navigation controller.
 -   Your app should always scroll on the document, never on a different element - expect in popups or during transitions. This makes sure the toolbars disappear and appear properly in mobile browsers.
