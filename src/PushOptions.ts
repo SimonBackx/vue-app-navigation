@@ -38,9 +38,8 @@ export interface PushOptions {
     animated?: boolean | undefined;
 
     /**
-     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore
-     * shouldNavigateAway. Most of the time you'll need to set this to true for programmatic navigation (e.g. as a result of an API call).
-     * Set to false (= default) for user interaction (e.g. when he pressed the close button, when he tapped outside a popup, pressed the ESC key)
+     * Bypass the exposed shouldNavigateAway guards of replaced views. Defaults to false.
+     * Use after a successful save only when discarding the old view is safe.
      */
     force?: boolean | undefined;
 
@@ -65,6 +64,7 @@ export interface PushOptions {
      * Ignore client width checks, always display as modal, also on mobile devices.
      */
     forceModalDisplay?: boolean | undefined;
+    /** Requested presentation style; defaults to the component's style, then 'cover'. Popup/sheet may cover on narrow screens. */
     modalDisplayStyle?: ModalDisplayStyle | undefined;
     modalClass?: string | undefined;
     modalCssStyle?: string | undefined;
