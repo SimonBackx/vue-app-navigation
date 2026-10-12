@@ -24,6 +24,7 @@ import StackComponent from './StackComponent.vue';
 import { useFocused } from './utils/navigationHooks';
 
 const props = withDefaults(defineProps<{
+    /** Base app view, underneath presented flows. Dismiss closes a presented flow, not its inner stack's last view. */
     root: ComponentWithPropertiesType;
     initialComponents?: ComponentWithPropertiesType[] | null;
     initialPresents?: PushOptions[] | null;

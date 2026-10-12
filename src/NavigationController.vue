@@ -30,6 +30,11 @@ import { HistoryManager } from './HistoryManager';
 import { type PopOptions } from './PopOptions';
 import { type PushOptions } from './PushOptions';
 
+/**
+ * A stack of covering views. Pushing preserves the covered views' instances and
+ * scroll positions; popping removes the top view and restores the previous one.
+ * Child show/pop hooks target this stack, independently of its modal presentation.
+ */
 const NavigationController = defineComponent({
     name: 'NavigationController',
     components: {
