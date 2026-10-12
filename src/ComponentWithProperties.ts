@@ -5,6 +5,7 @@ import type { Route } from './utils/navigationHooks';
 
 export type ModalDisplayStyle = 'cover' | 'popup' | 'overlay' | 'sheet' | 'side-view';
 
+/** Setup-only access to this view's navigation wrapper; null when it was not rendered through the navigation framework. */
 export function useCurrentComponent(): ComponentWithPropertiesType | null {
     return inject('navigation_currentComponent', null) as ComponentWithPropertiesType | null;
 }
