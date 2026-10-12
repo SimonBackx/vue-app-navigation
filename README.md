@@ -4,6 +4,8 @@ Navigation library for Vue for web apps that need to feel and work like native a
 
 ## Installation
 
+After installing, follow the [first-view guide](docs/getting-started.md).
+
 ### Yarn
 
 ```
@@ -43,7 +45,7 @@ The class `ComponentWithProperties` is a temporary container that manages some t
 
 Normally, you don't need to use `ComponentWithPropertiesInstance` directly, since this library also provides the components your need for building your app navigation: NavigationController & SplitViewController.
 
-# Todo
+## URL navigation
 
--   Allow some way to have URL's redirect to a specific hierarchy of components (± comparable with how universtal links work in native apps)
--   Add complete documentation
+Routes can restore a hierarchy of views from direct URL entry. See the
+[route guide](docs/routes.md) for registration and async loading configuration.
