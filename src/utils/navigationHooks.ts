@@ -162,6 +162,7 @@ export type NavigationOptions<T> = {
     routes?: Route<any>[];
 };
 
+/** Setup hook returning the nearest stack's back action. Await it before another transition. */
 export function usePop() {
     const rawPop = inject('reactive_navigation_pop', null) as Ref<((options?: PopOptions) => Promise<void>) | undefined> | null;
 
@@ -778,6 +779,7 @@ export function useManualPresent() {
     };
 }
 
+/** Setup hook returning a push action on the nearest stack. Plain pushes preserve covered views; replacement checks their leave guards. */
 export function useShow() {
     const currentComponent = useCurrentComponent();
     const rawShow = inject('reactive_navigation_show', null) as Ref<(options: PushOptions) => Promise<void>> | null;
@@ -812,6 +814,7 @@ export function useShowDetail() {
     };
 }
 
+/** Setup hook starting a modal flow above the current view. Does not remove the covered view or invoke its leave guard. */
 export function usePresent() {
     const currentComponent = useCurrentComponent();
     const rawPresent = inject('reactive_navigation_present', null) as Ref<((options: PushOptions | ComponentWithProperties) => Promise<void>) | undefined> | null;
@@ -829,6 +832,7 @@ export function usePresent() {
     };
 }
 
+/** Setup hook closing the enclosing presented flow, including its child stack. Await before starting another transition. */
 export function useDismiss() {
     const rawDismiss = inject('reactive_navigation_dismiss', null) as Ref<(options?: PopOptions) => Promise<void>> | null;
 
@@ -844,6 +848,7 @@ export function useDismiss() {
     };
 }
 
+/** Reactive back-button availability, including an inherited parent stack. This does not evaluate leave guards. */
 export function useCanPop(): Ref<boolean> {
     const rawPop = inject('reactive_navigation_can_pop', false) as Ref<boolean | undefined> | false;
     return computed(() => {
@@ -851,6 +856,7 @@ export function useCanPop(): Ref<boolean> {
     });
 }
 
+/** Reactive availability of a modal close action; this does not evaluate leave guards. */
 export function useCanDismiss(): Ref<boolean> {
     const rawDismiss = inject('reactive_navigation_can_dismiss', false) as Ref<boolean | undefined> | false;
     return computed(() => !!unref(rawDismiss));

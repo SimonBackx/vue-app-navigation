@@ -23,6 +23,9 @@ npm install @simonbackx/vue-app-navigation
 See [navigation concepts](docs/navigation-concepts.md) for stacks, modal flows,
 diagrams, and examples.
 
+See [navigation actions](docs/navigation-api.md) for show/present, back/close,
+replacement, and leave guards.
+
 -   URL based navigation isn't fit for mobile applications. You should be able to keep pushing new views, and you should be able to navigate back to earlier states without having to keep in mind how to rebuild the state of earlier components. It just needs to 'work'.
 -   By allowing views to navivate to other views as they please, you don't need one place where you specify all your possible routes. The possibilities are endless. You can keep on pushing views on your navigation controller.
 -   Your app should always scroll on the document, never on a different element - expect in popups or during transitions. This makes sure the toolbars disappear and appear properly in mobile browsers.

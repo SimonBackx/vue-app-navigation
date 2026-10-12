@@ -5,9 +5,8 @@ export interface PopOptions {
     animated?: boolean;
 
     /**
-     * Whether the "shouldNavigateAway" popped components will get called and respected. Set force to true to ignore
-     * shouldNavigateAway. Most of the time you'll need to set this to true for programmatic navigation (e.g. as a result of an API call).
-     * Set to false (= default) for user interaction (e.g. when he pressed the close button, when he tapped outside a popup, pressed the ESC key)
+     * Bypass the exposed shouldNavigateAway guards of removed views. Defaults to false.
+     * Use after a successful save only when discarding the view is safe.
      */
     force?: boolean;
 

@@ -335,6 +335,12 @@ export class ComponentWithProperties {
         return getExposeProxy(this.vnode?.component) || this.vnode?.component?.proxy;
     }
 
+    /**
+     * Consults the mounted view's exposed `shouldNavigateAway(): boolean | Promise<boolean>`.
+     * Missing guards allow leaving. A false result vetoes removal; rejected promises propagate.
+     * Controllers call this for pop, dismiss and replacement unless `force` is true,
+     * not when merely covering a view with another view.
+     */
     async shouldNavigateAway(): Promise<boolean> {
         const instance = this.componentInstance() as any;
         if (instance && instance.shouldNavigateAway) {
