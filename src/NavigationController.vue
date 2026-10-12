@@ -81,10 +81,12 @@ const NavigationController = defineComponent({
         };
     },
     props: {
+        /** Initial view when initialComponents is absent or empty; later prop changes do not reset the stack. */
         root: {
             default: null,
             type: Object as PropType<ComponentWithProperties | null>,
         },
+        /** Initial bottom-to-top stack; a nonempty array takes precedence over root and only its last view is visible. */
         initialComponents: {
             default: null,
             type: Object as PropType<ComponentWithProperties[] | null>,

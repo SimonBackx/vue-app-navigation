@@ -57,11 +57,13 @@ export default defineComponent({
         };
     },
     props: {
+        /** Master/menu view, rendered in its own navigation stack. Detail navigation targets the second pane. */
         root: {
             required: true,
             type: Object as PropType<ComponentWithPropertiesType>,
 
         },
+        /** Optional CSS width for the detail pane; null uses the stylesheet default. */
         detailWidth: {
             default: null,
             type: String,
