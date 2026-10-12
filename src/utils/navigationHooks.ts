@@ -81,6 +81,7 @@ export function typeRoute(route: unknown): unknown {
     return route;
 }
 
+/** Registers one route during setup and returns it with parameter inference. Prefer this over heterogeneous defineRoutes arrays. */
 export const defineRoute: typeof typeRoute = (route: any) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     defineRoutes([route]);
@@ -122,7 +123,9 @@ export type RouteWithParams<Props, Params> = {
     alternativeUrls?: string[];
     params: UrlParamsConstructors<Params>;
     isDefault?: RouteNavigationOptions<Props, Params> & ({ params: Params } | { properties: Props });
+    /** Restores component props from URL parameters. May be async; query keys read through the tracked query are retained. */
     paramsToProps: (params: Params, query?: URLSearchParams | null) => Promise<Props> | Props;
+    /** Serializes props for programmatic navigation; return query explicitly when it belongs in the URL. */
     propsToParams: (props: Props) => { params: Params; query?: URLSearchParams | null };
 } & RouteComponent<Props>;
 
@@ -137,6 +140,7 @@ export type RouteWithoutParams<Props> = {
      */
     alternativeUrls?: string[];
     isDefault?: RouteNavigationOptions<Props>;
+    /** Supplies props for a route without path parameters, including direct URL entry. May be async. */
     defaultProperties?: (query: URLSearchParams | null) => Promise<Props> | Props;
     propsToParams?: (props: Props) => { params?: undefined; query?: URLSearchParams | null };
 } & RouteComponent<Props>;
@@ -181,6 +185,11 @@ export type ImportRetryMethod = <Args extends unknown[], T>(
     args: Args,
 ) => Promise<T> | T;
 
+/**
+ * Setup hook returning an awaited route transition. Accepts a route object or a
+ * registered name/URL, with either properties or URL params. Unknown names throw.
+ * Lazy components and async props require the application's window.PromiseComponent.
+ */
 export function useNavigate() {
     const instance = getCurrentInstance();
     const present = usePresent();
@@ -482,6 +491,7 @@ function addCheckRoutesMountedHandler() {
     });
 }
 
+/** Registers routes during setup for direct URL restoration and named navigation. Appends to existing registrations; use defineRoute for stronger per-route inference. */
 export function defineRoutes(tmpRoutes: Route<any>[]) {
     const urlhelpers = useUrl();
     const navigate = useNavigate();
@@ -627,6 +637,7 @@ export function useCurrentHref() {
     return state;
 }
 
+/** Setup hook returning a current-URL predicate for registered route names/URLs or route objects. Use in reactive rendering for selection state; unknown names throw. */
 export function useCheckRoute() {
     const urlhelpers = useUrl();
     const currentRoutes = getCurrentRoutes();
